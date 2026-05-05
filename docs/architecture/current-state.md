@@ -200,3 +200,7 @@ ADR объясняет решение, но не заменяет contract regis
 - concrete `VK Cloud` vs `Yandex Cloud` choice, managed-service packaging and
   secrets backend for the cloud-first pilot;
 - production host/deployment model для edge runtime.
+- кандидат для следующего Platform / Observability обсуждения: нужен ли
+  read-only `latest/history` API поверх существующих ClickHouse views
+  `telemetry_latest_v1` и `telemetry_events_dedup_v1`; это еще не реализованный
+  `Platform API` и не включает UI, alarm workflow, RBAC или write-back/control.

@@ -81,6 +81,13 @@
 
 ## Следующий срез Industrial Data Platform и модулей
 
+Кандидат для ближайшего совместного обсуждения Platform / Observability:
+решить, должен ли первый срез после `Config Registry` быть read-only
+`latest/history` telemetry API поверх уже существующих ClickHouse read models
+`telemetry_latest_v1` и `telemetry_events_dedup_v1`. Если команда выбирает
+этот путь, alarm workflow, auth/RBAC, config rollout, operator UI и
+write-back/control остаются отдельными открытыми вопросами и будущими решениями.
+
 | Вопрос | Почему это важно | Степень блокировки |
 | --- | --- | --- |
 | Какие конкретные API/use cases входят в первый tenant-facing API после `Config Registry`: telemetry read, config rollout, Web Monitoring read API или Alarm Management workflow API? | Data platform, Web Monitoring и Alarm Management разделены, поэтому следующий API contract должен явно назвать ownership | Высокая |
