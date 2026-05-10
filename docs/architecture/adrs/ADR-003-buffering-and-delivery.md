@@ -1,7 +1,7 @@
 # ADR-003: Локальный `SQLite Local State Store` и надежная доставка в backend
 
 Дата: 2026-03-20  
-Статус: partially superseded by `ADR-005` and `docs/contracts/wm-edge-agent/`
+Статус: partially superseded by `ADR-005` and `docs/contracts/edge-telemetry-agent/`
 
 ## Контекст
 
@@ -50,6 +50,6 @@ Edge-сервис работает на объекте, а контур мони
 
 Полные контракты локального SQLite-состояния вынесены в:
 
-- `docs/contracts/wm-edge-agent/sqlite-storage.v1.md`
-- `docs/contracts/wm-edge-agent/schemas/edge.sqlite-point-state-cache.v1.schema.json`
-- `docs/contracts/wm-edge-agent/schemas/edge.sqlite-outbox-record.v1.schema.json`
+- `docs/contracts/edge-telemetry-agent/sqlite-storage.v1.md`
+- `docs/contracts/edge-telemetry-agent/schemas/edge.sqlite-point-state-cache.v1.schema.json`
+- `docs/contracts/edge-telemetry-agent/schemas/edge.sqlite-outbox-record.v1.schema.json`

@@ -1,9 +1,9 @@
 model {
 
 
-    edge-telemetry-agent = developed-system 'wm_edge_agent' {
+    edge-telemetry-agent = developed-system 'edge_telemetry_agent' {
         description 'Универсальная edge-система, разворачиваемая на объекте рядом с полевыми протоколами и отвечающая за сбор данных, нормализацию, фильтрацию, буферизацию и доставку событий.'
-        technology 'apps/wm_edge_agent / Edge collector / normalization / buffering / delivery'
+        technology 'apps/edge_telemetry_agent / Edge collector / normalization / buffering / delivery'
 
         -> industrial-data-platform 'Получает retained agent runtime/source configs и публикует реализованные telemetry events через MQTT; status topics остаются target contract'
     }

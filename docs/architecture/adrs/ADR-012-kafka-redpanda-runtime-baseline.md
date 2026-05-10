@@ -29,7 +29,7 @@
 ## Decision drivers
 
 - Не ломать уже работающий integration baseline:
-  `Config Registry -> Kafka -> Redpanda Connect -> MQTT -> wm_edge_agent -> MQTT -> Redpanda Connect -> Kafka -> Kafka Connect -> ClickHouse`.
+  `Config Registry -> Kafka -> Redpanda Connect -> MQTT -> edge_telemetry_agent -> MQTT -> Redpanda Connect -> Kafka -> Kafka Connect -> ClickHouse`.
 - Сохранить `deployment parity`: self-hosted и cloud deployment modes не должны
   расходиться по Kafka topics, message schemas, ClickHouse tables и acceptance
   semantics.
@@ -85,7 +85,7 @@ compatibility PoC.
 задачей добавить compose override/profile без замены основного local stack и
 проверить:
 
-- создание всех `wm.kafka.topics.v1` topics с нужными retention/compaction
+- создание всех `idp.kafka.topics.v1` topics с нужными retention/compaction
   settings;
 - config delivery path:
   `Config Registry outbox -> Kafka-compatible broker -> Redpanda Connect -> retained MQTT`;

@@ -92,7 +92,7 @@ semantics.
 Следующий protocol track после `KNX`:
 
 - `OPC UA read-only ingestion`;
-- `wm_edge_agent` работает как `OPC UA client`;
+- `edge_telemetry_agent` работает как `OPC UA client`;
 - агент только считывает данные из `OPC UA server`;
 - `OPC UA` nodes мапятся в существующую `source/point` model;
 - telemetry идет по существующему path `MQTT -> Kafka -> ClickHouse`.

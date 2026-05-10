@@ -102,7 +102,7 @@ surface как первый `Web Monitoring Module` surface.
   публикации остаются следующими шагами.
 - Расширение southbound-адаптеров. Текущий практический срез остается
   `KNX-first`, а следующий выбранный protocol track — `OPC UA read-only
-  ingestion`: `wm_edge_agent` работает как `OPC UA client` и только считывает
+  ingestion`: `edge_telemetry_agent` работает как `OPC UA client` и только считывает
   данные из `OPC UA server`. `Modbus TCP`, `DB` и другие источники остаются
   future adapters.
 - Production security hardening: TLS/certificates/ACL/secrets lifecycle,
@@ -113,7 +113,7 @@ surface как первый `Web Monitoring Module` surface.
 В production data path система является read-only контуром сбора и хранения
 данных:
 
-- wm-edge-agent читает и наблюдает сигналы;
+- edge-telemetry-agent читает и наблюдает сигналы;
 - управляющие команды из Web Monitoring UI/API не входят в первый продуктовый
   scope;
 - технические platform writes для telemetry/status storage, config revisions,
@@ -154,8 +154,8 @@ surface как первый `Web Monitoring Module` surface.
 | Термины | `docs/architecture/glossary.md` |
 | Открытые вопросы | `docs/architecture/open-questions.md` |
 | Контракты данных и topic/table names | `docs/contracts/` |
-| Edge guide-документация | `apps/wm_edge_agent/docs/` |
-| Demo/agent runtime config bundle | `environments/demo-stand/wm_edge_agent/` |
+| Edge guide-документация | `apps/edge_telemetry_agent/docs/` |
+| Demo/agent runtime config bundle | `environments/demo-stand/edge_telemetry_agent/` |
 | Execution backlog, приоритеты и статусы | internal issue tracker |
 
 ## ADR Reading Guide
@@ -163,9 +163,9 @@ surface как первый `Web Monitoring Module` surface.
 Для большинства задач агенту не нужно читать все ADR. Используйте такой порядок:
 
 1. Для ориентации: этот документ и `docs/architecture/glossary.md`.
-2. Для edge agent runtime config: `ADR-008`, затем `docs/contracts/wm-edge-agent/`.
+2. Для edge agent runtime config: `ADR-008`, затем `docs/contracts/edge-telemetry-agent/`.
 3. Для MQTT delivery и topic tree: `ADR-005`, затем
-   `docs/contracts/wm-edge-agent/mqtt-topic-tree.v1.md`.
+   `docs/contracts/edge-telemetry-agent/mqtt-topic-tree.v1.md`.
 4. Для identity model: `ADR-004`.
 5. Для границ data platform, web monitoring и alarms: `ADR-014`.
 6. Для storage/platform design: `ADR-007`, затем `docs/contracts/clickhouse/`

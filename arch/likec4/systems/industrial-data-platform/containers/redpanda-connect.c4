@@ -5,9 +5,9 @@ model {
             technology 'Redpanda Connect / MQTT input-output / redpanda input-output components'
             icon @/redpanda-connect.svg
 
-            -> mqtt-ingestion-gateway 'Подписывается на MQTT telemetry/status topics по wm.mqtt.topic-tree.v1'
-            -> kafka-broker-runtime 'Пишет Kafka records по wm.kafka.topics.v1 через redpanda output component'
-            -> kafka-event-log 'Читает wm.platform.edge.configs.v1 для MQTT retained projection'
+            -> mqtt-ingestion-gateway 'Подписывается на MQTT telemetry/status topics по idp.edge.mqtt.topic-tree.v1'
+            -> kafka-broker-runtime 'Пишет Kafka records по idp.kafka.topics.v1 через redpanda output component'
+            -> kafka-event-log 'Читает idp.edge.configs.v1 для MQTT retained projection'
             -> mqtt-ingestion-gateway 'Публикует retained agent runtime/source configs из Kafka delivery log'
         }
     }

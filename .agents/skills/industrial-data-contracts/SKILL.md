@@ -18,9 +18,9 @@ Use this skill for changes where wire/storage compatibility matters.
 
 - Treat `docs/contracts/` as the source of truth for MQTT/Kafka/ClickHouse
   names, fields, schemas, and compatibility.
-- Preserve v1 compatibility. Breaking changes need a new contract version and a
-  migration/rollout plan.
-- Do not rename MQTT `wm/v1`, Kafka `wm.platform.*`, ClickHouse tables/views, or
+- Preserve v1 compatibility after the `idp.*` pre-production reset. Breaking
+  changes need a new contract version and a migration/rollout plan.
+- Do not rename MQTT `idp/v1`, Kafka `idp.*`, ClickHouse tables/views, or
   contract ids as part of product naming.
 - Keep ClickHouse migrations forward-only and checksum-stable after application.
 - Keep `alarm_history_events_v1`; it is a storage sink for the future Alarm

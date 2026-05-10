@@ -7,7 +7,7 @@
 
 Текущий репозиторий уже фактически реализует ядро сбора и хранения данных:
 
-- `wm_edge_agent` собирает telemetry рядом с объектом и надежно доставляет события;
+- `edge_telemetry_agent` собирает telemetry рядом с объектом и надежно доставляет события;
 - `Config Registry` хранит tenants/assets/agents/sources/points и выпускает edge config delivery records;
 - `MQTT -> Redpanda Connect -> Kafka Event Log -> Kafka Connect -> ClickHouse`
   является рабочим local storage/read path;
@@ -51,23 +51,26 @@ ClickHouse остается storage sink в `Telemetry Store`, но writer/owner
 системы. Это deprecated composite boundary для исторических документов, где
 раньше вместе назывались data platform, monitoring UI и alarm workflow.
 
-## Совместимость
+## Совместимость и reset
 
-Первый refactor является `Docs + C4 first` и не меняет runtime identifiers.
+Итоговый pre-production reset удаляет старые `wm*` runtime identifiers и не
+поддерживает совместимость со старыми локальными topics, storage state или
+migration history.
 
-Сохраняются без переименования:
+Канонические identifiers после reset:
 
-- Python packages и entrypoints: `wm_edge_agent`, `wm_config_registry`,
-  `wm_clickhouse`;
+- Python packages и entrypoints: `edge_telemetry_agent`, `idp_config_registry`,
+  `idp_telemetry_store`;
 - Docker Compose service names и image names;
-- MQTT topic tree `wm/v1/...`;
-- Kafka topics `wm.platform.*`;
-- contract ids `wm.edge.*`, `wm.platform.*`, `wm.clickhouse.*`;
-- ClickHouse table names и migration files.
+- MQTT topic tree `idp/v1/...`;
+- Kafka topics `idp.*`;
+- contract ids `idp.edge.*`, `idp.*`, `idp.telemetry-store.clickhouse.*`;
+- ClickHouse table names сохраняются, если они уже domain-neutral; migration
+  history начинается с fresh baseline.
 
-Префикс `wm.platform.*` остается стабильным wire-prefix и означает platform
+Префикс `idp.*` остается стабильным wire-prefix и означает platform
 boundary в контрактах, а не старое продуктовое имя `Monitoring & Alarm Platform`.
-Его изменение потребовало бы новых версий контрактов и не входит в этот ADR.
+Его изменение после reset потребует новых версий контрактов.
 
 ## Последствия
 
@@ -82,8 +85,8 @@ boundary в контрактах, а не старое продуктовое и
 Отрицательные:
 
 - В старых ADR останется исторический термин `Monitoring & Alarm Platform`.
-- Некоторые runtime имена с `wm-*` сохраняются ради совместимости, поэтому
-  продуктовая терминология и wire-prefixes временно различаются.
+- Локальные `wm*` topics, volumes, ClickHouse/Postgres state и migration
+  history требуют destructive reset в development окружении.
 
 ## Проверки принятия
 
@@ -94,5 +97,5 @@ boundary в контрактах, а не старое продуктовое и
   `Alarm Management Module`.
 - `Config Registry`, ingestion, Kafka Event Log, storage writer, ClickHouse и
   PostgreSQL остаются в `Industrial Data Platform`.
-- Контрактная документация явно говорит, что `wm.platform.*` не переименовывается
-  в рамках этого refactor.
+- Контрактная документация и runtime paths используют `idp.*`/`idp/v1` без
+  старых `wm*` compatibility aliases.

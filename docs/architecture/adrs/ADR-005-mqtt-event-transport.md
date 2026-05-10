@@ -57,22 +57,22 @@
 
 Корневой префикс:
 
-- `wm/v1`
+- `idp/v1`
 
 Telemetry topic:
 
-- `wm/v1/assets/{asset_id}/agents/{agent_id}/sources/{source_id}/points/{point_key}/event`
+- `idp/v1/assets/{asset_id}/agents/{agent_id}/sources/{source_id}/points/{point_key}/event`
 
 Config topics:
 
-- `wm/v1/agents/{agent_id}/config/agent-runtime`
-- `wm/v1/agents/{agent_id}/sources/{source_id}/config`
+- `idp/v1/agents/{agent_id}/config/agent-runtime`
+- `idp/v1/agents/{agent_id}/sources/{source_id}/config`
 
 Status topics:
 
-- `wm/v1/agents/{agent_id}/status/config`
-- `wm/v1/assets/{asset_id}/agents/{agent_id}/sources/{source_id}/status/connection`
-- `wm/v1/assets/{asset_id}/agents/{agent_id}/status/lwt`
+- `idp/v1/agents/{agent_id}/status/config`
+- `idp/v1/assets/{asset_id}/agents/{agent_id}/sources/{source_id}/status/connection`
+- `idp/v1/assets/{asset_id}/agents/{agent_id}/status/lwt`
 
 Правила:
 
@@ -97,8 +97,8 @@ Telemetry payload principles:
 - для MVP ограничен scalar values: `boolean`, `number`, `string`
 - complex protocol values вроде массивов, структур или `ByteString` не входят в текущую версию wire contract
 
-Полная схема telemetry payload является контрактом `wm.telemetry.event.v1` и
-зафиксирована в `docs/contracts/wm-edge-agent/`.
+Полная схема telemetry payload является контрактом `idp.edge.telemetry.event.v1` и
+зафиксирована в `docs/contracts/edge-telemetry-agent/`.
 
 Source config payload:
 
@@ -107,7 +107,7 @@ Source config payload:
 - позволяет consumer-у сделать одну retained subscription на source вместо `N` per-point metadata subscriptions
 
 Полная схема source config payload является контрактом
-`wm.edge.source-config.v1` и зафиксирована в `docs/contracts/wm-edge-agent/`.
+`idp.edge.source-config.v1` и зафиксирована в `docs/contracts/edge-telemetry-agent/`.
 
 ### 6. QoS и свойства публикации
 
@@ -168,7 +168,7 @@ Source config payload:
 
 ## Source of truth контрактов
 
-Полные MQTT topic templates и payload schemas вынесены в `docs/contracts/wm-edge-agent/`.
+Полные MQTT topic templates и payload schemas вынесены в `docs/contracts/edge-telemetry-agent/`.
 
 ## Отклоненные альтернативы
 

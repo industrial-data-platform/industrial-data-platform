@@ -11,11 +11,11 @@ MQTT topic + MQTT payload + retained source config
   -> downstream consumers
 ```
 
-Эти контракты принадлежат `Industrial Data Platform`. Существующие
-`wm.platform.*` message types и topics сохраняются как compatibility surface.
+Эти контракты принадлежат `Industrial Data Platform`. `idp.*` message types и
+topics являются стабильным wire surface после pre-production reset.
 
 ## Контракты
 
 | Contract-id | Файл | Назначение |
 | --- | --- | --- |
-| `wm.platform-ingestion.mqtt-to-kafka.v1` | `mqtt-to-kafka.v1.md` | Mapping MQTT edge boundary в canonical Kafka records |
+| `idp.ingestion.mqtt-to-kafka.v1` | `mqtt-to-kafka.v1.md` | Mapping MQTT edge boundary в canonical Kafka records |

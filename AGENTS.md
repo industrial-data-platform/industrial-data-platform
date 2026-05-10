@@ -39,15 +39,15 @@ shape, the contract document wins and the ADR needs a follow-up update.
 
 Do not rename these without an explicit migration plan and user approval:
 
-- Python packages/imports/entrypoints: `wm_edge_agent`, `wm_config_registry`,
-  `wm_clickhouse`, `wm-edge-agent`, `wm-config-registry`, `wm-clickhouse`.
+- Python packages/imports/entrypoints: `edge_telemetry_agent`, `idp_config_registry`,
+  `idp_telemetry_store`, `edge-telemetry-agent`, `idp-config-registry`, `idp-telemetry-store`.
 - Docker Compose services, image names, and the compose project name.
-- MQTT topic tree `wm/v1/...`.
-- Kafka topics and message ids with `wm.platform.*`.
+- MQTT topic tree `idp/v1/...`.
+- Kafka topics and message ids with `idp.*`.
 - ClickHouse table/view names and migration filenames.
 - Contract ids under `docs/contracts/`.
 
-`wm.platform.*` is a stable wire prefix. It is not a reason to reintroduce the
+`idp.*` is a stable wire prefix. It is not a reason to reintroduce the
 old product boundary name.
 
 ## Working Rules
@@ -66,12 +66,12 @@ old product boundary name.
 
 ## Repository Map
 
-- `apps/wm_edge_agent/`: Edge Telemetry Agent runtime.
-- `apps/wm_config_registry/`: Industrial Data Platform Config Registry.
-- `apps/wm_knx_demo/`: KNX demo utilities, not a production module.
-- `libs/wm_knx_parser/`: ETS `.knxproj` parsing library.
-- `libs/wm_demo_stack/`: demo and integration glue, not a production module.
-- `tools/wm_clickhouse_migrations/`: Telemetry Store migration and load-PoC CLI.
+- `apps/edge_telemetry_agent/`: Edge Telemetry Agent runtime.
+- `apps/idp_config_registry/`: Industrial Data Platform Config Registry.
+- `apps/knx_demo/`: KNX demo utilities, not a production module.
+- `libs/knx_project_parser/`: ETS `.knxproj` parsing library.
+- `libs/idp_demo_stack/`: demo and integration glue, not a production module.
+- `tools/idp_telemetry_store/`: Telemetry Store migration and load-PoC CLI.
 - `infra/local/`: local Industrial Data Platform stack and Web Monitoring
   surface.
 - `arch/`: LikeC4 architecture model and generated site tooling.

@@ -14,7 +14,7 @@
 Целевой контур должен поддерживать не только `KNX`, но и `OPC UA`, `Modbus`, а
 также другие PLC/SCADA-интеграции через southbound-адаптеры. Следующий
 выбранный post-MVP protocol track после `KNX` — `OPC UA read-only ingestion`:
-`wm_edge_agent` работает как `OPC UA client` и только считывает данные из
+`edge_telemetry_agent` работает как `OPC UA client` и только считывает данные из
 `OPC UA server`.
 
 Текущий практический фокус проекта: демо-стенд `KNX` как первый реализуемый адаптер и MVP без управляющих действий в production data path.
@@ -91,7 +91,7 @@ Source of truth для `C1/C2` и следующих уровней декомп
 - Edge-first. Сборщик работает в сети объекта и не зависит от постоянной доступности внешнего контура.
 - Read-only by default. В production data path data-platform контура сервис
   читает и наблюдает сигналы, но не отправляет управляющие команды из web UI/API.
-- Server-issued config. Все известные точки, `value_model`, параметры чтения и правила публикации приходят в wm-edge-agent как retained agent runtime/source configs; целевой поток доставки: PostgreSQL config revisions -> config outbox -> Kafka -> Redpanda Connect -> MQTT retained topics.
+- Server-issued config. Все известные точки, `value_model`, параметры чтения и правила публикации приходят в edge-telemetry-agent как retained agent runtime/source configs; целевой поток доставки: PostgreSQL config revisions -> config outbox -> Kafka -> Redpanda Connect -> MQTT retained topics.
 - Hybrid acquisition. Основной поток данных приходит из event/listen режима там, где он поддерживается; активное чтение включается только для whitelist endpoints.
 - Loose coupling. Протокольная интеграция, правила фильтрации и доставка во внешний контур разделены по компонентам.
 - Fail-safe degradation. При потере backend события не теряются сразу, а уходят в локальный Delivery Outbox.
@@ -114,7 +114,7 @@ Source of truth для `C1/C2` и следующих уровней декомп
 - публиковать аналоговые сигналы по достижению порога изменения
 - логировать события связи, декодирования и доставки
 - буферизовать неотправленные события локально
-- принимать `MQTT` telemetry events и status topics в `Industrial Data Platform`; retained agent runtime/source configs являются delivery projection для wm-edge-agent
+- принимать `MQTT` telemetry events и status topics в `Industrial Data Platform`; retained agent runtime/source configs являются delivery projection для edge-telemetry-agent
 - хранить телеметрию, source config snapshots, service history, derived events и storage sink для истории `alarm`
 - предоставлять read models и registry/config metadata прикладным модулям
 - выполнять правила `alarm` и маршрутизировать уведомления в отдельном `Alarm Management Module`
@@ -148,15 +148,15 @@ Source of truth для `C1/C2` и следующих уровней декомп
 Целевой production-поток следующего этапа поверх текущего `MVP`:
 
 1. `Config Registry` хранит rendered agent runtime/source config revisions в PostgreSQL и создает `config_outbox` record.
-2. `Config Event Publisher` публикует `wm.platform.edge.config.delivery.v1` records в Kafka topic `wm.platform.edge.configs.v1`.
-3. `Redpanda Connect` материализует config delivery records в retained MQTT agent runtime/source topics; wm-edge-agent получает `tenant_id`, `asset_id`, `sources` и `points` из этих retained configs.
-4. `Source Config Snapshot Projector` строит `wm.platform.source.configs.v1` из `wm.platform.edge.configs.v1`; retained MQTT source configs не являются authoritative Kafka ingress для source config snapshots.
+2. `Config Event Publisher` публикует `idp.edge.config.delivery.v1` records в Kafka topic `idp.edge.configs.v1`.
+3. `Redpanda Connect` материализует config delivery records в retained MQTT agent runtime/source topics; edge-telemetry-agent получает `tenant_id`, `asset_id`, `sources` и `points` из этих retained configs.
+4. `Source Config Snapshot Projector` строит `idp.source.configs.v1` из `idp.edge.configs.v1`; retained MQTT source configs не являются authoritative Kafka ingress для source config snapshots.
 5. `Edge Telemetry Agent` в текущем runtime baseline публикует telemetry events по `MQTT 5.0`; source connection status, config status и agent LWT/status остаются target contracts следующей runtime-фазы.
 6. `MQTT Ingestion Gateway` принимает MQTT-поток, валидирует payload и восстанавливает routing context.
 7. `Redpanda Connect` подписывается на MQTT topics через `mqtt` input.
-8. `Redpanda Connect` применяет mapping/transform pipeline по контракту `wm.platform-ingestion.mqtt-to-kafka.v1`, валидирует `tenant_id` claim и пишет canonical records в Kafka-compatible broker через `redpanda` output component.
-9. `Kafka-compatible Broker Runtime` хранит и обслуживает `Kafka Event Log` по контракту `wm.kafka.topics.v1`. Локальный MVP использует `Apache Kafka`; `Redpanda broker` остается candidate после отдельного compatibility PoC.
-10. `Telemetry Store Writer` / Kafka Connect читают Kafka topics и записывают raw/canonical telemetry events, source config snapshots, source connection history и agent status history в `Telemetry Store` на базе `ClickHouse` по контракту `wm.clickhouse.telemetry-store.v1`.
+8. `Redpanda Connect` применяет mapping/transform pipeline по контракту `idp.ingestion.mqtt-to-kafka.v1`, валидирует `tenant_id` claim и пишет canonical records в Kafka-compatible broker через `redpanda` output component.
+9. `Kafka-compatible Broker Runtime` хранит и обслуживает `Kafka Event Log` по контракту `idp.kafka.topics.v1`. Локальный MVP использует `Apache Kafka`; `Redpanda broker` остается candidate после отдельного compatibility PoC.
+10. `Telemetry Store Writer` / Kafka Connect читают Kafka topics и записывают raw/canonical telemetry events, source config snapshots, source connection history и agent status history в `Telemetry Store` на базе `ClickHouse` по контракту `idp.telemetry-store.clickhouse.telemetry-store.v1`.
 11. `Streaming Analytics` читает Kafka topics, при необходимости читает исторический контекст из `Telemetry Store`, рассчитывает агрегаты и производные признаки, записывает результаты в `Telemetry Store` и публикует derived events для прикладных модулей.
 12. `Web Monitoring Module` читает dashboards/history/latest read models из `Telemetry Store` и registry/config metadata из data-platform backend.
 13. `Alarm Management Module` читает telemetry/status/derived streams, обрабатывает правила, пишет immutable alarm history в `Telemetry Store`, хранит current alarm state и operator workflow state в `Platform Store` на базе `PostgreSQL` и инициирует уведомления.
@@ -179,7 +179,7 @@ Source of truth для ingestion, Kafka topics, ClickHouse contracts и migratio
 | Компонент | Ответственность |
 | --- | --- |
 | `Bootstrap Config Loader` | Загружает минимальную локальную конфигурацию запуска: `agent_id`, MQTT endpoint, credentials/secret refs, local storage и observability |
-| `Retained Config Loader` | Получает `wm.edge.agent-runtime-config.v1` и `wm.edge.source-config.v1` из MQTT, валидирует revision и собирает agent runtime config |
+| `Retained Config Loader` | Получает `idp.edge.agent-runtime-config.v1` и `idp.edge.source-config.v1` из MQTT, валидирует revision и собирает agent runtime config |
 | `Southbound Connection Manager` | Устанавливает протокольные соединения, отслеживает состояние каналов, выполняет reconnect |
 | `Protocol Event Listener` | Получает входящие события, выделяет endpoint, направление и raw payload |
 | `Selective Read Scheduler` | Выполняет `read_on_start` и `periodic_read` только по whitelist endpoints |
@@ -244,7 +244,7 @@ Source of truth для ingestion, Kafka topics, ClickHouse contracts и migratio
 
 Ограничения текущего MVP-среза:
 
-- локальный demo/integration flow ограничен `KNX -> wm_edge_agent -> MQTT`
+- локальный demo/integration flow ограничен `KNX -> edge_telemetry_agent -> MQTT`
 - Grafana не входит в текущий обязательный demo surface
 - alarm-логика, история и richer backend-возможности принадлежат отдельному
   `Alarm Management Module`; data platform предоставляет storage/event-log
@@ -256,7 +256,7 @@ Source of truth для ingestion, Kafka topics, ClickHouse contracts и migratio
 
 1. Сервис загружает `edge.bootstrap-config.v1`.
 2. Подключается к MQTT broker и подписывается на retained agent runtime/source config topics.
-3. Получает `wm.edge.agent-runtime-config.v1`, затем `wm.edge.source-config.v1` для каждого активного `source_id`.
+3. Получает `idp.edge.agent-runtime-config.v1`, затем `idp.edge.source-config.v1` для каждого активного `source_id`.
 4. Валидирует `tenant_id`, `asset_id`, `config_revision` и `source_config_revision`; публикация `status/config` остается target contract следующей runtime-фазы.
 5. Поднимает southbound-соединение для активных адаптеров.
 6. Выполняет `read_on_start` по разрешенным endpoints.
@@ -306,14 +306,14 @@ Source of truth для ingestion, Kafka topics, ClickHouse contracts и migratio
 - `value_raw`
 - `quality`
 
-Подробный контракт вынесен в `docs/contracts/wm-edge-agent/`.
+Подробный контракт вынесен в `docs/contracts/edge-telemetry-agent/`.
 
 ## MQTT status topics и operational logs
 
 Во внешний контур публикуются только те status topics, которые зафиксированы transport-контрактом в `ADR-005`:
 
-- `wm/v1/assets/{asset_id}/agents/{agent_id}/sources/{source_id}/status/connection`
-- `wm/v1/assets/{asset_id}/agents/{agent_id}/status/lwt`
+- `idp/v1/assets/{asset_id}/agents/{agent_id}/sources/{source_id}/status/connection`
+- `idp/v1/assets/{asset_id}/agents/{agent_id}/status/lwt`
 
 Во внутренних operational logs дополнительно полезны:
 
@@ -378,9 +378,9 @@ Source of truth для ingestion, Kafka topics, ClickHouse contracts и migratio
 - `arch/README.md`
 - `docs/architecture/glossary.md`
 - `docs/contracts/README.md`
-- `docs/contracts/wm-edge-agent/`
-- `apps/wm_edge_agent/docs/data-contracts.md`
-- `apps/wm_edge_agent/docs/mqtt-topics.md`
+- `docs/contracts/edge-telemetry-agent/`
+- `apps/edge_telemetry_agent/docs/data-contracts.md`
+- `apps/edge_telemetry_agent/docs/mqtt-topics.md`
 - `docs/architecture/open-questions.md`
 - `docs/architecture/adrs/ADR-001-runtime-topology.md`
 - `docs/architecture/adrs/ADR-002-acquisition-mode.md`
@@ -389,4 +389,4 @@ Source of truth для ingestion, Kafka topics, ClickHouse contracts и migratio
 - `docs/architecture/adrs/ADR-005-mqtt-event-transport.md`
 - `docs/architecture/adrs/ADR-007-monitoring-platform-data-stores.md`
 - `docs/architecture/adrs/ADR-008-server-issued-edge-runtime-configuration.md`
-- `docs/contracts/wm-edge-agent/config-bundle.v1.md`
+- `docs/contracts/edge-telemetry-agent/config-bundle.v1.md`

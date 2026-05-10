@@ -7,7 +7,7 @@
 
 - верхнеуровневой markdown-документации в `docs/architecture/`
 - LikeC4-модели в `arch/likec4/`
-- текущей Python-реализации в `apps/wm_edge_agent/` и `apps/wm_knx_demo/`
+- текущей Python-реализации в `apps/edge_telemetry_agent/` и `apps/knx_demo/`
 - локального dev-контура в `infra/local/`
 - versioned edge profile demo-стенда в `environments/demo-stand/`
 
@@ -17,23 +17,23 @@
   `0/0/1` как `command`, `0/0/7` как `feedback`, `2/0/0` как `sensor`.
 - В текущем конфиге `read_on_start` уже включен для `0/0/7` и `2/0/0`, а
   `change_threshold = 1.0` уже задан для температуры.
-- В коде `wm_edge_agent` уже реализованы и покрыты тестами:
+- В коде `edge_telemetry_agent` уже реализованы и покрыты тестами:
   загрузка bootstrap + retained agent runtime/source config, fail-fast валидация,
   подавление `command`-точек, threshold-based processing и `SQLite Delivery Outbox`.
 - В коде и `infra/local/` уже зафиксирован рабочий локальный dev-контур:
   `MQTT broker`, `Apache Kafka`, `Redpanda Connect` ingestion/config projection
   pipelines, `PostgreSQL`, `Config Registry`, `ClickHouse`, `Kafka Connect` и
   `Grafana`.
-- Для целевой configuration-модели принят `ADR-008`: wm-edge-agent получает
+- Для целевой configuration-модели принят `ADR-008`: edge-telemetry-agent получает
   retained agent runtime/source configs из MQTT; delivery path уточнен в `ADR-010`
   как PostgreSQL config outbox -> Kafka -> MQTT retained projection.
 - Для локального config delivery baseline уже реализованы `Config Registry`
   outbox publisher и Redpanda Connect projection
-  `wm.platform.edge.configs.v1 -> retained MQTT agent runtime/source topics`.
+  `idp.edge.configs.v1 -> retained MQTT agent runtime/source topics`.
 - Для локального storage/read baseline уже реализованы `ClickHouse`
   migrations, `Kafka Connect` raw landing path и `Grafana` read-model
   проверка integration-тестом.
-- Текущий проект уже достиг `MVP baseline`: `KNX/wm_edge_agent -> MQTT -> Kafka`
+- Текущий проект уже достиг `MVP baseline`: `KNX/edge_telemetry_agent -> MQTT -> Kafka`
   ingestion slice работает в репозитории и покрыт integration-тестами.
 - `ADR-013` фиксирует post-MVP product/pilot direction: первый пилот
   cloud-first в российском облаке (`VK Cloud` или `Yandex Cloud`), local Docker
@@ -64,7 +64,7 @@
 
 | Вопрос | Почему это важно | Степень блокировки |
 | --- | --- | --- |
-| Являются ли текущие артефакты demo-стенда: `.local/Выстовка.knxproj*` и текущие YAML-файлы утвержденным source of truth для формирования первого `wm.edge.source-config.v1` bundle? | После `ADR-008` agent runtime source of truth для wm-edge-agent должен приходить через retained MQTT configs, но исходная KNX-карта все равно нужна для генерации source config | Критично |
+| Являются ли текущие артефакты demo-стенда: `.local/Выстовка.knxproj*` и текущие YAML-файлы утвержденным source of truth для формирования первого `idp.edge.source-config.v1` bundle? | После `ADR-008` agent runtime source of truth для edge-telemetry-agent должен приходить через retained MQTT configs, но исходная KNX-карта все равно нужна для генерации source config | Критично |
 | Подтверждены ли для первого среза `read_on_start` и семантика чтения именно для `0/0/7` и `2/0/0`? | Versioned конфиг уже включает `read_on_start`, но это нужно подтвердить эксплуатационно, чтобы не зависеть от неподдерживаемого `GroupValueRead` | Высокая |
 | Какой следующий утвержденный whitelist точек нужен после текущих `0/0/7` и `2/0/0`? | Без этого нельзя планировать второй инкремент адаптера, расширение point registry и проверку `value_model` beyond demo | Средняя |
 
@@ -113,7 +113,7 @@
 
 | Вопрос | Почему это важно | Степень блокировки |
 | --- | --- | --- |
-| Какой максимальный размер одного retained `wm.edge.source-config.v1` допустим для production MQTT broker? | Agent runtime config делится по `source_id`, но один source все равно может содержать десятки тысяч points. Нужно понять, когда потребуется chunking | Высокая |
+| Какой максимальный размер одного retained `idp.edge.source-config.v1` допустим для production MQTT broker? | Agent runtime config делится по `source_id`, но один source все равно может содержать десятки тысяч points. Нужно понять, когда потребуется chunking | Высокая |
 | Как формировать deterministic `config_revision` и `source_config_revision`: human version, content hash или оба поля? | AI-agent должен давать воспроизводимый diff и publish summary, а edge/ingestion должны однозначно валидировать примененную версию | Высокая |
 | Как Redpanda Connect projection должен публиковать rollback или отключение source: новый retained payload с `enabled=false` или retained tombstone? | Это влияет на MQTT retained lifecycle и на безопасное удаление/отключение источников | Средняя |
 | Какой lifecycle остается у YAML config bundle после появления `Config Registry`: только import/bootstrap path, аварийный fallback или долгоживущий backoffice-инструмент? | `Config Registry` уже стал source of truth для agent runtime/source config, но нужно явно зафиксировать, какую роль bundle сохраняет в production workflow и support-процедурах | Средняя |
@@ -125,7 +125,7 @@
 | Какие health/metrics считаются обязательными для edge runtime и платформы в первом production-срезе? | В конфиге уже есть `metrics_bind`, а в архитектуре есть observability, но минимальный контракт SLI/SLO пока не назван | Средняя |
 | Нужно ли в production считать lag по Delivery Outbox, delivery latency и source connection uptime как обязательные SLI? | Эти метрики логично следуют из архитектуры Local State Store и delivery-модели, но без явного решения их легко не реализовать вовремя | Средняя |
 | Куда должны уходить логи edge runtime и платформы: только локальный файл/journal или централизованный log sink? | Без этого сложно определить retention, incident workflow и реальную поддержку объекта | Средняя |
-| Достаточно ли текущих CLI и demo utilities для диагностики на объекте, или нужен отдельный support-oriented diagnostic mode/UI? | В репозитории уже есть `wm-edge-agent check-config`, `show-config`, `enqueue-demo-event`, `deliver-once` и `wm-knx-demo`, но production-support workflow пока не утвержден | Низкая |
+| Достаточно ли текущих CLI и demo utilities для диагностики на объекте, или нужен отдельный support-oriented diagnostic mode/UI? | В репозитории уже есть `edge-telemetry-agent check-config`, `show-config`, `enqueue-demo-event`, `deliver-once` и `knx-demo`, но production-support workflow пока не утвержден | Низкая |
 
 ## Ближайшие решения
 

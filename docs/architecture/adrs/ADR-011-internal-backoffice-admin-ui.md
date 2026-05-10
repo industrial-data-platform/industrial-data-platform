@@ -35,7 +35,7 @@ config revision/outbox flow, что и HTTP API.
 - достаточно легкий для backoffice CRUD/view workflow
 - не требует перехода на другой ORM
 
-Админка подключается как infrastructure adapter внутри `apps/wm_config_registry`.
+Админка подключается как infrastructure adapter внутри `apps/idp_config_registry`.
 Backoffice write operations обязаны вызывать application use cases, а не менять
 config tables напрямую:
 
@@ -94,7 +94,7 @@ SQLAdmin form/custom action
   -> application use case
   -> PostgreSQL config revision + config_outbox в одной transaction
   -> Config Event Publisher
-  -> Kafka wm.platform.edge.configs.v1
+  -> Kafka idp.edge.configs.v1
   -> Redpanda Connect MQTT retained projection
 ```
 
@@ -182,7 +182,7 @@ state, остаются custom actions и должны вызывать applicat
 ## План реализации
 
 1. Добавить dependency `sqladmin`.
-2. Подключить SQLAdmin в `apps/wm_config_registry` на `/backoffice`.
+2. Подключить SQLAdmin в `apps/idp_config_registry` на `/backoffice`.
 3. Создать `admin` infrastructure module отдельно от `api/routers`.
 4. Добавить CRUD ModelViews для registry/outbox/revision tables.
 5. Для create registry entities использовать application use case adapters там,

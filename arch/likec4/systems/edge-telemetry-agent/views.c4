@@ -1,7 +1,7 @@
-views 'Developed Systems / wm_edge_agent' {
+views 'Developed Systems / edge_telemetry_agent' {
     view c2-edge-telemetry-agent-containers of edge-telemetry-agent {
         title 'C2 Containers'
-        description 'Контейнерная декомпозиция `wm_edge_agent`. Каждый контейнер описан в отдельном файле внутри systems/edge-telemetry-agent/containers.'
+        description 'Контейнерная декомпозиция `edge_telemetry_agent`. Каждый контейнер описан в отдельном файле внутри systems/edge-telemetry-agent/containers.'
 
         include *
         include service-engineer
