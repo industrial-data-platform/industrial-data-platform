@@ -47,7 +47,7 @@ stable identifiers: `idp_config_registry`, `idp-config-registry`,
 
 CLI/runtime упаковка publisher-а и local Redpanda Connect
 `Kafka -> MQTT retained` projection реализованы как первый delivery baseline
-по `ADR-010`.
+для Config Registry.
 
 ```bash
 uv run --package idp-config-registry pytest apps/idp_config_registry/tests

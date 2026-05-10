@@ -9,7 +9,7 @@
 `0001_idp_telemetry_store_v1.sql`. Физическая схема еще не считается
 production-validated performance schema до нагрузочного PoC.
 
-После `ADR-014` `Telemetry Store` принадлежит `Industrial Data Platform`.
+`Telemetry Store` принадлежит `Industrial Data Platform`.
 Таблицы и view names не переименовываются. `alarm_history_events_v1` остается
 storage sink в `Telemetry Store`, но writer/owner этого потока находится в
 `Alarm Management Module`.

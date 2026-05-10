@@ -16,8 +16,8 @@ Ingestion pipeline принимает:
 - MQTT payload contracts `idp.edge.telemetry.event.v1`, `idp.edge.source.connection.v1`,
   `idp.edge.agent.lwt.v1`
 - config registry/cache для проверки `tenant_id`, `source_config_revision` и
-  `point_id`; registry/cache строится из `idp.source.configs.v1` и/или
-  `Platform Store`, а не из retained MQTT config topics
+  `point_id`; authoritative registry/cache строится из `idp.source.configs.v1`
+  и/или `Platform Store`
 
 `tenant_id` публикуется edge-telemetry-agent-ом в MQTT payload как claim из retained
 agent runtime config. Ingestion не берет tenant из topic path и обязан валидировать
@@ -74,6 +74,11 @@ Source config enrichment:
 Retained `idp.edge.agent-runtime-config.v1` / `idp.edge.source-config.v1` topics являются
 delivery projection для edge-telemetry-agent и не являются authoritative MQTT ingress для
 `idp.source.configs.v1`.
+
+Local `Redpanda Connect` может использовать retained `idp.edge.source-config.v1`
+как неавторитетный warmup для ephemeral enrichment cache, но не должен
+публиковать из него `idp.source.configs.v1`; canonical source snapshots строит
+только `Source Config Snapshot Projector` из `idp.edge.configs.v1`.
 
 ## Output records
 

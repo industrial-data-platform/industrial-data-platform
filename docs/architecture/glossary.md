@@ -64,7 +64,7 @@ LikeC4-модель в `arch/likec4/` и markdown-документы в `docs/ar
 - `edge config MQTT projector` — Redpanda Connect pipeline, который читает `idp.edge.configs.v1` и материализует retained MQTT topics для edge-telemetry-agent.
 - `config delivery projection` — materialized MQTT retained topics, которые Redpanda Connect строит из Kafka config delivery records для edge-telemetry-agent.
 - `transactional outbox` — паттерн надежной интеграции PostgreSQL и Kafka: domain change и outbox record записываются атомарно в PostgreSQL, а отдельный publisher доставляет запись во внешний broker с retry и idempotency.
-- `YAML config bundle` — versioned import/bootstrap artifact для seed и support-сценариев; после `ADR-010` не конкурирует с `Config Registry`/`Platform Store` как source of truth и служит входом для publish/import workflow.
+- `YAML config bundle` — versioned import/bootstrap artifact для seed и support-сценариев; после появления `Config Registry` не конкурирует с `Config Registry`/`Platform Store` как source of truth и служит входом для publish/import workflow.
 - `source` — логическое подключение агента к конкретному источнику данных, идентифицируемое `source_id`.
 - `point` — точка мониторинга внутри `source`, идентифицируемая `point_ref`.
 - `point_ref` — технический идентификатор точки внутри источника, например group address, node id или register reference.

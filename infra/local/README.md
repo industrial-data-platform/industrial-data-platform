@@ -25,9 +25,10 @@ foundation и первого `Web Monitoring Module` surface.
 - проверить поток
   `KNX-shaped telemetry -> edge_telemetry_agent -> MQTT -> Kafka -> ClickHouse landing`
 
-В терминах `ADR-012` этот stack не использует Redpanda broker: `Kafka Event
-Log` обслуживает локальный `Apache Kafka`, а `Redpanda Connect` используется
-только как connector runtime для MQTT/Kafka projection.
+Этот stack не использует Redpanda broker: `Kafka Event Log` обслуживает
+локальный `Apache Kafka`, а `Redpanda Connect` используется только как
+connector runtime для MQTT/Kafka projection. Активное решение по broker runtime
+сведено в `docs/architecture/decisions.md`.
 
 ## Что поднимается
 
@@ -46,7 +47,9 @@ Ownership в этом stack:
 - `kafka-init` — одноразовое создание platform topics, storage DLQ topic и
   internal topics будущего Kafka Connect runtime
 - `redpanda-connect` — connector pipeline, который читает `idp/v1/#`,
-  обогащает telemetry retained source config и пишет platform records в Kafka
+  поддерживает enrichment cache из `idp.source.configs.v1` и retained source
+  config projection, но не строит `idp.source.configs.v1` из MQTT, и пишет
+  telemetry/status records в Kafka
 - `redpanda-connect-config-projection` — connector pipeline, который читает
   `idp.edge.configs.v1` и материализует retained agent runtime/source
   config topics для edge-telemetry-agent

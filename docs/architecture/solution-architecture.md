@@ -163,7 +163,9 @@ Source of truth для `C1/C2` и следующих уровней декомп
 
 ### Хранилища данных Industrial Data Platform
 
-Решение по persistence зафиксировано в `ADR-007`.
+Активное решение по persistence кратко зафиксировано в
+`docs/architecture/decisions.md`; contract-level детали находятся в
+`docs/contracts/`.
 
 - `Telemetry Store` — `ClickHouse`, authoritative analytical store для append-only telemetry events, source config snapshots, source connection history, agent status history, derived events, aggregates, rollups и immutable alarm history. `alarm_history_events_v1` остается storage sink, но writer/owner потока находится в `Alarm Management Module`.
 - `Platform Store` — `PostgreSQL`, transactional store для assets, agents, sources, point registry, shared platform state, module workflow state, audit и Keycloak persistence.
@@ -310,7 +312,9 @@ Source of truth для ingestion, Kafka topics, ClickHouse contracts и migratio
 
 ## MQTT status topics и operational logs
 
-Во внешний контур публикуются только те status topics, которые зафиксированы transport-контрактом в `ADR-005`:
+Во внешний контур публикуются только те status topics, которые зафиксированы
+transport-контрактом в
+`docs/contracts/edge-telemetry-agent/mqtt-topic-tree.v1.md`:
 
 - `idp/v1/assets/{asset_id}/agents/{agent_id}/sources/{source_id}/status/connection`
 - `idp/v1/assets/{asset_id}/agents/{agent_id}/status/lwt`
@@ -382,11 +386,6 @@ Source of truth для ingestion, Kafka topics, ClickHouse contracts и migratio
 - `apps/edge_telemetry_agent/docs/data-contracts.md`
 - `apps/edge_telemetry_agent/docs/mqtt-topics.md`
 - `docs/architecture/open-questions.md`
-- `docs/architecture/adrs/ADR-001-runtime-topology.md`
-- `docs/architecture/adrs/ADR-002-acquisition-mode.md`
-- `docs/architecture/adrs/ADR-003-buffering-and-delivery.md`
-- `docs/architecture/adrs/ADR-004-universal-agent-configuration.md`
-- `docs/architecture/adrs/ADR-005-mqtt-event-transport.md`
-- `docs/architecture/adrs/ADR-007-monitoring-platform-data-stores.md`
-- `docs/architecture/adrs/ADR-008-server-issued-edge-runtime-configuration.md`
+- `docs/architecture/decisions.md`
+- `docs/architecture/adrs/archive/`
 - `docs/contracts/edge-telemetry-agent/config-bundle.v1.md`

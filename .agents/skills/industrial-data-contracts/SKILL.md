@@ -11,20 +11,23 @@ Use this skill for changes where wire/storage compatibility matters.
 
 1. `AGENTS.md`
 2. `docs/contracts/AGENTS.md`
-3. `docs/agents/module-map.yaml`
-4. The affected contract document under `docs/contracts/`
+3. The closest scoped `AGENTS.md` for affected implementation paths
+4. `docs/agents/module-map.yaml`
+5. The affected contract document under `docs/contracts/`
 
 ## Contract Rules
 
 - Treat `docs/contracts/` as the source of truth for MQTT/Kafka/ClickHouse
   names, fields, schemas, and compatibility.
-- Preserve v1 compatibility after the `idp.*` pre-production reset. Breaking
+- Preserve v1 compatibility for stable `idp.*`/`idp/v1` identifiers. Breaking
   changes need a new contract version and a migration/rollout plan.
 - Do not rename MQTT `idp/v1`, Kafka `idp.*`, ClickHouse tables/views, or
   contract ids as part of product naming.
 - Keep ClickHouse migrations forward-only and checksum-stable after application.
 - Keep `alarm_history_events_v1`; it is a storage sink for the future Alarm
   Management Module writer.
+- If an ADR is needed, document the resulting implementation in living
+  contracts, guides, or C4 docs after the decision is made.
 
 ## Workflow
 
@@ -39,7 +42,9 @@ Use this skill for changes where wire/storage compatibility matters.
 
 ## Output
 
-- Contract surface changed.
+- Contract surface changed: topic/table/schema/config/migration.
+- Source of truth checked: exact contract docs and scoped `AGENTS.md`.
 - Compatibility decision: backward-compatible or new version required.
 - Producers/consumers/storage paths checked.
-- Validation run or intentionally not run.
+- Docs/C4/ADR follow-up: completed or not needed.
+- Validation: exact commands run, or skipped with reason.

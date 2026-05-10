@@ -41,7 +41,8 @@ Observation
 - `tenant_id` приходит из retained agent runtime config и публикуется в MQTT telemetry payload как claim.
 - `source_config_revision` связывает telemetry event с retained source config.
 - `point_key` строится как обратимое percent-encoding от `point_ref`.
-- `command` points по умолчанию не публикуются как telemetry, если `publish.enabled` не задан явно.
+- `command` points не публикуются как production telemetry; `publish.enabled`
+  не является override для control/write-path сигналов.
 - `storage.sqlite_path` указывает на локальное техническое SQLite-хранилище агента, а не только на outbox.
 - SQLite на edge не является историческим архивом телеметрии и не заменяет `Telemetry Store`.
 - `SQLite Point State Cache` используется для warm restart, change filtering и восстановления sequence.
@@ -52,5 +53,5 @@ Observation
 ## Связанные документы
 
 - [`mqtt-topics.md`](./mqtt-topics.md) — guide по MQTT publish contract.
-- [`ADR-005`](../../../docs/architecture/adrs/ADR-005-mqtt-event-transport.md) — решение по MQTT transport.
-- [`ADR-008`](../../../docs/architecture/adrs/ADR-008-server-issued-edge-runtime-configuration.md) — целевое решение по server-issued config.
+- [`docs/architecture/decisions.md`](../../../docs/architecture/decisions.md) — compact register активных архитектурных решений.
+- [`docs/architecture/adrs/archive/`](../../../docs/architecture/adrs/archive/) — historical rationale для transport/config решений.

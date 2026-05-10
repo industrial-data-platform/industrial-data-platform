@@ -7,7 +7,7 @@
 Существующие документы в `apps/edge_telemetry_agent/docs/` остаются guide-ами и примерами,
 а полные схемы и имена topics находятся здесь.
 
-Production-модель после `ADR-008`: edge-telemetry-agent стартует с минимальным
+Production-модель server-issued config: edge-telemetry-agent стартует с минимальным
 `edge.bootstrap-config.v1`, получает retained `idp.edge.agent-runtime-config.v1` и
 `idp.edge.source-config.v1` из MQTT и публикует telemetry с `tenant_id` из
 server-issued config.
@@ -78,7 +78,8 @@ Observation
 - `source_config_revision` связывает telemetry event с retained source config, по которому backend выполняет enrichment.
 - `asset_id`, `agent_id`, `source_id` и segments `topic_root` должны соответствовать `mqtt_path_id`: `^[a-z0-9][a-z0-9_-]{0,127}$`.
 - `point_key` — обратимое percent-encoding от `point_ref`, пригодное для MQTT topic path.
-- `command` points по умолчанию не публикуются как telemetry, если `publish.enabled` не задан явно.
+- `command` points не публикуются как production telemetry; `publish.enabled`
+  не должен использоваться как override для control/write-path сигналов.
 - SQLite на edge хранит техническое состояние агента, а не исторический архив телеметрии.
 - `SQLite Point State Cache` поддерживает warm restart, фильтрацию изменений и восстановление sequence.
 - `SQLite Delivery Outbox` нужен для надежной retry-доставки telemetry events.

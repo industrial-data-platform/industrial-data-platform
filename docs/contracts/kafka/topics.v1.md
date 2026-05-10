@@ -8,7 +8,8 @@
 конкретным broker product. Локальный integration slice использует
 `Apache Kafka` как broker runtime и `Redpanda Connect` как connector pipeline
 `MQTT -> Kafka`. `Redpanda broker` остается candidate для production/self-hosted
-runtime после compatibility PoC, зафиксированного в `ADR-012`.
+runtime после compatibility PoC. Активное broker/runtime решение сведено в
+`docs/architecture/decisions.md`.
 
 `idp.*` является стабильным wire-prefix текущего pre-production baseline.
 Совместимость со старыми локальными topics не поддерживается.

@@ -132,7 +132,7 @@ def _runtime_config():
                             "periodic_interval_seconds": None,
                         },
                         "publish": {
-                            "enabled": False,
+                            "enabled": True,
                             "change_threshold": None,
                         },
                         "tags": {},
@@ -242,7 +242,7 @@ def test_processing_uses_threshold_for_numeric_points() -> None:
     assert third.event.sequence == 2
 
 
-def test_processing_suppresses_command_point_by_default() -> None:
+def test_processing_suppresses_command_point_even_when_publish_enabled() -> None:
     runtime = _runtime_config()
     processor = ObservationProcessor(runtime, agent_id="edge-telemetry-agent-001")
 
@@ -256,7 +256,7 @@ def test_processing_suppresses_command_point_by_default() -> None:
     )
 
     assert result.event is None
-    assert result.suppressed_reason == "publish_disabled"
+    assert result.suppressed_reason == "command_point"
 
 
 def test_processing_restores_published_state_after_restart(tmp_path) -> None:

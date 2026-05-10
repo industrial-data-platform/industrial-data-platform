@@ -7,9 +7,10 @@ compatibility_bridges:
 source_of_truth:
   contracts: docs/contracts
   architecture_model: arch/likec4
-  decisions: docs/architecture/adrs
   current_state: docs/architecture/current-state.md
   glossary: docs/architecture/glossary.md
+  decisions: docs/architecture/decisions.md
+  decision_archive: docs/architecture/adrs/archive
 compatibility_identifiers:
   python_packages:
     - edge_telemetry_agent
@@ -35,7 +36,8 @@ modules:
     source_of_truth:
       - docs/contracts
       - arch/likec4/systems/industrial-data-platform
-      - docs/architecture/adrs/ADR-014-data-platform-core-and-modules.md
+      - docs/architecture/current-state.md
+      - docs/architecture/decisions.md
     validation:
       - "uv run --package idp-config-registry pytest apps/idp_config_registry/tests"
       - "uv run --package idp-telemetry-store pytest tools/idp_telemetry_store/tests"
@@ -61,7 +63,8 @@ modules:
       - tests/integration/test_grafana_clickhouse.py
     source_of_truth:
       - arch/likec4/systems/web-monitoring-module
-      - docs/architecture/adrs/ADR-014-data-platform-core-and-modules.md
+      - docs/architecture/current-state.md
+      - docs/architecture/decisions.md
     validation:
       - "uv run --group integration pytest tests/integration/test_grafana_clickhouse.py"
   - id: alarm_management_module
@@ -71,7 +74,8 @@ modules:
       - arch/likec4/systems/alarm-management-module
       - docs/contracts/clickhouse/telemetry-store.v1.md
     source_of_truth:
-      - docs/architecture/adrs/ADR-014-data-platform-core-and-modules.md
+      - docs/architecture/current-state.md
+      - docs/architecture/decisions.md
       - arch/likec4/systems/alarm-management-module
     validation:
       - "cd arch && npm run validate"
@@ -104,3 +108,4 @@ cross_cutting:
     validation:
       - "git diff --check"
       - "uv run --group integration python -c \"import pathlib, yaml; yaml.safe_load(pathlib.Path('docs/agents/module-map.yaml').read_text())\""
+      - "npm --prefix docs-site run build"

@@ -27,13 +27,18 @@ Use this order when sources disagree:
    names, table names, schema details, and compatibility.
 2. `arch/likec4/` for C4 systems, containers, ownership, dependencies, and
    deployment views.
-3. `docs/architecture/adrs/` for accepted decisions and trade-offs.
-4. `docs/architecture/current-state.md`, `docs/architecture/glossary.md`, and
+3. `docs/architecture/current-state.md`, `docs/architecture/glossary.md`, and
    `docs/architecture/open-questions.md` for the current working snapshot.
+4. `docs/architecture/decisions.md` for the compact decision register.
 5. Package READMEs and implementation guides for local usage details.
 
+Archived ADRs in `docs/architecture/adrs/archive/` are historical rationale,
+not default source-of-truth. Open them only when you need decision context,
+trade-offs, or rejected alternatives.
+
 If a contract document and an ADR disagree on fields, topics, tables, or schema
-shape, the contract document wins and the ADR needs a follow-up update.
+shape, the contract document wins and the living docs or decision register need
+a follow-up update.
 
 ## Compatibility Rules
 
@@ -76,7 +81,9 @@ old product boundary name.
   surface.
 - `arch/`: LikeC4 architecture model and generated site tooling.
 - `docs/contracts/`: canonical data and storage contracts.
-- `docs/architecture/`: architecture docs, ADRs, glossary, and open questions.
+- `docs/architecture/`: architecture docs, decision register, ADR archive,
+  glossary, and open questions.
+- `docs-site/`: internal Starlight documentation site over curated repo docs.
 - `docs/agents/`: agent workflows, roles, templates, and module map.
 
 ## Validation Matrix
@@ -89,8 +96,9 @@ old product boundary name.
 - C4 change: run `cd arch && npm run validate`.
 - Local infra change: run `docker compose -f infra/local/compose.yaml config
   --quiet`; run relevant integration tests.
-- Agent docs only: run `git diff --check`, parse `docs/agents/module-map.yaml`,
-  and verify links/references with `rg`.
+- Agent/docs only: run `git diff --check`, parse
+  `docs/agents/module-map.yaml`, build `docs-site`, and verify links/references
+  with `rg`.
 
 ## Agent Workflow
 

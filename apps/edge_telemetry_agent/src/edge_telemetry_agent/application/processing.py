@@ -53,6 +53,9 @@ class ObservationProcessor:
         state.last_observed_at = observation.observed_at
         state.last_observed_raw = observation.value_raw
         state.last_observed_quality = observation.quality
+        if point.signal_type == "command":
+            self._save_state(observation.source_id, observation.point_ref, state)
+            return ProcessingResult(event=None, suppressed_reason="command_point")
         if not point.publish.enabled:
             self._save_state(observation.source_id, observation.point_ref, state)
             return ProcessingResult(event=None, suppressed_reason="publish_disabled")

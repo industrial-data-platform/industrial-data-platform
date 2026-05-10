@@ -4,14 +4,14 @@
 Статус: working draft
 
 Этот контракт фиксирует versioned import/bootstrap path для edge agent runtime config
-рядом с `Config Registry` из `ADR-010`.
+рядом с `Config Registry`.
 
 ## Назначение
 
 Versioned YAML config bundle больше не является primary source of truth.
-После внедрения `ADR-010` он остается import/bootstrap tooling и не конкурирует
-с PostgreSQL-backed `Config Registry`/`Platform Store` как runtime source of
-truth.
+После внедрения PostgreSQL-backed `Config Registry` он остается
+import/bootstrap tooling и не конкурирует с `Config Registry`/`Platform Store`
+как runtime source of truth.
 
 Config delivery pipeline валидирует bundle, строит agent runtime/source payloads,
 публикует config delivery records `idp.edge.config.delivery.v1` в Kafka

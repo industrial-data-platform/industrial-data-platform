@@ -19,7 +19,8 @@ contract surface.
 | Артефакт | Роль |
 | --- | --- |
 | `docs/contracts/` | Канонические контракты данных, topic/table names и boundary schemas |
-| `docs/architecture/adrs/` | Обоснование архитектурных решений и trade-off |
+| `docs/architecture/decisions.md` | Компактный register активных архитектурных решений |
+| `docs/architecture/adrs/archive/` | Историческое обоснование решений и trade-off |
 | `arch/likec4/` | Карта систем, контейнеров, связей и владельцев контрактов |
 | `apps/*/docs/` | Руководства по использованию контрактов, примеры и runtime notes |
 

@@ -4,8 +4,9 @@
 Статус: working snapshot
 
 Этот документ является коротким operational snapshot для людей и AI-agent.
-Он описывает текущее состояние системы без истории решений. История и trade-off
-остаются в `docs/architecture/adrs/`.
+Он описывает текущее состояние системы без истории решений. Активные решения
+сведены в `docs/architecture/decisions.md`; полные ADR остаются архивным
+rationale в `docs/architecture/adrs/archive/`.
 
 ## Статус MVP
 
@@ -149,37 +150,43 @@ surface как первый `Web Monitoring Module` surface.
 | Область | Source of truth |
 | --- | --- |
 | Текущий снимок системы | `docs/architecture/current-state.md` |
-| История решений и trade-off | `docs/architecture/adrs/` |
+| Активные архитектурные решения | `docs/architecture/decisions.md` |
+| История решений и trade-off | `docs/architecture/adrs/archive/` |
 | Карта систем и контейнеров | `arch/likec4/` |
 | Термины | `docs/architecture/glossary.md` |
 | Открытые вопросы | `docs/architecture/open-questions.md` |
-| Контракты данных и topic/table names | `docs/contracts/` |
+| Контракты данных, MQTT/Kafka topics и table names | `docs/contracts/` |
 | Edge guide-документация | `apps/edge_telemetry_agent/docs/` |
 | Demo/agent runtime config bundle | `environments/demo-stand/edge_telemetry_agent/` |
 | Execution backlog, приоритеты и статусы | internal issue tracker |
 
-## ADR Reading Guide
+## Agent Reading Guide
 
-Для большинства задач агенту не нужно читать все ADR. Используйте такой порядок:
+Для большинства задач агенту не нужно читать архивные ADR. Используйте такой
+порядок:
 
 1. Для ориентации: этот документ и `docs/architecture/glossary.md`.
-2. Для edge agent runtime config: `ADR-008`, затем `docs/contracts/edge-telemetry-agent/`.
-3. Для MQTT delivery и topic tree: `ADR-005`, затем
+2. Для активных архитектурных решений: `docs/architecture/decisions.md`.
+3. Для edge agent runtime config: `docs/contracts/edge-telemetry-agent/`.
+4. Для MQTT delivery и topic tree:
    `docs/contracts/edge-telemetry-agent/mqtt-topic-tree.v1.md`.
-4. Для identity model: `ADR-004`.
-5. Для границ data platform, web monitoring и alarms: `ADR-014`.
-6. Для storage/platform design: `ADR-007`, затем `docs/contracts/clickhouse/`
-   и `docs/contracts/kafka/`.
-7. Для deployment parity `self-hosted`/`cloud`: `ADR-009`, затем `ADR-013` для
-   cloud-first pilot и local Docker infra policy.
-8. Для backend хранения настроек платформы: `ADR-010`.
-9. Для post-MVP product/pilot governance, `OPC UA` read-only track и internal
-   execution backlog: `ADR-013`.
-10. Для KNX-first MVP behavior: `ADR-001`, `ADR-002`, `ADR-003`.
+5. Для identity model: `docs/contracts/edge-telemetry-agent/` и
+   `docs/contracts/platform-ingestion/`.
+6. Для границ data platform, web monitoring и alarms: этот документ,
+   `docs/architecture/decisions.md` и LikeC4.
+7. Для storage/platform design: `docs/contracts/clickhouse/` и
+   `docs/contracts/kafka/`.
+8. Для backend хранения настроек платформы: `apps/idp_config_registry/README.md`
+   и `docs/contracts/edge-telemetry-agent/config-revision-model.md`.
+9. Для deployment parity, cloud-first pilot, `OPC UA` read-only track и internal
+   execution backlog: этот документ, `solution-architecture.md` и
+   `open-questions.md`.
+10. Для KNX-first MVP behavior: `solution-architecture.md` и
+    `apps/edge_telemetry_agent/docs/data-contracts.md`.
 
-Если ADR и `docs/contracts/` расходятся по полям сообщения, topic/table names
-или schema details, приоритет у `docs/contracts/`. ADR объясняет решение, но не
-заменяет contract registry.
+Если архивный ADR и `docs/contracts/` расходятся по полям сообщения,
+topic/table names или schema details, приоритет у `docs/contracts/`. Архивный
+ADR объясняет решение, но не заменяет contract registry.
 
 ## Next Decisions
 

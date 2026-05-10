@@ -24,9 +24,9 @@
   `MQTT broker`, `Apache Kafka`, `Redpanda Connect` ingestion/config projection
   pipelines, `PostgreSQL`, `Config Registry`, `ClickHouse`, `Kafka Connect` и
   `Grafana`.
-- Для целевой configuration-модели принят `ADR-008`: edge-telemetry-agent получает
-  retained agent runtime/source configs из MQTT; delivery path уточнен в `ADR-010`
-  как PostgreSQL config outbox -> Kafka -> MQTT retained projection.
+- Для целевой configuration-модели принято: edge-telemetry-agent получает
+  retained agent runtime/source configs из MQTT; delivery path идет как
+  PostgreSQL config outbox -> Kafka -> MQTT retained projection.
 - Для локального config delivery baseline уже реализованы `Config Registry`
   outbox publisher и Redpanda Connect projection
   `idp.edge.configs.v1 -> retained MQTT agent runtime/source topics`.
@@ -35,10 +35,10 @@
   проверка integration-тестом.
 - Текущий проект уже достиг `MVP baseline`: `KNX/edge_telemetry_agent -> MQTT -> Kafka`
   ingestion slice работает в репозитории и покрыт integration-тестами.
-- `ADR-013` фиксирует post-MVP product/pilot direction: первый пилот
-  cloud-first в российском облаке (`VK Cloud` или `Yandex Cloud`), local Docker
-  infra остается обязательной для разработки и тестов, следующий protocol track
-  — `OPC UA read-only ingestion`, а internal issue tracker используется как
+- Post-MVP product/pilot direction: первый пилот cloud-first в российском
+  облаке (`VK Cloud` или `Yandex Cloud`), local Docker infra остается
+  обязательной для разработки и тестов, следующий protocol track —
+  `OPC UA read-only ingestion`, а internal issue tracker используется как
   internal-only execution backlog.
 - Полная `Industrial Data Platform` как `MQTT Ingestion Gateway`,
   `Redpanda Connect`, `Kafka-compatible Broker Runtime`, `Kafka Event Log`,
@@ -64,7 +64,7 @@
 
 | Вопрос | Почему это важно | Степень блокировки |
 | --- | --- | --- |
-| Являются ли текущие артефакты demo-стенда: `.local/Выстовка.knxproj*` и текущие YAML-файлы утвержденным source of truth для формирования первого `idp.edge.source-config.v1` bundle? | После `ADR-008` agent runtime source of truth для edge-telemetry-agent должен приходить через retained MQTT configs, но исходная KNX-карта все равно нужна для генерации source config | Критично |
+| Являются ли текущие артефакты demo-стенда: `.local/Выстовка.knxproj*` и текущие YAML-файлы утвержденным source of truth для формирования первого `idp.edge.source-config.v1` bundle? | Agent runtime source of truth для edge-telemetry-agent должен приходить через retained MQTT configs, но исходная KNX-карта все равно нужна для генерации source config | Критично |
 | Подтверждены ли для первого среза `read_on_start` и семантика чтения именно для `0/0/7` и `2/0/0`? | Versioned конфиг уже включает `read_on_start`, но это нужно подтвердить эксплуатационно, чтобы не зависеть от неподдерживаемого `GroupValueRead` | Высокая |
 | Какой следующий утвержденный whitelist точек нужен после текущих `0/0/7` и `2/0/0`? | Без этого нельзя планировать второй инкремент адаптера, расширение point registry и проверку `value_model` beyond demo | Средняя |
 
@@ -76,29 +76,29 @@
 | Требуется ли после пилота отдельная эксплуатационная поставка на `Windows Server 2019`, или для заказчика достаточно контейнерной поставки на `Ubuntu Server LTS`? | Это влияет на roadmap, бюджет и границы следующего проекта. Сейчас `Windows`-дистрибуция явно вынесена за рамки текущего объема работ | Высокая |
 | На каком классе хоста будет работать production `Edge Telemetry Agent`: industrial PC, VM, отдельный Linux-host или встроенный контроллер? | Сейчас рабочий dev-сценарий идет с `Developer Workstation`, а target topology требует отдельный edge-узел на объекте. Это влияет на packaging, watchdog, volume paths и lifecycle | Критично |
 | Остается ли внешний NAT-доступ к `KNX/IP` строго dev-only сценарием, или нужен утвержденный remote maintenance path и для эксплуатации? | Сейчас документы разводят production topology и demo remote access. Нужно подтвердить сетевую политику, чтобы не спроектировать лишний или небезопасный ingress path | Высокая |
-| Какой launcher берем для production edge runtime после cloud validation: `docker compose`, `systemd`-wrapper/OS service management или managed runtime? | `ADR-013` фиксирует local Docker infra как dev/test baseline и cloud-first pilot для `Industrial Data Platform`, но production edge lifecycle все еще требует отдельного решения | Средняя |
+| Какой launcher берем для production edge runtime после cloud validation: `docker compose`, `systemd`-wrapper/OS service management или managed runtime? | Local Docker infra уже принят как dev/test baseline, а первый pilot target для `Industrial Data Platform` cloud-first; production edge lifecycle все еще требует отдельного решения | Средняя |
 | Какой допустимый простой edge runtime при рестарте, обновлении и reconnect? | Это влияет на backoff policy, drain outbox, health semantics и требования к rolling update | Средняя |
 
 ## Следующий срез Industrial Data Platform и модулей
 
 | Вопрос | Почему это важно | Степень блокировки |
 | --- | --- | --- |
-| Какие конкретные API/use cases входят в первый tenant-facing API после `Config Registry`: telemetry read, config rollout, Web Monitoring read API или Alarm Management workflow API? | `ADR-014` разделяет data platform, Web Monitoring и Alarm Management, поэтому следующий API contract должен явно назвать ownership | Высокая |
+| Какие конкретные API/use cases входят в первый tenant-facing API после `Config Registry`: telemetry read, config rollout, Web Monitoring read API или Alarm Management workflow API? | Data platform, Web Monitoring и Alarm Management разделены, поэтому следующий API contract должен явно назвать ownership | Высокая |
 | Где фиксируется `Redpanda Connect` pipeline config: в platform repository, IaC, Redpanda Cloud-managed pipeline или отдельном operations bundle? | MQTT input, mapping/transform и redpanda output становятся частью production data path, поэтому конфигурация pipeline должна быть версионирована и управляться так же строго, как edge source config | Высокая |
-| Нужно ли переходить с локального `Apache Kafka` broker runtime на `Redpanda broker`? | `ADR-012` оставляет Apache Kafka локальным baseline и требует отдельный compatibility PoC для Redpanda broker, чтобы не смешивать broker migration с connector/runtime cleanup | Средняя |
+| Нужно ли переходить с локального `Apache Kafka` broker runtime на `Redpanda broker`? | Apache Kafka остается локальным baseline; Redpanda broker требует отдельный compatibility PoC, чтобы не смешивать broker migration с connector/runtime cleanup | Средняя |
 | Нужно ли менять draft Kafka topics, retention и consumer groups после нагрузочного PoC? | Базовый контракт зафиксирован в `docs/contracts/kafka/topics.v1.md`, но реальные partition counts и retention могут потребовать корректировки после измерений | Средняя |
-| Какие изменения потребуются в draft ClickHouse DDL, rollups и TTL после обязательного нагрузочного PoC? | `ADR-013` фиксирует load PoC как gate перед production schema; сами sizing/rollup/retention параметры должны быть подтверждены на данных целевого масштаба | Средняя |
-| Какие alarm rule types и screens нужны поверх принятого минимального lifecycle `active/raised`, `acknowledged`, `cleared/resolved`, `severity`? | Минимальный lifecycle принят в `ADR-013`, но сами правила, thresholds, UI workflow и notification policy остаются продуктовой развилкой | Высокая |
+| Какие изменения потребуются в draft ClickHouse DDL, rollups и TTL после обязательного нагрузочного PoC? | Load PoC является gate перед production schema; сами sizing/rollup/retention параметры должны быть подтверждены на данных целевого масштаба | Средняя |
+| Какие alarm rule types и screens нужны поверх принятого минимального lifecycle `active/raised`, `acknowledged`, `cleared/resolved`, `severity`? | Минимальный lifecycle принят, но сами правила, thresholds, UI workflow и notification policy остаются продуктовой развилкой | Высокая |
 | Какие notification channels требуются в первом production-срезе: email, Telegram, SMS, webhook или только in-app/Grafana? | `Notification Service` теперь относится к `Alarm Management Module`; без выбора каналов нельзя стабилизировать scope backend и интеграций | Средняя |
-| Когда принимать отдельный ADR по Keycloak/auth/JWT/users/roles? | Аутентификация специально исключена из `ADR-010`, чтобы не смешивать хранение настроек и IAM | Средняя |
+| Когда принимать отдельное решение по Keycloak/auth/JWT/users/roles? | Аутентификация специально исключена из config backend slice, чтобы не смешивать хранение настроек и IAM | Средняя |
 
 ## Cloud-first pilot и operations
 
 | Вопрос | Почему это важно | Степень блокировки |
 | --- | --- | --- |
-| Что выбираем для первого cloud pilot: `VK Cloud` или `Yandex Cloud`? | `ADR-013` фиксирует российский cloud-first pilot, но конкретный provider влияет на networking, managed PostgreSQL/ClickHouse/Kafka options, secrets, observability и стоимость | Критично |
+| Что выбираем для первого cloud pilot: `VK Cloud` или `Yandex Cloud`? | Российский cloud-first pilot уже принят, но конкретный provider влияет на networking, managed PostgreSQL/ClickHouse/Kafka options, secrets, observability и стоимость | Критично |
 | Какие managed services допустимы в cloud pilot, а какие компоненты держим как self-managed containers для parity с future self-hosted? | Provider optimization не должна менять contracts, migrations и acceptance tests, но может снизить операционную нагрузку первого пилота | Высокая |
-| Как customer feedback из пилота попадает в internal issue tracker: вручную через triage или через отдельный customer-facing project/helpdesk/view? | `ADR-013` запрещает внешний доступ к internal backlog, но feedback loop нужно сделать удобным и безопасным | Средняя |
+| Как customer feedback из пилота попадает в internal issue tracker: вручную через triage или через отдельный customer-facing project/helpdesk/view? | Внешний доступ к internal backlog запрещен, но feedback loop нужно сделать удобным и безопасным | Средняя |
 
 ## MQTT delivery и безопасность
 
@@ -131,7 +131,7 @@
 
 - подтвердить, что текущий `demo-stand` конфиг и ETS-derived артефакты являются каноническим source of truth для первого `KNX`-среза
 - проверить доступы internal issue tracker и держать `Post-MVP production foundation`
-  backlog синхронизированным с `ADR-013`
+  backlog синхронизированным с `docs/architecture/decisions.md`
 - зафиксировать production MQTT broker, требования по `TLS`/`ACL` и способ хранения секретов
 - зафиксировать contract и limits для config delivery: bundle layout, revision generation, Kafka delivery record, retained projection order и rollback semantics
 - выбрать cloud provider первого пилота: `VK Cloud` или `Yandex Cloud`

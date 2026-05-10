@@ -36,9 +36,9 @@ Kafka delivery records и retained MQTT config.
 
 | Термин | Что это | Где живет | Primary refs |
 | --- | --- | --- | --- |
-| `AgentRuntimeConfigRevision` | persisted snapshot root agent runtime config агента | `Config Registry`, таблица `agent_runtime_config_revisions` | [ADR-010](../../architecture/adrs/ADR-010-platform-configuration-backend.md#agent-runtime-config-revision), [ADR-010 storage model](../../architecture/adrs/ADR-010-platform-configuration-backend.md) |
+| `AgentRuntimeConfigRevision` | persisted snapshot root agent runtime config агента | `Config Registry`, таблица `agent_runtime_config_revisions` | [Config Registry README](../../../apps/idp_config_registry/README.md), [PostgreSQL models](../../../apps/idp_config_registry/src/idp_config_registry/infrastructure/postgres/models.py) |
 | `config_revision` | строковый revision-id root agent runtime config | `idp.edge.agent-runtime-config.v1`, `idp.edge.source-config.v1`, Kafka delivery, outbox | [idp.edge.agent-runtime-config.v1](./schemas/idp.edge.agent-runtime-config.v1.schema.json), [idp.edge.source-config.v1](./schemas/idp.edge.source-config.v1.schema.json), [idp.edge.config.delivery.v1](../kafka/schemas/idp.edge.config.delivery.v1.schema.json) |
-| `SourceConfigRevision` | persisted snapshot source config для одного `source_id` | `Config Registry`, таблица `source_config_revisions` | [ADR-010](../../architecture/adrs/ADR-010-platform-configuration-backend.md#source-config-revision), [ADR-010 storage model](../../architecture/adrs/ADR-010-platform-configuration-backend.md) |
+| `SourceConfigRevision` | persisted snapshot source config для одного `source_id` | `Config Registry`, таблица `source_config_revisions` | [Config Registry README](../../../apps/idp_config_registry/README.md), [PostgreSQL models](../../../apps/idp_config_registry/src/idp_config_registry/infrastructure/postgres/models.py) |
 | `source_config_revision` | строковый revision-id source config | root agent runtime source ref, source config payload, telemetry event, ingestion/storage contracts | [idp.edge.agent-runtime-config.v1](./schemas/idp.edge.agent-runtime-config.v1.schema.json), [idp.edge.source-config.v1](./schemas/idp.edge.source-config.v1.schema.json), [idp.edge.telemetry.event.v1](./schemas/idp.edge.telemetry.event.v1.schema.json), [idp.telemetry.event.v1](../kafka/schemas/idp.telemetry.event.v1.schema.json) |
 
 ## Сравнение
@@ -78,11 +78,11 @@ scheme для всех authoring paths. См. [Server-issued edge config open qu
 
 | Этап | `config_revision` | `source_config_revision` | Contract / doc |
 | --- | --- | --- | --- |
-| Rendered config snapshots в `Config Registry` | обязательное поле root revision | обязательное поле source revision; source revision также хранит link на `config_revision` | [ADR-010](../../architecture/adrs/ADR-010-platform-configuration-backend.md#agent-runtime-config-revision), [ADR-010](../../architecture/adrs/ADR-010-platform-configuration-backend.md#source-config-revision) |
+| Rendered config snapshots в `Config Registry` | обязательное поле root revision | обязательное поле source revision; source revision также хранит link на `config_revision` | [Config Registry README](../../../apps/idp_config_registry/README.md), [render_config.py](../../../apps/idp_config_registry/src/idp_config_registry/application/use_cases/render_config.py) |
 | Kafka config delivery envelope | обязателен всегда | `null` для `config_scope=agent_runtime`, обязателен для `config_scope=source:{source_id}` | [idp.edge.config.delivery.v1](../kafka/schemas/idp.edge.config.delivery.v1.schema.json) |
 | Retained agent runtime config | обязателен в root payload | передается внутри массива `sources[]` как ref на ожидаемую source revision | [idp.edge.agent-runtime-config.v1](./schemas/idp.edge.agent-runtime-config.v1.schema.json) |
 | Retained source config | обязателен и должен совпасть с root agent runtime config | обязателен в source payload | [idp.edge.source-config.v1](./schemas/idp.edge.source-config.v1.schema.json) |
-| Telemetry MQTT payload | не передается отдельно в `idp.edge.telemetry.event.v1` | обязателен как metadata version marker | [idp.edge.telemetry.event.v1](./schemas/idp.edge.telemetry.event.v1.schema.json), [ADR-005](../../architecture/adrs/ADR-005-mqtt-event-transport.md) |
+| Telemetry MQTT payload | не передается отдельно в `idp.edge.telemetry.event.v1` | обязателен как metadata version marker | [idp.edge.telemetry.event.v1](./schemas/idp.edge.telemetry.event.v1.schema.json), [mqtt-topic-tree.v1](./mqtt-topic-tree.v1.md) |
 | Platform Kafka telemetry record | implicit context через validated config cache | обязателен для enrichment и routing в canonical telemetry record | [mqtt-to-kafka.v1](../platform-ingestion/mqtt-to-kafka.v1.md) |
 | ClickHouse source snapshots / telemetry | используется как связь runtime batch на стороне config delivery lineage | хранится как исторический version marker для source config и telemetry joins | [telemetry-store.v1](../clickhouse/telemetry-store.v1.md) |
 
@@ -106,6 +106,6 @@ scheme для всех authoring paths. См. [Server-issued edge config open qu
 
 Primary refs:
 
-- [ADR-008](../../architecture/adrs/ADR-008-server-issued-edge-runtime-configuration.md)
+- [Decision register](../../architecture/decisions.md)
 - [agent runtime/source validation in edge-telemetry-agent](../../../apps/edge_telemetry_agent/src/edge_telemetry_agent/application/configuration.py)
 - [mqtt-to-kafka.v1](../platform-ingestion/mqtt-to-kafka.v1.md)

@@ -3,24 +3,35 @@ http:
   enabled: true
 
 input:
-  mqtt:
-    urls:
-      - tcp://mqtt-broker:1883
-    client_id: idp-local-mqtt-to-kafka
-    user: ${MQTT_USERNAME}
-    password: ${MQTT_PASSWORD}
-    topics:
-      - idp/v1/#
-    qos: 1
-    clean_session: true
+  broker:
+    inputs:
+      - mqtt:
+          urls:
+            - tcp://mqtt-broker:1883
+          client_id: idp-local-mqtt-to-kafka
+          user: ${MQTT_USERNAME}
+          password: ${MQTT_PASSWORD}
+          topics:
+            - idp/v1/#
+          qos: 1
+          clean_session: true
+      - redpanda:
+          seed_brokers:
+            - kafka:19092
+          topics:
+            - idp.source.configs.v1:0
+          client_id: idp-local-mqtt-to-kafka-source-config-cache
+          start_offset: earliest
 
 pipeline:
   threads: 1
   processors:
     - mapping: |
-        let parts = metadata("mqtt_topic").split("/")
+        let mqtt_topic = metadata("mqtt_topic").or("")
+        let parts = $mqtt_topic.split("/")
         root = this
-        root._mqtt_topic = metadata("mqtt_topic")
+        root._mqtt_topic = $mqtt_topic
+        root._kafka_topic = metadata("kafka_topic").or("")
         root._topic_parts = $parts
         root._asset_id = if $parts.length() > 3 && $parts.index(2) == "assets" { $parts.index(3) } else { null }
         root._agent_id = if $parts.length() > 4 && $parts.index(2) == "agents" { $parts.index(3) } else if $parts.length() > 5 && $parts.index(4) == "agents" { $parts.index(5) } else { null }
@@ -28,12 +39,12 @@ pipeline:
         root._point_key = if $parts.length() > 9 && $parts.index(8) == "points" { $parts.index(9) } else { null }
 
     - switch:
-        - check: this.message_type == "idp.edge.agent-runtime-config.v1"
+        - check: this.message_type == "idp.source.config.v1"
           processors:
             - cache:
-                resource: runtime_configs
+                resource: source_configs
                 operator: set
-                key: '${! json("agent_id") }'
+                key: '${! json("tenant_id") }|${! json("asset_id") }|${! json("agent_id") }|${! json("source_id") }|${! json("source_config_revision") }'
                 value: '${! content().string() }'
             - mapping: root = deleted()
 
@@ -66,18 +77,19 @@ pipeline:
                   "unit": point.unit | null,
                   "tags": point.tags | {},
                 })
-                meta kafka_topic = "idp.source.configs.v1"
-                meta kafka_key = "%s|%s|%s|%s".format(root.tenant_id, root.asset_id, root.agent_id, root.source_id)
             - cache:
                 resource: source_configs
                 operator: set
                 key: '${! json("tenant_id") }|${! json("asset_id") }|${! json("agent_id") }|${! json("source_id") }|${! json("source_config_revision") }'
                 value: '${! content().string() }'
-            - cache:
-                resource: source_routes
-                operator: set
-                key: '${! json("asset_id") }|${! json("agent_id") }|${! json("source_id") }'
-                value: '${! content().string() }'
+            - mapping: root = deleted()
+
+        - check: this.message_type == "idp.edge.agent-runtime-config.v1"
+          processors:
+            - mapping: root = deleted()
+
+        - check: this.message_type == "idp.edge.config.status.v1"
+          processors:
             - mapping: root = deleted()
 
         - check: this.message_type == "idp.edge.telemetry.event.v1"
@@ -208,13 +220,7 @@ output:
     key: '${! meta("kafka_key") }'
 
 cache_resources:
-  - label: runtime_configs
-    memory:
-      default_ttl: 24h
   - label: source_configs
-    memory:
-      default_ttl: 24h
-  - label: source_routes
     memory:
       default_ttl: 24h
 

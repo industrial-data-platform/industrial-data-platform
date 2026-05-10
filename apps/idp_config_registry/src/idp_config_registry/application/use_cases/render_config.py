@@ -186,6 +186,9 @@ def _point_payload(
     acquisition_defaults: dict[str, Any],
     publish_defaults: dict[str, Any],
 ) -> dict[str, Any]:
+    publish_settings = _settings_with_defaults(point.publish_json, publish_defaults)
+    if point.signal_type.value == "command":
+        publish_settings = {**publish_settings, "enabled": False}
     return {
         "point_key": point.point_key,
         "point_ref": point.point_ref,
@@ -196,7 +199,7 @@ def _point_payload(
         "signal_type": point.signal_type.value,
         "unit": point.unit,
         "acquisition": _settings_with_defaults(point.acquisition_json, acquisition_defaults),
-        "publish": _settings_with_defaults(point.publish_json, publish_defaults),
+        "publish": publish_settings,
         "tags": dict(point.tags_json),
     }
 
