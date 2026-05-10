@@ -1,5 +1,5 @@
 model {
-    extend monitoring-alarm-platform {
+    extend industrial-data-platform {
         wm-config-registry-outbox-worker = container 'wm-config-registry-outbox-worker' {
             description 'Worker из apps/wm_config_registry: читает PostgreSQL config_outbox и публикует wm.platform.edge.config.delivery.v1 records в Kafka topic wm.platform.edge.configs.v1. MQTT retained topics строит Redpanda Connect projection.'
             technology 'apps/wm_config_registry / wm-config-registry publish-config-outbox-worker / Kafka producer'

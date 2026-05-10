@@ -1,6 +1,6 @@
 # Реестр контрактов данных
 
-Дата: 2026-05-02
+Дата: 2026-05-10
 Статус: working draft
 
 `docs/contracts/` является единым source of truth для контрактов данных проекта:
@@ -8,6 +8,12 @@
 - схемы сообщений и локальных структур данных
 - имена MQTT topics, Kafka topics и таблиц хранения
 - правила маршрутизации, дедупликации и совместимости на границах систем
+
+После `ADR-014` продуктовая граница центрального ядра называется
+`Industrial Data Platform`. Существующие contract-id, MQTT topic prefix,
+Kafka topic prefix `wm.platform.*` и ClickHouse table names не переименовываются:
+они являются стабильным compatibility surface, а не отражением старого
+продуктового имени `Monitoring & Alarm Platform`.
 
 ## Роли артефактов
 

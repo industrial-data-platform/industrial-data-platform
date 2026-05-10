@@ -1,6 +1,6 @@
 # Platform Ingestion Contracts
 
-Дата: 2026-05-02
+Дата: 2026-05-10
 Статус: working draft
 
 Раздел фиксирует контракты преобразования:
@@ -10,6 +10,9 @@ MQTT topic + MQTT payload + retained source config
   -> canonical Kafka record
   -> downstream consumers
 ```
+
+Эти контракты принадлежат `Industrial Data Platform`. Существующие
+`wm.platform.*` message types и topics сохраняются как compatibility surface.
 
 ## Контракты
 

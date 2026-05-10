@@ -3,6 +3,12 @@
 Дата: 2026-05-03  
 Статус: accepted
 
+Примечание 2026-05-10: после `ADR-014` `Config Registry` относится к
+`Industrial Data Platform` core. Термины `Monitoring & Alarm Platform` и
+`Platform API` в этом ADR остаются историческим контекстом первого backend-среза
+и не означают, что config backend должен расширяться до Web Monitoring или Alarm
+Management API без отдельного решения.
+
 ## Контекст
 
 Следующий backend-инкремент нужен не для всей `Monitoring & Alarm Platform`

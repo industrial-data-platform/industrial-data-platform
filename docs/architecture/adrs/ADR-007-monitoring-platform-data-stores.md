@@ -8,6 +8,11 @@
 Log` является логическим слоем, локальный MVP использует `Apache Kafka`, а
 `Redpanda broker` остается candidate после отдельного compatibility PoC.
 
+Примечание 2026-05-10: термин `Monitoring & Alarm Platform` заменен в текущей
+архитектуре на `Industrial Data Platform` плюс отдельные `Web Monitoring Module`
+и `Alarm Management Module` (`ADR-014`). Выбор `ClickHouse + PostgreSQL`
+остается действующим для data platform core.
+
 ## Контекст
 
 `Monitoring & Alarm Platform` должна хранить данные всей платформы, но эти данные

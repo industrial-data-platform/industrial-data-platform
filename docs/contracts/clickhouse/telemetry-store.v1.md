@@ -1,6 +1,6 @@
 # `wm.clickhouse.telemetry-store.v1`
 
-Дата: 2026-05-02
+Дата: 2026-05-10
 Статус: working draft
 
 Этот контракт фиксирует начальную migration-backed физическую модель
@@ -8,6 +8,11 @@
 совместимости Kafka consumers и сопровождения уже существующих миграций.
 Физическая схема еще не считается production-validated performance schema до
 нагрузочного PoC.
+
+После `ADR-014` `Telemetry Store` принадлежит `Industrial Data Platform`.
+Таблицы и view names не переименовываются. `alarm_history_events_v1` остается
+storage sink в `Telemetry Store`, но writer/owner этого потока находится в
+`Alarm Management Module`.
 
 ## Tables
 
@@ -18,7 +23,7 @@
 | `source_connection_events_v1` | История southbound source connection states | `telemetry-store-writer.v1` |
 | `agent_status_events_v1` | История agent online/offline status | `telemetry-store-writer.v1` |
 | `derived_events_v1` | Derived events from Streaming Analytics | `telemetry-store-writer.v1`, `streaming-analytics.v1` |
-| `alarm_history_events_v1` | Immutable alarm lifecycle history | `alarm-rule-engine.v1` |
+| `alarm_history_events_v1` | Immutable alarm lifecycle history storage sink; writer-owned by `Alarm Management Module` | `alarm-rule-engine.v1` |
 | `telemetry_events_dedup_v1` | Deduplicated view для безопасного чтения истории telemetry | query view |
 | `telemetry_latest_v1` | Последнее значение по точке для быстрых UI/API запросов | query view |
 | `telemetry_1m_v1` | Correctness-first rollup view по точке за 1 минуту | query view |

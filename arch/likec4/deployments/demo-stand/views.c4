@@ -1,7 +1,7 @@
 views 'Deployments / Demo Stand' {
     deployment view deployment-demo-stand-topology {
         title 'Deployment - Demo Stand Topology'
-        description 'Полная deployment topology demo-стенда по ETS-проекту "Выстовка": локальная сеть, удаленный хост с whitelist, KNX/IP, TP-линия 1.1, локальный Docker Compose stack и production-контур Monitoring & Alarm Platform с MQTT ingress и Grafana.'
+        description 'Полная deployment topology demo-стенда по ETS-проекту "Выстовка": локальная сеть, удаленный хост с whitelist, KNX/IP, TP-линия 1.1, локальный Docker Compose stack, production-контур Industrial Data Platform и отдельные Web Monitoring / Alarm Management modules.'
 
         include demo-stand.**
         include whitelisted-remote-host.**

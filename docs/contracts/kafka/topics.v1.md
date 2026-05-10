@@ -1,14 +1,18 @@
 # `wm.kafka.topics.v1`
 
-Дата: 2026-05-02
+Дата: 2026-05-10
 Статус: working draft
 
-Этот контракт фиксирует Kafka-compatible topics `Monitoring & Alarm Platform`.
+Этот контракт фиксирует Kafka-compatible topics `Industrial Data Platform`.
 `Kafka Event Log` является логическим Kafka-compatible event stream, а не
 конкретным broker product. Локальный integration slice использует
 `Apache Kafka` как broker runtime и `Redpanda Connect` как connector pipeline
 `MQTT -> Kafka`. `Redpanda broker` остается candidate для production/self-hosted
 runtime после compatibility PoC, зафиксированного в `ADR-012`.
+
+`wm.platform.*` остается стабильным wire-prefix для существующих topics. Его
+не переименовываем в рамках `ADR-014`, чтобы не делать breaking change для
+producers, consumers, connector configs и ClickHouse ingestion.
 
 ## Topics
 

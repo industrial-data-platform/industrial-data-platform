@@ -1,5 +1,5 @@
 model {
-    extend monitoring-alarm-platform {
+    extend industrial-data-platform {
         redpanda-connect = container 'Redpanda Connect' {
             description 'Connector pipeline между MQTT, Kafka и MQTT retained projection: читает MQTT telemetry/status topics в Kafka, а также читает Kafka edge config delivery records и материализует их в retained MQTT agent runtime/source config topics.'
             technology 'Redpanda Connect / MQTT input-output / redpanda input-output components'

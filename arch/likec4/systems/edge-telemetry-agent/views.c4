@@ -7,9 +7,9 @@ views 'Developed Systems / wm_edge_agent' {
         include service-engineer
         include field-protocol-gateways
         include field-protocol-gateways.*
-        include monitoring-alarm-platform
-        exclude service-engineer -> monitoring-alarm-platform
-        exclude service-engineer -> monitoring-alarm-platform.*
+        include industrial-data-platform
+        exclude service-engineer -> industrial-data-platform
+        exclude service-engineer -> industrial-data-platform.*
 
         style edge-telemetry-agent {
             color primary
@@ -20,7 +20,7 @@ views 'Developed Systems / wm_edge_agent' {
         }
 
         rank sink {
-            monitoring-alarm-platform
+            industrial-data-platform
         }
     }
 }

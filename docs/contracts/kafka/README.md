@@ -1,10 +1,15 @@
 # Kafka Contracts
 
-Дата: 2026-05-02
+Дата: 2026-05-10
 Статус: working draft
 
 Раздел фиксирует Kafka topic names, keys, value schemas, retention,
-partitioning и consumer group conventions `Monitoring & Alarm Platform`.
+partitioning и consumer group conventions `Industrial Data Platform`.
+
+Префикс `wm.platform.*` остается стабильным wire-prefix. Он не переименовывается
+в рамках перехода от старого composite term `Monitoring & Alarm Platform` к
+`Industrial Data Platform`, потому что topic names являются breaking contract
+surface.
 
 ## Контракты
 

@@ -1,6 +1,6 @@
 # Текущее состояние системы
 
-Дата: 2026-05-03
+Дата: 2026-05-10
 Статус: working snapshot
 
 Этот документ является коротким operational snapshot для людей и AI-agent.
@@ -20,14 +20,16 @@
 - локальный ingestion slice `MQTT -> Redpanda Connect -> Apache Kafka`
 - versioned config bundle и integration-тесты для этого контура
 
-Поверх этого baseline в текущей ветке уже реализованы первые platform-foundation
-инкременты: `Config Registry` на `PostgreSQL`, Kafka-first config delivery,
-локальный `ClickHouse Telemetry Store` path и `Grafana` read-model surface.
+Поверх этого baseline в текущей ветке уже реализованы первые data-platform
+foundation инкременты: `Config Registry` на `PostgreSQL`, Kafka-first config
+delivery, локальный `ClickHouse Telemetry Store` path и `Grafana` read-model
+surface как первый `Web Monitoring Module` surface.
 
 ## Назначение
 
-`Industrial Edge Web Monitoring` строится как промышленная система сбора,
-доставки, хранения и отображения телеметрии.
+Система строится прежде всего как `Industrial Data Platform`: промышленное ядро
+сбора, доставки, конфигурации и хранения данных. `Web Monitoring` и
+`Alarm Management` являются отдельными модулями поверх этого ядра.
 
 Целевая линия:
 
@@ -35,9 +37,10 @@
 - Agent читает данные из southbound-источников, нормализует наблюдения,
   фильтрует изменения, хранит техническое состояние в SQLite и доставляет
   события наружу.
-- `Monitoring & Alarm Platform` принимает поток, валидирует и обогащает его,
-  пишет события в Kafka-compatible event log и хранилища, строит alarm/UI/API.
-- `Monitoring & Alarm Platform` должна поддерживать два deployment modes:
+- `Industrial Data Platform` принимает поток, валидирует и обогащает его,
+  пишет события в Kafka-compatible event log и хранилища, а прикладные модули
+  читают подготовленные данные и используют shared platform services.
+- `Industrial Data Platform` должна поддерживать два deployment modes:
   `self-hosted` и `cloud`, без расхождения по основным contracts и data path.
 - Первый post-MVP пилот запускается cloud-first в российском облаке (`VK Cloud`
   или `Yandex Cloud`), потому что on-prem/self-hosted инфраструктура первых
@@ -72,20 +75,25 @@
 
 ## Что остается post-MVP развитием
 
-- Расширение `Monitoring & Alarm Platform` от текущего `MVP baseline` до полной
-  production-инсталляции: production `MQTT Ingestion Gateway`,
-  production Kafka-compatible broker runtime, `Telemetry Consumers`,
-  `Streaming Analytics`, `Telemetry Store`, `Platform Store`,
-  `Alarm Rule Engine`, `Platform API`, `Platform Frontend`, `Keycloak`,
-  `Grafana` и `Notification Service`. Локально уже есть foundation-срезы
-  `Config Registry`, `ClickHouse`, `Kafka Connect` и `Grafana`, но они еще не
-  доведены до production-grade platform runtime.
+- Расширение `Industrial Data Platform` от текущего `MVP baseline` до
+  production-инсталляции: production `MQTT Ingestion Gateway`, production
+  Kafka-compatible broker runtime, storage writer/Kafka Connect,
+  `Streaming Analytics`, `Telemetry Store`, `Platform Store`, `Config Registry`
+  и shared IAM. Локально уже есть foundation-срезы `Config Registry`,
+  `ClickHouse`, `Kafka Connect` и `Grafana`, но core runtime еще не доведен до
+  production-grade.
+- Развитие `Web Monitoring Module`: Grafana/read dashboards уже представлены
+  локально, полноценный monitoring frontend и tenant-facing read API остаются
+  следующим модульным слоем поверх data platform.
+- Развитие `Alarm Management Module`: `Alarm Rule Engine`, alarm lifecycle,
+  current alarm workflow state и `Notification Service` являются отдельным
+  модулем поверх data platform, а не частью ingestion/storage core.
 - Production hardening существующих foundation stores: `ClickHouse` как
   `Telemetry Store` и `PostgreSQL` как `Platform Store` уже представлены в
   локальном dev/integration контуре, но не доведены до production sizing,
   backup/restore, HA и операционных процедур.
 - Расширение `Config Registry` от текущего foundation-среза до tenant-facing
-  platform backend: authn/authz, richer revision workflow, rollout controls,
+  data-platform backend: authn/authz, richer revision workflow, rollout controls,
   approval/publish process и API boundaries beyond current internal/backoffice
   scope.
 - Tenant-facing UI для редактирования agent runtime/source config. На текущем этапе
@@ -102,10 +110,11 @@
 
 ## Production Boundaries
 
-В production data path система является read-only monitoring/alarm контуром:
+В production data path система является read-only контуром сбора и хранения
+данных:
 
 - wm-edge-agent читает и наблюдает сигналы;
-- управляющие команды из web-monitoring UI/API не входят в первый продуктовый
+- управляющие команды из Web Monitoring UI/API не входят в первый продуктовый
   scope;
 - технические platform writes для telemetry/status storage, config revisions,
   outbox, audit и alarm workflow state остаются частью платформы;
@@ -116,11 +125,12 @@
 - локальный `MQTT/Kafka` stack является dev/integration slice, а не полной
   production platform.
 
-Для центральной платформы действуют дополнительные границы deployment-модели:
+Для `Industrial Data Platform` действуют дополнительные границы deployment-модели:
 
 - `self-hosted` и `cloud` считаются двумя вариантами поставки одной и той же
-  `Monitoring & Alarm Platform`, а не двумя разными архитектурами;
-- первый pilot target для центральной платформы — cloud-first в российском
+  `Industrial Data Platform` с модулями поверх нее, а не двумя разными
+  архитектурами;
+- первый pilot target для `Industrial Data Platform` — cloud-first в российском
   облаке; self-hosted/on-prem остается целевым mode после cloud validation и
   готовности инфраструктуры заказчика;
 - baseline contracts, основной ingestion/data path и acceptance criteria должны
@@ -132,7 +142,7 @@
   не считается production target первого пилота.
 
 Отдельный пилот `KNX -> OPC` может иметь write-path из внешнего OPC-клиента,
-но это отдельный сервисный контур, не основной web-monitoring data path.
+но это отдельный сервисный контур, не основной data-platform data path.
 
 ## Source Of Truth
 
@@ -157,14 +167,15 @@
 3. Для MQTT delivery и topic tree: `ADR-005`, затем
    `docs/contracts/wm-edge-agent/mqtt-topic-tree.v1.md`.
 4. Для identity model: `ADR-004`.
-5. Для storage/platform design: `ADR-007`, затем `docs/contracts/clickhouse/`
+5. Для границ data platform, web monitoring и alarms: `ADR-014`.
+6. Для storage/platform design: `ADR-007`, затем `docs/contracts/clickhouse/`
    и `docs/contracts/kafka/`.
-6. Для deployment parity `self-hosted`/`cloud`: `ADR-009`, затем `ADR-013` для
+7. Для deployment parity `self-hosted`/`cloud`: `ADR-009`, затем `ADR-013` для
    cloud-first pilot и local Docker infra policy.
-7. Для backend хранения настроек платформы: `ADR-010`.
-8. Для post-MVP product/pilot governance, `OPC UA` read-only track и internal
+8. Для backend хранения настроек платформы: `ADR-010`.
+9. Для post-MVP product/pilot governance, `OPC UA` read-only track и internal
    `YouTrack`: `ADR-013`.
-9. Для KNX-first MVP behavior: `ADR-001`, `ADR-002`, `ADR-003`.
+10. Для KNX-first MVP behavior: `ADR-001`, `ADR-002`, `ADR-003`.
 
 Если ADR и `docs/contracts/` расходятся по полям сообщения, topic/table names
 или schema details, приоритет у `docs/contracts/`. ADR объясняет решение, но не
@@ -177,7 +188,7 @@
 
 - production MQTT broker, TLS, ACL и secrets handling;
 - limits и lifecycle для retained agent runtime/source config;
-- эволюция YAML config bundle из import/bootstrap path в полностью platform-led
+- эволюция YAML config bundle из import/bootstrap path в полностью data-platform-led
   authoring workflow;
 - concrete `VK Cloud` vs `Yandex Cloud` choice, managed-service packaging and
   secrets backend for the cloud-first pilot;

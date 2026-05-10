@@ -66,16 +66,16 @@ deployment {
                 description 'Локальный broker текущего dev-контура. Это временный transport endpoint для разработки и smoke-test, а не target MQTT Ingestion Gateway платформы.'
             }
 
-            local-platform-host = host 'Local Platform Stack' {
+            local-platform-host = host 'Local Data Platform Stack' {
                 technology 'Docker Compose / infra/local'
-                description 'Локальный platform slice для smoke/integration: MQTT -> Redpanda Connect -> Apache Kafka -> Kafka Connect Sink -> ClickHouse read models -> Grafana.'
+                description 'Локальный data platform slice для smoke/integration: MQTT -> Redpanda Connect -> Apache Kafka -> Kafka Connect Sink -> ClickHouse read models -> Grafana.'
 
-                redpanda-connect = instanceOf monitoring-alarm-platform.redpanda-connect 'Local Redpanda Connect'
-                kafka-event-log = instanceOf monitoring-alarm-platform.kafka-event-log 'Local Kafka'
-                kafka-broker-runtime = instanceOf monitoring-alarm-platform.kafka-broker-runtime 'Local Apache Kafka Broker'
-                telemetry-consumers = instanceOf monitoring-alarm-platform.telemetry-consumers 'Local Kafka Connect Sink'
-                telemetry-store = instanceOf monitoring-alarm-platform.telemetry-store 'Local ClickHouse'
-                grafana = instanceOf monitoring-alarm-platform.grafana 'Local Grafana'
+                redpanda-connect = instanceOf industrial-data-platform.redpanda-connect 'Local Redpanda Connect'
+                kafka-event-log = instanceOf industrial-data-platform.kafka-event-log 'Local Kafka'
+                kafka-broker-runtime = instanceOf industrial-data-platform.kafka-broker-runtime 'Local Apache Kafka Broker'
+                telemetry-consumers = instanceOf industrial-data-platform.telemetry-consumers 'Local Kafka Connect Sink'
+                telemetry-store = instanceOf industrial-data-platform.telemetry-store 'Local ClickHouse'
+                grafana = instanceOf web-monitoring-module.grafana 'Local Grafana'
 
                 redpanda-connect -> local-mqtt-broker 'Подписывается на MQTT telemetry/status topics и перекладывает их в Kafka topics'
                 redpanda-connect -> kafka-broker-runtime 'Пишет platform Kafka records'
@@ -101,31 +101,33 @@ deployment {
         }
     }
 
-    environment monitoring-cloud 'Monitoring Cloud' {
-        description 'Облачный production-контур Monitoring & Alarm Platform.'
+    environment monitoring-cloud 'Cloud Data Platform' {
+        description 'Облачный production-контур Industrial Data Platform и прикладных модулей Web Monitoring / Alarm Management.'
 
         network-zone public-cloud 'Public Cloud' {
-            description 'Облачная зона приема MQTT-сообщений, streaming pipeline и визуализации Monitoring & Alarm Platform.'
+            description 'Облачная зона приема MQTT-сообщений, streaming pipeline, хранения данных, web monitoring и alarm management.'
 
-            mqtt-ingest-host = host 'Monitoring Platform Host' {
+            mqtt-ingest-host = host 'Data Platform Host' {
                 technology 'Cloud runtime'
-                description 'Хост облачного контура Monitoring & Alarm Platform для приема telemetry events, Kafka-compatible streaming, хранения и визуализации.'
+                description 'Хост облачного контура для приема telemetry events, Kafka-compatible streaming, хранения, web monitoring и alarm management.'
 
-                mqtt-ingestion-gateway = instanceOf monitoring-alarm-platform.mqtt-ingestion-gateway
-                yaml-config-bundle = instanceOf monitoring-alarm-platform.yaml-config-bundle
-                wm-config-registry-outbox-worker = instanceOf monitoring-alarm-platform.wm-config-registry-outbox-worker
-                redpanda-connect = instanceOf monitoring-alarm-platform.redpanda-connect
-                kafka-broker-runtime = instanceOf monitoring-alarm-platform.kafka-broker-runtime
-                kafka-event-log = instanceOf monitoring-alarm-platform.kafka-event-log
-                source-config-snapshot-projector = instanceOf monitoring-alarm-platform.source-config-snapshot-projector
-                telemetry-consumers = instanceOf monitoring-alarm-platform.telemetry-consumers
-                streaming-analytics = instanceOf monitoring-alarm-platform.streaming-analytics
-                alarm-rule-engine = instanceOf monitoring-alarm-platform.alarm-rule-engine
-                wm-config-registry = instanceOf monitoring-alarm-platform.wm-config-registry
-                keycloak = instanceOf monitoring-alarm-platform.keycloak
-                telemetry-store = instanceOf monitoring-alarm-platform.telemetry-store
-                platform-store = instanceOf monitoring-alarm-platform.platform-store
-                grafana = instanceOf monitoring-alarm-platform.grafana
+                mqtt-ingestion-gateway = instanceOf industrial-data-platform.mqtt-ingestion-gateway
+                yaml-config-bundle = instanceOf industrial-data-platform.yaml-config-bundle
+                wm-config-registry-outbox-worker = instanceOf industrial-data-platform.wm-config-registry-outbox-worker
+                redpanda-connect = instanceOf industrial-data-platform.redpanda-connect
+                kafka-broker-runtime = instanceOf industrial-data-platform.kafka-broker-runtime
+                kafka-event-log = instanceOf industrial-data-platform.kafka-event-log
+                source-config-snapshot-projector = instanceOf industrial-data-platform.source-config-snapshot-projector
+                telemetry-consumers = instanceOf industrial-data-platform.telemetry-consumers
+                streaming-analytics = instanceOf industrial-data-platform.streaming-analytics
+                wm-config-registry = instanceOf industrial-data-platform.wm-config-registry
+                keycloak = instanceOf industrial-data-platform.keycloak
+                telemetry-store = instanceOf industrial-data-platform.telemetry-store
+                platform-store = instanceOf industrial-data-platform.platform-store
+                grafana = instanceOf web-monitoring-module.grafana
+                web-monitoring-frontend = instanceOf web-monitoring-module.web-monitoring-frontend
+                alarm-rule-engine = instanceOf alarm-management-module.alarm-rule-engine
+                notification-service = instanceOf alarm-management-module.notification-service
 
                 wm-config-registry-outbox-worker -> kafka-event-log 'Публикует wm.platform.edge.config.delivery.v1 records'
                 redpanda-connect -> kafka-event-log 'Читает edge config delivery records'
@@ -141,9 +143,11 @@ deployment {
                 alarm-rule-engine -> kafka-event-log 'Читает telemetry и derived events'
                 alarm-rule-engine -> telemetry-store 'Записывает immutable alarm history'
                 alarm-rule-engine -> platform-store 'Записывает current alarm state и operator workflow state'
+                alarm-rule-engine -> notification-service 'Запускает доставку alarm notifications'
                 wm-config-registry -> platform-store 'Читает и изменяет registry/config settings'
                 keycloak -> platform-store 'Хранит IAM persistence'
                 grafana -> telemetry-store 'Читает подготовленные данные из ClickHouse для dashboards'
+                web-monitoring-frontend -> grafana 'Открывает и встраивает dashboards'
             }
         }
     }

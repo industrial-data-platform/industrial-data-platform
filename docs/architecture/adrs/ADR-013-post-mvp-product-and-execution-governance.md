@@ -3,6 +3,12 @@
 Дата: 2026-05-05
 Статус: accepted
 
+Примечание 2026-05-10: `ADR-014` уточняет продуктовую архитектуру: ядро теперь
+называется `Industrial Data Platform`, а web monitoring и alarms являются
+отдельными модулями поверх него. Решения этого ADR по cloud-first pilot,
+OPC UA read-only ingestion, local Docker infra и YouTrack governance остаются
+действующими.
+
 ## Контекст
 
 Проект уже достиг `MVP baseline` и дальше развивается как самостоятельный

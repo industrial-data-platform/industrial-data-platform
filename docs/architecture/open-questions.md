@@ -1,6 +1,6 @@
 # Открытые вопросы и развилки
 
-Дата: 2026-05-03
+Дата: 2026-05-10
 Статус: open
 
 Документ актуализирован после сверки:
@@ -40,11 +40,14 @@
   infra остается обязательной для разработки и тестов, следующий protocol track
   — `OPC UA read-only ingestion`, а `YouTrack` используется как internal-only
   execution backlog.
-- Полная `Monitoring & Alarm Platform` как `MQTT Ingestion Gateway`,
-  `Redpanda Connect`, `Kafka-compatible Broker Runtime`, `Kafka Event Log`, `Telemetry Consumers`, `Streaming Analytics`,
-  `Telemetry Store`, `Platform Store`, `Alarm Rule Engine`, `Platform API`, `Platform Frontend`,
-  `Keycloak`, `Grafana` и `Notification Service` остается следующей фазой
+- Полная `Industrial Data Platform` как `MQTT Ingestion Gateway`,
+  `Redpanda Connect`, `Kafka-compatible Broker Runtime`, `Kafka Event Log`,
+  storage writer/Kafka Connect, `Streaming Analytics`, `Telemetry Store`,
+  `Platform Store`, `Config Registry` и shared IAM остается следующей фазой
   развития поверх текущего `MVP`.
+- `Web Monitoring Module` и `Alarm Management Module` развиваются как отдельные
+  модули поверх data platform; старый `Monitoring & Alarm Platform` больше не
+  используется как имя центральной системы.
 
 ## Что принято в рабочих материалах по пилоту `KNX -> OPC`
 
@@ -73,20 +76,20 @@
 | Требуется ли после пилота отдельная эксплуатационная поставка на `Windows Server 2019`, или для заказчика достаточно контейнерной поставки на `Ubuntu Server LTS`? | Это влияет на roadmap, бюджет и границы следующего проекта. Сейчас `Windows`-дистрибуция явно вынесена за рамки текущего объема работ | Высокая |
 | На каком классе хоста будет работать production `Edge Telemetry Agent`: industrial PC, VM, отдельный Linux-host или встроенный контроллер? | Сейчас рабочий dev-сценарий идет с `Developer Workstation`, а target topology требует отдельный edge-узел на объекте. Это влияет на packaging, watchdog, volume paths и lifecycle | Критично |
 | Остается ли внешний NAT-доступ к `KNX/IP` строго dev-only сценарием, или нужен утвержденный remote maintenance path и для эксплуатации? | Сейчас документы разводят production topology и demo remote access. Нужно подтвердить сетевую политику, чтобы не спроектировать лишний или небезопасный ingress path | Высокая |
-| Какой launcher берем для production edge runtime после cloud validation: `docker compose`, `systemd`-wrapper/OS service management или managed runtime? | `ADR-013` фиксирует local Docker infra как dev/test baseline и cloud-first pilot для центральной платформы, но production edge lifecycle все еще требует отдельного решения | Средняя |
+| Какой launcher берем для production edge runtime после cloud validation: `docker compose`, `systemd`-wrapper/OS service management или managed runtime? | `ADR-013` фиксирует local Docker infra как dev/test baseline и cloud-first pilot для `Industrial Data Platform`, но production edge lifecycle все еще требует отдельного решения | Средняя |
 | Какой допустимый простой edge runtime при рестарте, обновлении и reconnect? | Это влияет на backoff policy, drain outbox, health semantics и требования к rolling update | Средняя |
 
-## Следующий срез Monitoring & Alarm Platform
+## Следующий срез Industrial Data Platform и модулей
 
 | Вопрос | Почему это важно | Степень блокировки |
 | --- | --- | --- |
-| Какие конкретные API/use cases входят в первый tenant-facing `Platform API` после `Config Registry`: telemetry read, alarm workflow, config rollout или auth/user boundary? | `ADR-013` фиксирует `Config Registry` как текущий backend-срез и `Platform API` как future boundary, но точный API contract следующего backend-инкремента требует отдельного ADR | Высокая |
+| Какие конкретные API/use cases входят в первый tenant-facing API после `Config Registry`: telemetry read, config rollout, Web Monitoring read API или Alarm Management workflow API? | `ADR-014` разделяет data platform, Web Monitoring и Alarm Management, поэтому следующий API contract должен явно назвать ownership | Высокая |
 | Где фиксируется `Redpanda Connect` pipeline config: в platform repository, IaC, Redpanda Cloud-managed pipeline или отдельном operations bundle? | MQTT input, mapping/transform и redpanda output становятся частью production data path, поэтому конфигурация pipeline должна быть версионирована и управляться так же строго, как edge source config | Высокая |
 | Нужно ли переходить с локального `Apache Kafka` broker runtime на `Redpanda broker`? | `ADR-012` оставляет Apache Kafka локальным baseline и требует отдельный compatibility PoC для Redpanda broker, чтобы не смешивать broker migration с connector/runtime cleanup | Средняя |
 | Нужно ли менять draft Kafka topics, retention и consumer groups после нагрузочного PoC? | Базовый контракт зафиксирован в `docs/contracts/kafka/topics.v1.md`, но реальные partition counts и retention могут потребовать корректировки после измерений | Средняя |
 | Какие изменения потребуются в draft ClickHouse DDL, rollups и TTL после обязательного нагрузочного PoC? | `ADR-013` фиксирует load PoC как gate перед production schema; сами sizing/rollup/retention параметры должны быть подтверждены на данных целевого масштаба | Средняя |
 | Какие alarm rule types и screens нужны поверх принятого минимального lifecycle `active/raised`, `acknowledged`, `cleared/resolved`, `severity`? | Минимальный lifecycle принят в `ADR-013`, но сами правила, thresholds, UI workflow и notification policy остаются продуктовой развилкой | Высокая |
-| Какие notification channels требуются в первом production-срезе: email, Telegram, SMS, webhook или только in-app/Grafana? | В LikeC4 есть `Notification Service`, но без выбора каналов нельзя стабилизировать scope backend и интеграций | Средняя |
+| Какие notification channels требуются в первом production-срезе: email, Telegram, SMS, webhook или только in-app/Grafana? | `Notification Service` теперь относится к `Alarm Management Module`; без выбора каналов нельзя стабилизировать scope backend и интеграций | Средняя |
 | Когда принимать отдельный ADR по Keycloak/auth/JWT/users/roles? | Аутентификация специально исключена из `ADR-010`, чтобы не смешивать хранение настроек и IAM | Средняя |
 
 ## Cloud-first pilot и operations

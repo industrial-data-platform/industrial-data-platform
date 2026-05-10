@@ -1,6 +1,6 @@
 # Глоссарий архитектуры
 
-Дата: 2026-05-03
+Дата: 2026-05-10
 Статус: working draft
 
 Канонический словарь терминов проекта хранится в этом документе.
@@ -10,9 +10,12 @@ LikeC4-модель в `arch/likec4/` и markdown-документы в `docs/ar
 ## Основные системы
 
 - `Edge Telemetry Agent` — продуктово-архитектурное имя периферийной системы; текущий реализованный модуль в коде — `apps/wm_edge_agent` / package `wm_edge_agent`.
-- `Monitoring & Alarm Platform` — наша центральная система, которая может разворачиваться как `self-hosted` инсталляция или в облаке/интернете, принимает события, хранит телеметрию, вычисляет `alarm` и предоставляет UI/API.
+- `Industrial Data Platform` — центральное ядро системы сбора и хранения данных: принимает события от edge agents, ведет Kafka-compatible event log, хранит telemetry/service history, управляет config registry и предоставляет read/storage boundaries для прикладных модулей.
+- `Web Monitoring Module` — отдельный прикладной модуль поверх `Industrial Data Platform`: dashboards, history views, latest values, operator read screens и read-only visualization. Текущий `Grafana` surface относится сюда.
+- `Alarm Management Module` — отдельный прикладной модуль поверх `Industrial Data Platform`: alarm rules, lifecycle, acknowledgements, mutes/operator workflow и notification routing.
+- `Monitoring & Alarm Platform` — deprecated composite boundary. Исторически этим термином называли вместе `Industrial Data Platform`, `Web Monitoring Module` и `Alarm Management Module`; в новой документации не используется как имя центральной системы.
 - `deployment parity` — архитектурный принцип проекта: `self-hosted` и `cloud` считаются двумя deployment modes одной платформы и не должны расходиться по baseline contracts, основному data path и acceptance semantics без отдельного ADR.
-- `cloud-first pilot` — первый post-MVP пилот центральной платформы в российском облаке (`VK Cloud` или `Yandex Cloud`); self-hosted/on-prem остается future deployment mode после cloud validation.
+- `cloud-first pilot` — первый post-MVP пилот `Industrial Data Platform` в российском облаке (`VK Cloud` или `Yandex Cloud`); self-hosted/on-prem остается future deployment mode после cloud validation.
 - `local Docker infra` — локальный `Docker Compose` контур разработки, integration/smoke тестов, onboarding и воспроизведения инцидентов; не production target первого пилота.
 - `internal YouTrack` — внутренний execution backlog проекта для задач, приоритетов, статусов и follow-up; не должен быть доступен первым заказчикам/партнерам с видимостью internal roadmap, commercial terms, IP/security decisions или raw backlog.
 
@@ -25,28 +28,28 @@ LikeC4-модель в `arch/likec4/` и markdown-документы в `docs/ar
 - `Point State Cache` — persistent cache последнего наблюденного и опубликованного состояния точки, sequence и качества, используемый для фильтрации изменений и warm restart.
 - `Delivery Outbox` — локальная очередь telemetry events, ожидающих надежной доставки или retry во внешний transport.
 - `status topic` — transport-specific `MQTT` сообщение о состоянии southbound source или самого publisher, например `status/connection` и `status/lwt`.
-- `Kafka Event Log` — логический Kafka-compatible event stream внутри `Monitoring & Alarm Platform`: topics для telemetry events, source config snapshots, source connection events, agent status events, ingestion errors и derived events. Не означает конкретный broker product.
+- `Kafka Event Log` — логический Kafka-compatible event stream внутри `Industrial Data Platform`: topics для telemetry events, source config snapshots, source connection events, agent status events, ingestion errors и derived events. Не означает конкретный broker product.
 - `Kafka-compatible broker runtime` — конкретная реализация broker-а, которая обслуживает `Kafka Event Log` через Kafka API. Локальный MVP использует `Apache Kafka`; `Redpanda broker` остается production/self-hosted candidate после отдельного compatibility PoC.
 - `Redpanda Connect` — connector pipeline, который читает MQTT topics через `mqtt` input, выполняет mapping/transform и пишет records в Kafka-compatible broker через `redpanda` input/output components.
 - `Redpanda broker` — Kafka-compatible broker product, который может стать runtime implementation для `Kafka Event Log` после отдельного ADR/PoC; в текущем локальном MVP broker runtime — `Apache Kafka`.
-- `Telemetry Store` — authoritative analytical store на базе `ClickHouse` для append-only telemetry events, source config snapshots, source connection history, agent status history, derived events, aggregates, rollups и immutable alarm history.
-- `Platform Store` — transactional store на базе `PostgreSQL` для конфигурации объектов, агентов, источников и точек, правил, notification policies, current alarm state, acknowledgements, mutes, audit и persistence Keycloak.
+- `Telemetry Store` — authoritative analytical store на базе `ClickHouse` для append-only telemetry events, source config snapshots, source connection history, agent status history, derived events, aggregates, rollups и immutable alarm history. `alarm_history_events_v1` является storage sink, writer/owner которого находится в `Alarm Management Module`.
+- `Platform Store` — transactional store на базе `PostgreSQL` для конфигурации объектов, агентов, источников и точек, shared platform state, module workflow state, audit и persistence Keycloak.
 - `ClickHouse` — выбранная аналитическая БД платформы для high-volume time-series/event history и Grafana/API historical queries.
 - `PostgreSQL` — выбранная транзакционная БД платформы для mutable platform state, API-конфигурации и Keycloak persistence.
 - `Telemetry Consumers` — backend workers, которые читают Kafka topics и записывают canonical telemetry events, source config snapshots, source connection history, agent status history и derived events в `Telemetry Store`.
-- `Streaming Analytics` — потоковая обработка telemetry stream для агрегатов, rollups, производных признаков и derived events для `Alarm Rule Engine`; результаты пишет в `Telemetry Store`.
-- `Grafana` — слой визуализации внутри `Monitoring & Alarm Platform`; в production-контуре читает подготовленные данные из `Telemetry Store`.
-- `Platform API` — целевая tenant-facing backend API boundary платформы; в текущем MVP она еще не является отдельным реализованным модулем.
+- `Streaming Analytics` — потоковая обработка telemetry stream для агрегатов, rollups, производных признаков и derived events для прикладных модулей; результаты пишет в `Telemetry Store`.
+- `Grafana` — текущий read-only visualization surface внутри `Web Monitoring Module`; в production-контуре читает подготовленные данные из `Telemetry Store`.
+- `Platform API` — deprecated/ambiguous umbrella term для будущих tenant-facing API. Новые API должны проектироваться как data-platform API, web-monitoring API или alarm-management API в зависимости от ownership.
 - `Config Registry` — первый реализованный backend-срез `apps/wm_config_registry` / package `wm_config_registry`: хранит tenants, assets, agents, sources, points и config revisions в PostgreSQL.
 - `Backoffice Admin UI` — внутренний operational UI на базе `SQLAdmin` для команды платформы; не доступен tenant/client users, допускает internal CRUD shortcut, а выпуск config state выполняется отдельным render action через application use cases и transactional outbox.
-- `Platform Frontend` — целевое browser-приложение, которое будет аутентифицироваться через Keycloak и работать с платформой через tenant-facing API; в текущем MVP отдельный frontend еще не реализован.
+- `Web Monitoring Frontend` — future browser-приложение модуля мониторинга, которое будет аутентифицироваться через Keycloak и работать с data-platform/read API; в текущем MVP отдельный frontend еще не реализован.
 - `Keycloak` — IAM-компонент платформы: пользователи, группы, роли, OIDC clients, sessions и JWT issuance.
 - `JWT` — access token, выпускаемый Keycloak и валидируемый будущими tenant-facing API локально по OIDC discovery/JWKS.
 - `API Gateway` — application-level gateway перед несколькими backend API; решение по нему выносится в отдельный ADR.
 - `southbound-адаптеры` — адаптеры и драйверы, через которые `wm_edge_agent` подключается вниз по стеку к полевым протоколам и локальным источникам данных, например `KNX`, `OPC UA`, `Modbus`, `SCADA`.
-- `OPC UA read-only ingestion` — следующий выбранный post-MVP protocol track: `wm_edge_agent` работает как `OPC UA client`, только считывает данные из `OPC UA server` и мапит nodes в существующую `source/point` model без управляющих команд из web-monitoring UI/API.
-- `write/control path` — в web-monitoring документации означает только управляющие команды в промышленный контур из web UI/API; не относится к техническим platform writes вроде telemetry/status storage, config revisions, outbox, audit или alarm workflow state.
-- `northbound delivery` — доставка данных вверх по стеку из `wm_edge_agent` в `Monitoring & Alarm Platform` через внешний transport, например `MQTT`.
+- `OPC UA read-only ingestion` — следующий выбранный post-MVP protocol track: `wm_edge_agent` работает как `OPC UA client`, только считывает данные из `OPC UA server` и мапит nodes в существующую `source/point` model без управляющих команд из Web Monitoring UI/API.
+- `write/control path` — в Web Monitoring документации означает только управляющие команды в промышленный контур из web UI/API; не относится к техническим platform writes вроде telemetry/status storage, config revisions, outbox, audit или alarm workflow state.
+- `northbound delivery` — доставка данных вверх по стеку из `wm_edge_agent` в `Industrial Data Platform` через внешний transport, например `MQTT`.
 
 ## Конфигурационная модель
 

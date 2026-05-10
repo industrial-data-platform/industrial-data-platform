@@ -1,5 +1,5 @@
 model {
-    extend monitoring-alarm-platform {
+    extend industrial-data-platform {
         mqtt-ingestion-gateway = container 'MQTT Ingestion Gateway' {
             description 'Принимает MQTT telemetry events и status topics от wm_edge_agent, хранит retained agent runtime/source configs для агентов, восстанавливает routing context из topic и предоставляет MQTT-поток для чтения Redpanda Connect.'
             technology 'MQTT broker / ingestion service'

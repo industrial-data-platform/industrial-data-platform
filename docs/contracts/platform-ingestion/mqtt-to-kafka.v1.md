@@ -1,10 +1,14 @@
 # `wm.platform-ingestion.mqtt-to-kafka.v1`
 
-Дата: 2026-05-02
+Дата: 2026-05-10
 Статус: working draft
 
 Этот контракт фиксирует преобразование MQTT edge boundary в canonical Kafka
-records `Monitoring & Alarm Platform`.
+records для `Industrial Data Platform`.
+
+Kafka topics и message types сохраняют существующий `wm.platform.*` prefix как
+стабильный wire contract. Этот prefix не является названием старого
+`Monitoring & Alarm Platform` boundary.
 
 ## Input
 

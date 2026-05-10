@@ -95,7 +95,7 @@ Tool/pipeline должен печатать publish summary:
 - AI-agent не обходит Kafka delivery log при выпуске edge config.
 - Любое изменение должно проходить schema validation и давать deterministic
   `config_revision`.
-- AI-agent должен учитывать, что `Monitoring & Alarm Platform` поддерживает
+- AI-agent должен учитывать, что `Industrial Data Platform` поддерживает
   `self-hosted` и `cloud` deployment modes, и не должен вводить bundle,
   contracts или workflow, которые форкают baseline между ними без отдельного
   ADR.
