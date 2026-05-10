@@ -12,7 +12,6 @@ COPY apps ./apps
 COPY libs ./libs
 COPY tools ./tools
 COPY docs ./docs
-COPY templates ./templates
 
 RUN uv sync --frozen --package idp-config-registry --no-dev
 

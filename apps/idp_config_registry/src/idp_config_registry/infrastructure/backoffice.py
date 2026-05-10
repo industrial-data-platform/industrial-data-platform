@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from importlib.resources import files
+
 from fastapi import FastAPI
 from sqladmin import Admin, BaseView, ModelView
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -44,7 +46,8 @@ def mount_backoffice(app: FastAPI, *, engine: AsyncEngine) -> Admin:
         app=app,
         engine=engine,
         base_url="/backoffice",
-        title="Web Monitoring Backoffice",
+        title="Config Registry Backoffice",
+        templates_dir=str(files("idp_config_registry").joinpath("templates")),
     )
     admin.admin.state.root_app = app
     admin.admin.add_middleware(BackofficeStateContextMiddleware)

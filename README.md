@@ -1,6 +1,6 @@
 # Industrial Data Platform
 
-[![Coverage](https://raw.githubusercontent.com/SergeyDubovitsky/wm/badges/coverage.svg)](https://github.com/SergeyDubovitsky/wm/actions/workflows/python-ci.yml)
+[![Coverage](https://raw.githubusercontent.com/SergeyDubovitsky/industrial-data-platform/badges/coverage.svg)](https://github.com/SergeyDubovitsky/industrial-data-platform/actions/workflows/python-ci.yml)
 
 Репозиторий организован как monorepo для `Edge Telemetry Agent`,
 `Industrial Data Platform`, прикладных модулей `Web Monitoring` /
@@ -64,10 +64,14 @@ deployment modes: `self-hosted` и `cloud`.
 - [`libs/idp_demo_stack/`](libs/idp_demo_stack/) — библиотека demo/scenario потока `config bundle -> Config Registry API -> outbox worker -> Kafka config delivery -> retained MQTT config -> telemetry`
 - [`tools/idp_telemetry_store/`](tools/idp_telemetry_store/) — repo-native operational tooling и migration CLI для `Industrial Data Platform Telemetry Store`
 - [`environments/`](environments/) — versioned edge profiles конкретных стендов и окружений
-- [`infra/`](infra/) — локальная инфраструктура разработки и будущие `compose`-артефакты
+- [`infra/`](infra/) — локальная Docker-инфраструктура разработки и integration-тестов
+- [`docs/contracts/`](docs/contracts/) — канонические MQTT/Kafka/ClickHouse/storage контракты
 - [`docs/architecture/`](docs/architecture/) — архитектурные документы и ADR верхнего уровня
+- [`docs/agents/`](docs/agents/) — agent workflows, roles, templates и module map
+- [`docs-site/`](docs-site/) — внутренний Starlight docs-site поверх curated markdown-документации
 - [`docs/future-ideas.md`](docs/future-ideas.md) — идеи и возможные следующие инкременты, не текущий backlog
 - [`arch/`](arch/) — LikeC4-модель и связанные материалы
+- [`tests/integration/`](tests/integration/) — end-to-end проверки локального platform slice
 
 Правило именования верхнего уровня:
 
@@ -81,7 +85,7 @@ workspace packages с `src/`, тестами и импортируемым API, 
 
 ## Code Ownership Map
 
-В этом проходе ownership разнесен без физического переименования packages:
+Текущая ownership-карта разнесена без физического переименования packages:
 
 - `Industrial Data Platform`: `apps/idp_config_registry`, `tools/idp_telemetry_store`, `infra/local` сервисы `mqtt-broker`, `kafka`, `redpanda-connect`, `kafka-connect`, `clickhouse`, `postgres`, `idp-config-registry` и `idp-config-registry-outbox-worker`.
 - `Web Monitoring Module`: `infra/local/grafana` и integration surface `Grafana -> ClickHouse read models`.

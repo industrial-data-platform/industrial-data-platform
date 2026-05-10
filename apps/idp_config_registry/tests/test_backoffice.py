@@ -1038,7 +1038,10 @@ def test_sqladmin_dependency_stays_out_of_domain_and_application_layers() -> Non
 
 def test_custom_list_template_keeps_sqladmin_bulk_action_modals() -> None:
     template = (
-        Path.cwd() / "templates" / "sqladmin" / "list.html"
+        CONFIG_REGISTRY_SRC
+        / "templates"
+        / "sqladmin"
+        / "list.html"
     ).read_text(encoding="utf-8")
 
     assert "sqladmin/modals/delete.html" in template

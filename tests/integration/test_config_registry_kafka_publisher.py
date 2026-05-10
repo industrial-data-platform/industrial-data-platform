@@ -277,7 +277,7 @@ def test_config_registry_api_container_uses_local_postgres(
     assert health == {"status": "ok"}
     assert backoffice_status == 200
     assert agent_list_status == 200
-    assert "Web Monitoring Backoffice" in backoffice_html
+    assert "Config Registry Backoffice" in backoffice_html
     assert "Собрать config" in agent_list_html
     assert "render-agent-config" in agent_list_html
     assert legacy_render_config_error.value.code == 404
