@@ -1,7 +1,10 @@
 # wm-clickhouse
 
 Repo-native ClickHouse migration CLI for the local and future production
-Telemetry Store path.
+`Industrial Data Platform Telemetry Store` path.
+
+Package name and CLI entrypoint remain compatibility identifiers:
+`wm_clickhouse` and `wm-clickhouse`.
 
 ```bash
 uv run wm-clickhouse migrate status

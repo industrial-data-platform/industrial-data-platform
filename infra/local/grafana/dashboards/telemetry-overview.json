@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "Local Grafana dashboard over ClickHouse telemetry read models.",
+  "description": "Local Web Monitoring Module dashboard over ClickHouse telemetry read models.",
   "editable": false,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,

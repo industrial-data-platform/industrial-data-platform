@@ -51,7 +51,7 @@ def create_app(
                 await dispose()
 
     app = FastAPI(
-        title="Web Monitoring Config Registry",
+        title="Industrial Data Platform Config Registry",
         version="0.1.0",
         docs_url="/docs",
         redoc_url="/redoc",

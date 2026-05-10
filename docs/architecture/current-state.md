@@ -156,7 +156,7 @@ surface как первый `Web Monitoring Module` surface.
 | Контракты данных и topic/table names | `docs/contracts/` |
 | Edge guide-документация | `apps/wm_edge_agent/docs/` |
 | Demo/agent runtime config bundle | `environments/demo-stand/wm_edge_agent/` |
-| Execution backlog, приоритеты и статусы | internal `YouTrack` |
+| Execution backlog, приоритеты и статусы | internal issue tracker |
 
 ## ADR Reading Guide
 
@@ -174,7 +174,7 @@ surface как первый `Web Monitoring Module` surface.
    cloud-first pilot и local Docker infra policy.
 8. Для backend хранения настроек платформы: `ADR-010`.
 9. Для post-MVP product/pilot governance, `OPC UA` read-only track и internal
-   `YouTrack`: `ADR-013`.
+   execution backlog: `ADR-013`.
 10. Для KNX-first MVP behavior: `ADR-001`, `ADR-002`, `ADR-003`.
 
 Если ADR и `docs/contracts/` расходятся по полям сообщения, topic/table names

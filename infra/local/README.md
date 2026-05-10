@@ -1,7 +1,8 @@
-# Локальный MQTT/Kafka стек
+# Локальный Industrial Data Platform stack
 
 Этот каталог хранит локальный docker compose стек для разработки и
-интеграционных тестов вокруг `wm_edge_agent`.
+интеграционных тестов вокруг `wm_edge_agent`, `Industrial Data Platform`
+foundation и первого `Web Monitoring Module` surface.
 
 Основной сценарий сейчас такой:
 
@@ -18,7 +19,8 @@
 - поднять `Config Registry API` как отдельный backend-контейнер
 - поднять `Config Registry Outbox Worker` как отдельный worker-контейнер
 - поднять `Kafka Connect` с `ClickHouse Kafka Connect Sink`
-- поднять `Grafana` с provisioned ClickHouse datasource/dashboard
+- поднять `Grafana` как локальный `Web Monitoring Module` surface с
+  provisioned ClickHouse datasource/dashboard
 - запаблишить config delivery records из `config.bundle.yaml` в Kafka
 - проверить поток
   `KNX-shaped telemetry -> wm_edge_agent -> MQTT -> Kafka -> ClickHouse landing`
@@ -28,6 +30,16 @@ Log` обслуживает локальный `Apache Kafka`, а `Redpanda Conn
 только как connector runtime для MQTT/Kafka projection.
 
 ## Что поднимается
+
+Ownership в этом stack:
+
+- `Industrial Data Platform`: MQTT/Kafka ingestion, Redpanda Connect
+  pipelines, Kafka Connect, ClickHouse, PostgreSQL, Config Registry API и
+  Config Registry Outbox Worker.
+- `Web Monitoring Module`: Grafana datasource/dashboard поверх ClickHouse read
+  models.
+- `Demo/integration glue`: seed/publish helpers из `wm-demo-stack`.
+- `Alarm Management Module`: runtime service пока не представлен в local stack.
 
 - `mqtt-broker` — локальный `Eclipse Mosquitto`
 - `kafka` — локальный single-node `Apache Kafka` в KRaft mode
@@ -52,7 +64,7 @@ Log` обслуживает локальный `Apache Kafka`, а `Redpanda Conn
   `ClickHouse Kafka Connect Sink`
 - `kafka-ui` — web UI для просмотра Kafka topics/messages
 - `mqttx-web` — web MQTT-клиент для ручной подписки на MQTT topics
-- `grafana` — локальный dashboard над ClickHouse read models
+- `grafana` — локальный `Web Monitoring Module` dashboard над ClickHouse read models
 
 ## Быстрый старт
 
@@ -65,7 +77,7 @@ Log` обслуживает локальный `Apache Kafka`, а `Redpanda Conn
 docker compose -f infra/local/compose.yaml --env-file .env up -d mqtt-broker
 ```
 
-Полный local platform slice:
+Полный local `Industrial Data Platform` slice с Web Monitoring surface:
 
 ```bash
 ./infra/local/up-platform.sh

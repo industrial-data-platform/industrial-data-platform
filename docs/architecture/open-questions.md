@@ -38,8 +38,8 @@
 - `ADR-013` фиксирует post-MVP product/pilot direction: первый пилот
   cloud-first в российском облаке (`VK Cloud` или `Yandex Cloud`), local Docker
   infra остается обязательной для разработки и тестов, следующий protocol track
-  — `OPC UA read-only ingestion`, а `YouTrack` используется как internal-only
-  execution backlog.
+  — `OPC UA read-only ingestion`, а internal issue tracker используется как
+  internal-only execution backlog.
 - Полная `Industrial Data Platform` как `MQTT Ingestion Gateway`,
   `Redpanda Connect`, `Kafka-compatible Broker Runtime`, `Kafka Event Log`,
   storage writer/Kafka Connect, `Streaming Analytics`, `Telemetry Store`,
@@ -98,7 +98,7 @@
 | --- | --- | --- |
 | Что выбираем для первого cloud pilot: `VK Cloud` или `Yandex Cloud`? | `ADR-013` фиксирует российский cloud-first pilot, но конкретный provider влияет на networking, managed PostgreSQL/ClickHouse/Kafka options, secrets, observability и стоимость | Критично |
 | Какие managed services допустимы в cloud pilot, а какие компоненты держим как self-managed containers для parity с future self-hosted? | Provider optimization не должна менять contracts, migrations и acceptance tests, но может снизить операционную нагрузку первого пилота | Высокая |
-| Как customer feedback из пилота попадает в internal `YouTrack`: вручную через triage или через отдельный customer-facing project/helpdesk/view? | `ADR-013` запрещает внешний доступ к internal backlog, но feedback loop нужно сделать удобным и безопасным | Средняя |
+| Как customer feedback из пилота попадает в internal issue tracker: вручную через triage или через отдельный customer-facing project/helpdesk/view? | `ADR-013` запрещает внешний доступ к internal backlog, но feedback loop нужно сделать удобным и безопасным | Средняя |
 
 ## MQTT delivery и безопасность
 
@@ -130,7 +130,7 @@
 ## Ближайшие решения
 
 - подтвердить, что текущий `demo-stand` конфиг и ETS-derived артефакты являются каноническим source of truth для первого `KNX`-среза
-- проверить доступы internal `YouTrack` и держать `Post-MVP production foundation`
+- проверить доступы internal issue tracker и держать `Post-MVP production foundation`
   backlog синхронизированным с `ADR-013`
 - зафиксировать production MQTT broker, требования по `TLS`/`ACL` и способ хранения секретов
 - зафиксировать contract и limits для config delivery: bundle layout, revision generation, Kafka delivery record, retained projection order и rollback semantics

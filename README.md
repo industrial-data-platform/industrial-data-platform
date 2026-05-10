@@ -59,10 +59,10 @@ deployment modes: `self-hosted` и `cloud`.
 
 - [`apps/wm_edge_agent/`](apps/wm_edge_agent/) — edge runtime, example-конфиги и runtime-guides
 - [`apps/wm_knx_demo/`](apps/wm_knx_demo/) — KNX demo utilities
-- [`apps/wm_config_registry/`](apps/wm_config_registry/) — первый backend-срез Config Registry
+- [`apps/wm_config_registry/`](apps/wm_config_registry/) — первый backend-срез `Industrial Data Platform Config Registry`
 - [`libs/wm_knx_parser/`](libs/wm_knx_parser/) — библиотека для разбора ETS `.knxproj`
 - [`libs/wm_demo_stack/`](libs/wm_demo_stack/) — библиотека demo/scenario потока `config bundle -> Config Registry API -> outbox worker -> Kafka config delivery -> retained MQTT config -> telemetry`
-- [`tools/wm_clickhouse_migrations/`](tools/wm_clickhouse_migrations/) — repo-native operational tooling и migration CLI
+- [`tools/wm_clickhouse_migrations/`](tools/wm_clickhouse_migrations/) — repo-native operational tooling и migration CLI для `Industrial Data Platform Telemetry Store`
 - [`environments/`](environments/) — versioned edge profiles конкретных стендов и окружений
 - [`infra/`](infra/) — локальная инфраструктура разработки и будущие `compose`-артефакты
 - [`docs/architecture/`](docs/architecture/) — архитектурные документы и ADR верхнего уровня
@@ -79,21 +79,45 @@ deployment modes: `self-hosted` и `cloud`.
 workspace packages с `src/`, тестами и импортируемым API, а `wm_demo_stack`
 используется в integration-тестах как библиотека, а не только как CLI.
 
+## Code Ownership Map
+
+В этом проходе ownership разнесен без физического переименования packages:
+
+- `Industrial Data Platform`: `apps/wm_config_registry`, `tools/wm_clickhouse_migrations`, `infra/local` сервисы `mqtt-broker`, `kafka`, `redpanda-connect`, `kafka-connect`, `clickhouse`, `postgres`, `wm-config-registry` и `wm-config-registry-outbox-worker`.
+- `Web Monitoring Module`: `infra/local/grafana` и integration surface `Grafana -> ClickHouse read models`.
+- `Edge Telemetry Agent`: `apps/wm_edge_agent`, edge profiles в `environments/` и KNX/parser tooling.
+- `Demo/integration glue`: `libs/wm_demo_stack`; это не production module boundary.
+- `Alarm Management Module`: runtime package пока отсутствует и будет добавлен отдельным инкрементом после выбора alarm use cases.
+
+## Working With Agents
+
+Для AI-агентов tracked entrypoint находится в [`AGENTS.md`](AGENTS.md).
+Порядок чтения:
+
+1. root [`AGENTS.md`](AGENTS.md)
+2. ближайший scoped `AGENTS.md` в затронутой директории
+3. [`docs/agents/module-map.yaml`](docs/agents/module-map.yaml)
+4. нужные contracts, ADR и LikeC4 source files
+
+`CLAUDE.md` и `.github/copilot-instructions.md` являются compatibility bridges
+и не должны дублировать полную политику репозитория. Локальные scratch runs
+остаются в `.local/` и не трекаются git.
+
 ## Task Tracking
 
-Internal `YouTrack` — source of truth для текущих задач, приоритетов и статуса
-выполнения.
+Internal issue tracker — source of truth для текущих задач, приоритетов и
+статуса выполнения.
 
-- internal `YouTrack` хранит execution backlog, приоритеты, статусы,
+- internal issue tracker хранит execution backlog, приоритеты, статусы,
   follow-up задачи и future analysis
 - external customers/partners не должны иметь доступ к internal roadmap,
   commercial terms, product/IP strategy, security decisions и raw backlog
-- customer feedback переносится в internal `YouTrack` вручную или через
+- customer feedback переносится в internal issue tracker вручную или через
   отдельный customer-facing project/helpdesk/view без internal fields
 - git-документация хранит архитектуру, ADR, product boundaries, открытые вопросы
   и future ideas
 - живые execution plans не поддерживаются в репозитории, чтобы не расходиться с
-  internal `YouTrack`
+  internal issue tracker
 
 ## Python Workspace
 

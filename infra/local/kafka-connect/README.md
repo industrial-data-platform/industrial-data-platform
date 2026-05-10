@@ -1,7 +1,8 @@
 # Local Kafka Connect
 
 This directory contains the local Kafka Connect image and versioned connector
-config for the `Kafka -> ClickHouse` Telemetry Store path.
+config for the `Kafka -> ClickHouse` Industrial Data Platform Telemetry Store
+path.
 
 The connector is installed into the image at build time:
 

@@ -6,7 +6,7 @@
 Примечание 2026-05-10: `ADR-014` уточняет продуктовую архитектуру: ядро теперь
 называется `Industrial Data Platform`, а web monitoring и alarms являются
 отдельными модулями поверх него. Решения этого ADR по cloud-first pilot,
-OPC UA read-only ingestion, local Docker infra и YouTrack governance остаются
+OPC UA read-only ingestion, local Docker infra и issue tracker governance остаются
 действующими.
 
 ## Контекст
@@ -28,8 +28,8 @@ OPC UA read-only ingestion, local Docker infra и YouTrack governance остаю
 - локальная Docker-инфра уже стала критичной для разработки и integration
   проверки;
 - последние архитектурные и продуктовые решения принимались в документации и
-  переписке, а не через `YouTrack`;
-- в текущем `YouTrack` есть внешние участники/первые заказчики, поэтому его
+  переписке, а не через internal issue tracker;
+- в текущем issue tracker есть внешние участники/первые заказчики, поэтому его
   нельзя без ограничений использовать для внутреннего backlog, стратегии,
   коммерции и security decisions.
 
@@ -136,16 +136,17 @@ outbox records, audit records, alarm state и operator workflow state.
 Термин `M1` не принимается как официальный milestone. Для документации
 используется формулировка `post-MVP production-foundation increment`.
 
-### Documentation и YouTrack governance
+### Documentation и issue tracker governance
 
 Принимается гибридная модель source of truth:
 
 - git-документация и ADR являются source of truth для архитектурных решений,
   product boundaries, long-lived rationale, contracts и open questions;
-- internal `YouTrack` является source of truth для execution backlog,
+- internal issue tracker является source of truth для execution backlog,
   приоритетов, статусов, follow-up задач и будущего анализа выполнения.
 
-`YouTrack` для execution backlog должен быть internal-only для команды проекта.
+Issue tracker для execution backlog должен быть internal-only для команды
+проекта.
 
 Первые заказчики, партнеры и внешние участники не должны иметь доступ к
 внутреннему project/backlog, где видны:
@@ -159,14 +160,14 @@ outbox records, audit records, alarm state и operator workflow state.
 
 Для внешней обратной связи допускаются только безопасные варианты:
 
-- удалить внешних участников из internal `YouTrack` project и переносить их
+- удалить внешних участников из internal issue tracker project и переносить их
   feedback вручную;
 - создать отдельный customer-facing project/helpdesk/view только для
   feedback/requests/bugs без internal fields и без видимости внутреннего
   roadmap.
 
-После принятия этого ADR нужно backfill-нуть последние решения в internal
-`YouTrack`.
+После принятия этого ADR нужно backfill-нуть последние решения в internal issue
+tracker.
 
 Минимальный backfill:
 
@@ -180,18 +181,18 @@ outbox records, audit records, alarm state и operator workflow state.
 - alarm lifecycle minimum;
 - `ClickHouse` load PoC;
 - `Config Registry` / future `Platform API` scope;
-- note that these decisions were made before `YouTrack` was re-aligned and are
+- note that these decisions were made before the issue tracker was re-aligned and are
   now backfilled from ADR/docs.
 
 ## Рассмотренные варианты
 
 | Вариант | Решение |
 | --- | --- |
-| Только git-документация без `YouTrack` | Отклонено. Не дает удобного execution backlog, статусов, follow-up задач и анализа выполнения. |
-| `YouTrack` как единый source of truth для всего, включая ADR/product strategy | Отклонено. Архитектурные решения и long-lived rationale должны жить рядом с кодом и контрактами. |
-| Один общий `YouTrack` для внутренней команды и первых заказчиков | Отклонено. Внешние участники не должны видеть internal roadmap, commercial terms, IP strategy, security decisions и незрелый backlog. |
-| Internal-only `YouTrack` + git docs/ADR | Принято. Разводит execution management и архитектурную память без утечки внутренней информации. |
-| Customer-facing `YouTrack` project/helpdesk поверх internal project | Допустимо. Только если видимость строго ограничена feedback/requests/bugs и нет доступа к internal fields/backlog. |
+| Только git-документация без internal issue tracker | Отклонено. Не дает удобного execution backlog, статусов, follow-up задач и анализа выполнения. |
+| Issue tracker как единый source of truth для всего, включая ADR/product strategy | Отклонено. Архитектурные решения и long-lived rationale должны жить рядом с кодом и контрактами. |
+| Один общий issue tracker для внутренней команды и первых заказчиков | Отклонено. Внешние участники не должны видеть internal roadmap, commercial terms, IP strategy, security decisions и незрелый backlog. |
+| Internal-only issue tracker + git docs/ADR | Принято. Разводит execution management и архитектурную память без утечки внутренней информации. |
+| Customer-facing issue tracker project/helpdesk поверх internal project | Допустимо. Только если видимость строго ограничена feedback/requests/bugs и нет доступа к internal fields/backlog. |
 
 ## Последствия
 
@@ -206,14 +207,14 @@ outbox records, audit records, alarm state и operator workflow state.
 
 Отрицательные:
 
-- нужно перенастроить доступы в `YouTrack`;
+- нужно перенастроить доступы в internal issue tracker;
 - нужно вручную backfill-нуть последние решения в backlog;
 - customer-facing feedback workflow потребует отдельной дисциплины triage;
 - provider selection `VK Cloud` vs `Yandex Cloud` остается отдельной задачей.
 
 ## Проверки принятия
 
-- README говорит про internal `YouTrack`, а не про общий `YouTrack` для всех
+- README говорит про internal issue tracker, а не про общий issue tracker для всех
   участников.
 - `docs/architecture/open-questions.md` не держит как открытые те решения,
   которые приняты этим ADR.
@@ -221,7 +222,7 @@ outbox records, audit records, alarm state и operator workflow state.
   self-hosted/on-prem deployment.
 - `OPC UA` описан как read-only southbound ingestion без управляющих команд из
   web-monitoring UI/API, а не как `OPC UA server` mode web-monitoring platform.
-- В internal `YouTrack` создан или обновлен backlog по минимальному backfill
+- В internal issue tracker создан или обновлен backlog по минимальному backfill
   списку из этого ADR.
 - Внешние участники не имеют доступа к internal roadmap/security/commercial/IP
-  материалам в `YouTrack`.
+  материалам в internal issue tracker.

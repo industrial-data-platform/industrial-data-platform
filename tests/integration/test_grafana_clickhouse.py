@@ -8,7 +8,11 @@ from typing import Any
 
 import pytest
 
-pytestmark = [pytest.mark.integration, pytest.mark.integration_grafana]
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.integration_grafana,
+    pytest.mark.integration_web_monitoring,
+]
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DASHBOARD_FILE = (
     REPO_ROOT / "infra" / "local" / "grafana" / "dashboards" / "telemetry-overview.json"

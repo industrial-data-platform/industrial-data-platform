@@ -51,6 +51,8 @@ markers = [
     "integration_storage: Kafka to ClickHouse storage integration checks",
     "integration_config_delivery: Config Registry to Kafka/MQTT delivery checks",
     "integration_grafana: Grafana and ClickHouse dashboard integration checks",
+    "integration_data_platform: Industrial Data Platform integration checks",
+    "integration_web_monitoring: Web Monitoring Module integration checks",
 ]
 
 [tool.ruff]

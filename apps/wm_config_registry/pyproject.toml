@@ -1,7 +1,7 @@
 [project]
 name = "wm-config-registry"
 version = "0.1.0"
-description = "Configuration registry service for web-monitoring"
+description = "Industrial Data Platform configuration registry service"
 readme = "README.md"
 authors = [
     { name = "srgi0", email = "dss181@gmail.com" }

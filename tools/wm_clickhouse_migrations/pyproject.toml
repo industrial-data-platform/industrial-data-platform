@@ -1,7 +1,7 @@
 [project]
 name = "wm-clickhouse"
 version = "0.1.0"
-description = "ClickHouse migration tooling for the web-monitoring platform"
+description = "ClickHouse migration tooling for the Industrial Data Platform Telemetry Store"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = []

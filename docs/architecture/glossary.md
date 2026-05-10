@@ -17,7 +17,7 @@ LikeC4-модель в `arch/likec4/` и markdown-документы в `docs/ar
 - `deployment parity` — архитектурный принцип проекта: `self-hosted` и `cloud` считаются двумя deployment modes одной платформы и не должны расходиться по baseline contracts, основному data path и acceptance semantics без отдельного ADR.
 - `cloud-first pilot` — первый post-MVP пилот `Industrial Data Platform` в российском облаке (`VK Cloud` или `Yandex Cloud`); self-hosted/on-prem остается future deployment mode после cloud validation.
 - `local Docker infra` — локальный `Docker Compose` контур разработки, integration/smoke тестов, onboarding и воспроизведения инцидентов; не production target первого пилота.
-- `internal YouTrack` — внутренний execution backlog проекта для задач, приоритетов, статусов и follow-up; не должен быть доступен первым заказчикам/партнерам с видимостью internal roadmap, commercial terms, IP/security decisions или raw backlog.
+- `internal issue tracker` — внутренний execution backlog проекта для задач, приоритетов, статусов и follow-up; не должен быть доступен первым заказчикам/партнерам с видимостью internal roadmap, commercial terms, IP/security decisions или raw backlog.
 
 ## Домен и доставка
 

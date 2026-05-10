@@ -29,7 +29,11 @@ from wm_config_registry.infrastructure.postgres.unit_of_work import (
 from wm_config_registry.main import create_app
 from wm_config_registry.settings import ConfigRegistrySettings
 
-pytestmark = [pytest.mark.integration, pytest.mark.integration_config_delivery]
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.integration_config_delivery,
+    pytest.mark.integration_data_platform,
+]
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CONTRACT_DIR = REPO_ROOT / "docs" / "contracts" / "wm-edge-agent" / "schemas"

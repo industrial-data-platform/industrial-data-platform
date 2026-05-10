@@ -3,6 +3,10 @@
 Внутренняя библиотека для локального demo/scenario потока
 `config bundle -> Config Registry API -> outbox worker -> Kafka config delivery -> retained MQTT config -> telemetry`.
 
+Это demo/integration glue, а не production module boundary. Production
+ownership остается у `Industrial Data Platform`, `Edge Telemetry Agent` и
+прикладных модулей поверх них.
+
 Содержит:
 
 - модели и topic scope для demo-данных

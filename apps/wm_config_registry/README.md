@@ -1,7 +1,11 @@
 # wm-config-registry
 
-Первый backend-срез `Monitoring & Alarm Platform`: internal `Config Registry`
-для tenants/assets/agents/sources/points и Kafka-first config delivery flow.
+Первый backend-срез `Industrial Data Platform Config Registry` для
+tenants/assets/agents/sources/points и Kafka-first config delivery flow.
+
+Package name, import path, CLI entrypoint и Docker service остаются
+compatibility identifiers: `wm_config_registry`, `wm-config-registry`,
+`wm-config-registry` / `wm-config-registry-outbox-worker`.
 
 Текущий инкремент реализует минимальный clean architecture baseline:
 

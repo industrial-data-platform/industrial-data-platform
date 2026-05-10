@@ -32,7 +32,7 @@ ADR остаются журналом архитектурных решений.
 | `ADR-010-platform-configuration-backend.md` | accepted | Фиксирует первый backend-срез настроек: `Config Registry` на FastAPI async + SQLAlchemy + PostgreSQL, clean architecture и модель данных по edge config contracts. |
 | `ADR-011-internal-backoffice-admin-ui.md` | accepted | Фиксирует внутреннюю backoffice-админку на SQLAdmin для Config Registry; write operations обязаны идти через application use cases и transactional outbox. |
 | `ADR-012-kafka-redpanda-runtime-baseline.md` | accepted | Разделяет логический `Kafka Event Log` и broker runtime; оставляет локальный MVP на Apache Kafka + Redpanda Connect + Kafka Connect, а Redpanda broker фиксирует как PoC-кандидат. |
-| `ADR-013-post-mvp-product-and-execution-governance.md` | accepted | Фиксирует post-MVP product/pilot direction: cloud-first российский пилот, local Docker infra для разработки, `OPC UA` read-only ingestion и internal-only `YouTrack` execution backlog. |
+| `ADR-013-post-mvp-product-and-execution-governance.md` | accepted | Фиксирует post-MVP product/pilot direction: cloud-first российский пилот, local Docker infra для разработки, `OPC UA` read-only ingestion и internal-only issue tracker / execution backlog. |
 | `ADR-014-data-platform-core-and-modules.md` | accepted | Переименовывает центральное ядро в `Industrial Data Platform` и отделяет `Web Monitoring Module` и `Alarm Management Module` без изменения runtime/contract identifiers. |
 
 ## Быстрый выбор ADR
@@ -49,7 +49,7 @@ ADR остаются журналом архитектурных решений.
 | Как проектировать backend хранения настроек платформы? | `ADR-010` |
 | Как быстро дать внутреннюю админку для настроек? | `ADR-011` |
 | Что выбираем между Apache Kafka, Redpanda broker, Redpanda Connect и Kafka Connect? | `ADR-012` |
-| Что принято после MVP baseline по пилоту, cloud/local infra, `OPC UA` и `YouTrack`? | `ADR-013` |
+| Что принято после MVP baseline по пилоту, cloud/local infra, `OPC UA` и issue tracker governance? | `ADR-013` |
 | Где граница между data platform, web monitoring и alarms? | `ADR-014` |
 | Почему monorepo? | `ADR-006` |
 
