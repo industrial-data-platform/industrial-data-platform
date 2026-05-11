@@ -149,7 +149,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: ["idp-config-registry", "serve"]
+    command: ["idp-config-registry", "serve", "--reload"]
     ports:
       - "${CONFIG_REGISTRY_PORT:-8000}:8000"
     environment:
@@ -157,6 +157,10 @@ services:
       CONFIG_REGISTRY_PORT: 8000
       CONFIG_REGISTRY_INTERNAL_MODE: ${CONFIG_REGISTRY_INTERNAL_MODE:-true}
       CONFIG_REGISTRY_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-idp}:${POSTGRES_PASSWORD:-change-me-local-postgres}@postgres:5432/${POSTGRES_DB:-idp_config_registry}
+      PYTHONPATH: /app/apps/idp_config_registry/src
+    volumes:
+      - ../../apps/idp_config_registry:/app/apps/idp_config_registry
+      - ../../docs/contracts:/app/docs/contracts:ro
 
   idp-config-registry-outbox-worker:
     build:

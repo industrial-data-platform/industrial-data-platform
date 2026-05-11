@@ -151,6 +151,34 @@ class SeedSummary:
         }
 
 
+@dataclass(frozen=True)
+class DeleteSummary:
+    tenant_id: str
+    asset_id: str
+    agent_id: str
+    reset: ResetSummary
+    entries: tuple[SeedEntry, ...]
+
+    @property
+    def counts(self) -> dict[str, int]:
+        return dict(Counter(entry.action for entry in self.entries))
+
+    @property
+    def ok(self) -> bool:
+        return not any(entry.action in {"drift", "error"} for entry in self.entries)
+
+    def to_dict(self) -> JsonObject:
+        return {
+            "ok": self.ok,
+            "tenant_id": self.tenant_id,
+            "asset_id": self.asset_id,
+            "agent_id": self.agent_id,
+            "counts": self.counts,
+            "reset": self.reset.to_dict(),
+            "entries": [entry.to_dict() for entry in self.entries],
+        }
+
+
 class ConfigRegistrySeeder:
     def __init__(
         self,
@@ -348,6 +376,40 @@ class ConfigRegistrySeeder:
             render_response=render_response,
         )
 
+    def delete_generated(
+        self,
+        model: SyntheticModel,
+        *,
+        config_registry_url: str,
+    ) -> DeleteSummary:
+        reset_summary = self._reset_policy.evaluate(
+            model,
+            config_registry_url=config_registry_url,
+        )
+        reset_summary, reset_entries = self._apply_config_registry_reset(
+            model,
+            reset_summary,
+        )
+        entries = list(reset_entries)
+        if not entries:
+            config_registry_reset = _target_by_name(reset_summary, "config_registry")
+            entries.append(
+                SeedEntry(
+                    action="deleted",
+                    record_type="registry_graph",
+                    record_id=model.agent.agent_id,
+                    path=_registry_graph_reset_path(model),
+                    detail=config_registry_reset.detail,
+                )
+            )
+        return DeleteSummary(
+            tenant_id=model.tenant.tenant_id,
+            asset_id=model.asset.asset_id,
+            agent_id=model.agent.agent_id,
+            reset=reset_summary,
+            entries=tuple(entries),
+        )
+
     def _create_or_match(
         self,
         *,
@@ -426,18 +488,7 @@ class ConfigRegistrySeeder:
         if not reset_summary.enabled:
             return reset_summary, ()
 
-        reset_path = (
-            _path(
-                "tenants",
-                model.tenant.tenant_id,
-                "assets",
-                model.asset.asset_id,
-                "agents",
-                model.agent.agent_id,
-                "registry-graph",
-            )
-            + "?delete_empty_asset=true&delete_empty_tenant=true"
-        )
+        reset_path = _registry_graph_reset_path(model)
         entries: list[SeedEntry] = []
         deleted = 0
         try:
@@ -563,6 +614,28 @@ def _registry_graph_records_deleted(response: JsonObject) -> int:
         if isinstance(value, int):
             total += value
     return total
+
+
+def _registry_graph_reset_path(model: SyntheticModel) -> str:
+    return (
+        _path(
+            "tenants",
+            model.tenant.tenant_id,
+            "assets",
+            model.asset.asset_id,
+            "agents",
+            model.agent.agent_id,
+            "registry-graph",
+        )
+        + "?delete_empty_asset=true&delete_empty_tenant=true"
+    )
+
+
+def _target_by_name(summary: ResetSummary, name: str) -> ResetTargetSummary:
+    for target in summary.targets:
+        if target.name == name:
+            return target
+    raise ConfigRegistryError(f"Reset target {name!r} was not planned")
 
 
 def _has_drift_or_error(entries: list[SeedEntry]) -> bool:

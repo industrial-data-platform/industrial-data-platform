@@ -8,9 +8,13 @@ ENV PATH="/app/.venv/bin:${PATH}" \
     UV_LINK_MODE=copy
 
 COPY pyproject.toml uv.lock README.md ./
-COPY apps ./apps
-COPY libs ./libs
-COPY tools ./tools
+COPY apps/edge_telemetry_agent ./apps/edge_telemetry_agent
+COPY apps/idp_config_registry ./apps/idp_config_registry
+COPY apps/knx_demo ./apps/knx_demo
+COPY libs/idp_demo_stack ./libs/idp_demo_stack
+COPY libs/idp_synthetic_config ./libs/idp_synthetic_config
+COPY libs/knx_project_parser ./libs/knx_project_parser
+COPY tools/idp_telemetry_store ./tools/idp_telemetry_store
 COPY docs ./docs
 
 RUN uv sync --frozen --package idp-config-registry --no-dev

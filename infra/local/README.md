@@ -101,6 +101,11 @@ docker compose -f infra/local/compose.yaml --env-file .env up -d mqtt-broker
 - `MQTTX Web`: [http://localhost:8081](http://localhost:8081)
 - `Grafana`: [http://localhost:3000](http://localhost:3000)
 
+Контейнер `idp-config-registry` в local stack монтирует исходники
+`apps/idp_config_registry` из рабочей копии и запускает FastAPI через
+`idp-config-registry serve --reload`, поэтому изменения Python-кода
+подхватываются без пересборки image.
+
 Сервисные endpoint и порты:
 
 - `MQTT broker`: `mqtt://localhost:1883`
