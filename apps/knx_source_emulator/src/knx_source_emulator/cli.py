@@ -5,10 +5,17 @@ import asyncio
 import json
 import logging
 import sys
+from dataclasses import replace
 from typing import Sequence, TextIO
 
-from idp_synthetic_config.cli import main as synthetic_config_main
+from idp_synthetic_config.config_registry_seeder import (
+    ConfigRegistryHttpClient,
+    ConfigRegistrySeeder,
+    SeedSummary,
+)
 from idp_synthetic_config.generator import GeneratorOptions, generate_synthetic_config
+from idp_synthetic_config.models import SyntheticModel
+from idp_synthetic_config.reset import ResetPolicy
 from knx_source_emulator.plan import build_emulator_plan
 from knx_source_emulator.server import KnxSourceEmulatorServer
 
@@ -30,12 +37,9 @@ def main(
         if args.command == "run":
             return asyncio.run(_handle_run(args, out))
         if args.command == "seed-config":
-            return _handle_seed_config(args)
+            return _handle_seed_config(args, out)
         if args.command == "start":
-            seed_exit = _handle_seed_config(args)
-            if seed_exit != 0:
-                return seed_exit
-            return asyncio.run(_handle_run(args, out))
+            return asyncio.run(_handle_start(args, out))
     except (OSError, ValueError, RuntimeError) as exc:
         print(f"ERROR: {exc}", file=err)
         return 1
@@ -54,12 +58,7 @@ def _parser() -> argparse.ArgumentParser:
 
     run = subparsers.add_parser("run", help="Run TCP device emulator")
     _add_common_args(run)
-    run.add_argument(
-        "--duration-seconds",
-        type=float,
-        default=None,
-        help="Stop after this duration; run until interrupted when omitted.",
-    )
+    _add_runtime_args(run)
 
     seed = subparsers.add_parser(
         "seed-config",
@@ -69,13 +68,19 @@ def _parser() -> argparse.ArgumentParser:
     seed.add_argument("--config-registry-url", default="http://localhost:8000")
     seed.add_argument("--no-reset", action="store_true")
     seed.add_argument("--allow-destructive-reset", action="store_true")
+    seed.add_argument("--config-revision", default=None)
+    seed.add_argument("--issued-at", default=None)
+    seed.add_argument("--timeout-seconds", type=float, default=30.0)
 
     start = subparsers.add_parser("start", help="Seed config, then run emulator")
     _add_common_args(start)
     start.add_argument("--config-registry-url", default="http://localhost:8000")
     start.add_argument("--no-reset", action="store_true")
     start.add_argument("--allow-destructive-reset", action="store_true")
-    start.add_argument("--duration-seconds", type=float, default=None)
+    start.add_argument("--config-revision", default=None)
+    start.add_argument("--issued-at", default=None)
+    start.add_argument("--timeout-seconds", type=float, default=30.0)
+    _add_runtime_args(start)
 
     return parser
 
@@ -100,6 +105,20 @@ def _add_common_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--log-level", default="INFO")
 
 
+def _add_runtime_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--duration-seconds",
+        type=float,
+        default=None,
+        help="Stop after this duration; run until interrupted when omitted.",
+    )
+    parser.add_argument(
+        "--forever",
+        action="store_true",
+        help="Run until interrupted; explicit form of omitting --duration-seconds.",
+    )
+
+
 def _handle_plan(args: argparse.Namespace, stdout: TextIO) -> int:
     del args.dry_run
     model = generate_synthetic_config(_options(args))
@@ -116,6 +135,7 @@ def _handle_plan(args: argparse.Namespace, stdout: TextIO) -> int:
 
 
 async def _handle_run(args: argparse.Namespace, stdout: TextIO) -> int:
+    duration_seconds = _runtime_duration_seconds(args)
     model = generate_synthetic_config(_options(args))
     plan = build_emulator_plan(
         model,
@@ -125,39 +145,61 @@ async def _handle_run(args: argparse.Namespace, stdout: TextIO) -> int:
         interval_seconds=args.interval_seconds,
     )
     server = KnxSourceEmulatorServer(plan, seed=args.seed)
-    if args.duration_seconds is None:
-        async with server:
-            await asyncio.Event().wait()
-    else:
-        await server.serve_for(args.duration_seconds)
-    payload = server.stats.to_dict()
-    if server._server is not None and server._server.sockets:
+    async with server:
         host, port = server.bound_address
-        payload.update({"host": host, "port": port})
+        await _wait_for_runtime_duration(duration_seconds)
+    payload = server.stats.to_dict()
+    payload.update({"host": host, "port": port})
     json.dump(payload, stdout, ensure_ascii=False, indent=2)
     stdout.write("\n")
     return 0
 
 
-def _handle_seed_config(args: argparse.Namespace) -> int:
-    seed_args = [
-        "seed",
-        "--devices",
-        str(args.devices),
-        "--tags-per-device",
-        str(args.tags_per_device),
-        "--source-id",
-        args.source_id,
-        "--seed",
-        str(args.seed),
-        "--config-registry-url",
-        args.config_registry_url,
-    ]
-    if args.no_reset:
-        seed_args.append("--no-reset")
-    if args.allow_destructive_reset:
-        seed_args.append("--allow-destructive-reset")
-    return synthetic_config_main(seed_args)
+def _handle_seed_config(args: argparse.Namespace, stdout: TextIO) -> int:
+    if args.port == 0:
+        raise ValueError("seed-config requires a concrete --port; use start with --port 0")
+    model = _model_with_endpoint(
+        generate_synthetic_config(_options(args)),
+        host=args.host,
+        port=args.port,
+    )
+    summary = _seed_model(args, model)
+    _write_summary(summary, stdout)
+    return 0 if summary.ok else 1
+
+
+async def _handle_start(args: argparse.Namespace, stdout: TextIO) -> int:
+    duration_seconds = _runtime_duration_seconds(args)
+    model = generate_synthetic_config(_options(args))
+    plan = build_emulator_plan(
+        model,
+        host=args.host,
+        port=args.port,
+        source_id=args.source_id,
+        interval_seconds=args.interval_seconds,
+    )
+    server = KnxSourceEmulatorServer(plan, seed=args.seed)
+    async with server:
+        host, port = server.bound_address
+        summary = _seed_model(
+            args,
+            _model_with_endpoint(model, host=host, port=port),
+        )
+        if not summary.ok:
+            _write_summary(summary, stdout)
+            return 1
+        await _wait_for_runtime_duration(duration_seconds)
+    payload = server.stats.to_dict()
+    payload.update(
+        {
+            "host": host,
+            "port": port,
+            "seed_config": summary.to_dict(),
+        }
+    )
+    json.dump(payload, stdout, ensure_ascii=False, indent=2)
+    stdout.write("\n")
+    return 0
 
 
 def _options(args: argparse.Namespace) -> GeneratorOptions:
@@ -167,6 +209,62 @@ def _options(args: argparse.Namespace) -> GeneratorOptions:
         source_id=args.source_id,
         seed=args.seed,
     )
+
+
+def _runtime_duration_seconds(args: argparse.Namespace) -> float | None:
+    if args.forever and args.duration_seconds is not None:
+        raise ValueError("--forever cannot be combined with --duration-seconds")
+    return args.duration_seconds
+
+
+async def _wait_for_runtime_duration(duration_seconds: float | None) -> None:
+    if duration_seconds is None:
+        await asyncio.Event().wait()
+    else:
+        await asyncio.sleep(duration_seconds)
+
+
+def _model_with_endpoint(model: SyntheticModel, *, host: str, port: int) -> SyntheticModel:
+    if port == 0:
+        raise ValueError("source config endpoint port must be bound before seeding")
+    source = model.sources[0]
+    updated_source = replace(
+        source,
+        connection_json={
+            **source.connection_json,
+            "mode": "synthetic",
+            "host": host,
+            "port": port,
+            "gateway_ip": host,
+            "gateway_port": port,
+        },
+    )
+    return replace(model, sources=(updated_source,))
+
+
+def _seed_model(args: argparse.Namespace, model: SyntheticModel) -> SeedSummary:
+    reset_policy = ResetPolicy(
+        enabled=not args.no_reset,
+        allow_destructive_reset=args.allow_destructive_reset,
+    )
+    seeder = ConfigRegistrySeeder(
+        ConfigRegistryHttpClient(
+            args.config_registry_url,
+            timeout_seconds=args.timeout_seconds,
+        ),
+        reset_policy=reset_policy,
+    )
+    return seeder.seed(
+        model,
+        config_registry_url=args.config_registry_url,
+        config_revision=args.config_revision,
+        issued_at=args.issued_at,
+    )
+
+
+def _write_summary(summary: SeedSummary, stdout: TextIO) -> None:
+    json.dump(summary.to_dict(), stdout, ensure_ascii=False, indent=2)
+    stdout.write("\n")
 
 
 if __name__ == "__main__":  # pragma: no cover

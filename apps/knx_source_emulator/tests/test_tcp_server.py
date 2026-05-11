@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import json
+from dataclasses import replace
 
 import pytest
 
@@ -104,6 +105,39 @@ async def test_tcp_server_accepts_writes_for_command_points_only() -> None:
     assert server.stats.writes == 1
 
 
+async def test_tcp_server_respects_per_point_periodic_intervals() -> None:
+    model = generate_synthetic_config(
+        GeneratorOptions(devices=1, tags_per_device=2, seed=17)
+    )
+    base_plan = build_emulator_plan(
+        model,
+        host="127.0.0.1",
+        port=0,
+    )
+    fast, slow = base_plan.stream_points[:2]
+    plan = replace(
+        base_plan,
+        points=(
+            replace(fast, periodic_interval_seconds=0.01, read_on_start=False),
+            replace(slow, periodic_interval_seconds=0.08, read_on_start=False),
+        ),
+        emission_interval_seconds=None,
+    )
+    server = KnxSourceEmulatorServer(plan)
+
+    async with server:
+        reader, writer = await asyncio.open_connection(*server.bound_address)
+        try:
+            messages = await _read_for(reader, seconds=0.04)
+        finally:
+            writer.close()
+            with contextlib.suppress(ConnectionError):
+                await writer.wait_closed()
+
+    assert messages
+    assert {message["point_ref"] for message in messages} == {fast.point_ref}
+
+
 async def _discard_initial_event(reader: asyncio.StreamReader) -> None:
     await asyncio.wait_for(reader.readline(), timeout=2)
 
@@ -116,3 +150,23 @@ async def _read_message_type(
         payload = json.loads(await asyncio.wait_for(reader.readline(), timeout=2))
         if payload["message_type"] == message_type:
             return payload
+
+
+async def _read_for(
+    reader: asyncio.StreamReader,
+    *,
+    seconds: float,
+) -> list[dict[str, object]]:
+    deadline = asyncio.get_running_loop().time() + seconds
+    messages: list[dict[str, object]] = []
+    while True:
+        remaining = deadline - asyncio.get_running_loop().time()
+        if remaining <= 0:
+            return messages
+        try:
+            line = await asyncio.wait_for(reader.readline(), timeout=remaining)
+        except TimeoutError:
+            return messages
+        if not line:
+            return messages
+        messages.append(json.loads(line))

@@ -6,19 +6,32 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Protocol
 
-from edge_telemetry_agent.application.delivery import DeliveryWorker
 from edge_telemetry_agent.application.processing import ObservationProcessor
 from edge_telemetry_agent.domain.config import AgentRuntimeConfig, SourceDefinition
-from edge_telemetry_agent.domain.events import Observation
-from edge_telemetry_agent.infrastructure.mqtt_publisher import connect_mqtt_publisher
-from edge_telemetry_agent.infrastructure.sqlite_outbox import SQLiteOutbox
-from edge_telemetry_agent.infrastructure.sqlite_point_state import SQLitePointStateCache
+from edge_telemetry_agent.domain.events import Observation, TelemetryEvent
 
 
-class Publisher(Protocol):
-    def publish(self, publication: object) -> None: ...
+class EventOutbox(Protocol):
+    def append(
+        self,
+        event: TelemetryEvent,
+        *,
+        available_at: datetime | None = None,
+    ) -> int: ...
 
-    def close(self) -> None: ...
+
+class DeliveryResult(Protocol):
+    published_count: int
+
+
+class DeliveryRunner(Protocol):
+    def deliver_once(
+        self,
+        *,
+        limit: int = 100,
+        lease_seconds: int = 60,
+        now: datetime | None = None,
+    ) -> DeliveryResult: ...
 
 
 @dataclass(frozen=True)
@@ -40,48 +53,25 @@ class SouthboundIngestionResult:
 async def run_knx_source_emulator_ingestion(
     runtime_config: AgentRuntimeConfig,
     *,
+    processor: ObservationProcessor,
+    outbox: EventOutbox,
+    worker: DeliveryRunner,
     source_id: str | None = None,
     max_events: int | None = None,
     duration_seconds: float | None = None,
-    publisher: Publisher | None = None,
 ) -> SouthboundIngestionResult:
     source = _select_source(runtime_config, source_id=source_id)
     host, port = _source_endpoint(source)
-    state_cache = SQLitePointStateCache(runtime_config.storage.sqlite_path)
-    state_cache.initialize()
-    outbox = SQLiteOutbox(runtime_config.storage.sqlite_path)
-    outbox.initialize()
-    processor = ObservationProcessor(
-        runtime_config,
-        agent_id=runtime_config.agent_id,
-        state_store=state_cache,
-    )
-    owned_publisher = publisher is None
-    resolved_publisher = publisher or connect_mqtt_publisher(
-        runtime_config.delivery.mqtt,
-        agent_id=runtime_config.agent_id,
-    )
-    worker = DeliveryWorker(
-        runtime_config=runtime_config,
-        agent_id=runtime_config.agent_id,
+    return await _read_source(
+        host=host,
+        port=port,
+        source_id=source.source_id,
+        processor=processor,
         outbox=outbox,
-        publisher=resolved_publisher,
+        worker=worker,
+        max_events=max_events,
+        duration_seconds=duration_seconds,
     )
-
-    try:
-        return await _read_source(
-            host=host,
-            port=port,
-            source_id=source.source_id,
-            processor=processor,
-            outbox=outbox,
-            worker=worker,
-            max_events=max_events,
-            duration_seconds=duration_seconds,
-        )
-    finally:
-        if owned_publisher or hasattr(resolved_publisher, "close"):
-            resolved_publisher.close()
 
 
 async def _read_source(
@@ -90,8 +80,8 @@ async def _read_source(
     port: int,
     source_id: str,
     processor: ObservationProcessor,
-    outbox: SQLiteOutbox,
-    worker: DeliveryWorker,
+    outbox: EventOutbox,
+    worker: DeliveryRunner,
     max_events: int | None,
     duration_seconds: float | None,
 ) -> SouthboundIngestionResult:

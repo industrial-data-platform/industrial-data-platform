@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import socket
 import subprocess
 import threading
 from dataclasses import replace
@@ -21,7 +22,7 @@ from idp_synthetic_config.config_registry_seeder import (
 )
 from idp_synthetic_config.generator import GeneratorOptions, generate_synthetic_config
 from idp_synthetic_config.reset import ResetPolicy
-from knx_source_emulator.plan import build_emulator_plan
+from knx_source_emulator.plan import build_emulator_plan_from_source_config
 from knx_source_emulator.server import KnxSourceEmulatorServer
 
 pytestmark = pytest.mark.integration
@@ -46,18 +47,37 @@ def test_synthetic_tcp_emulator_edge_delivery_flow_reaches_mqtt_kafka_and_clickh
     )
     config_revision = "rev-synthetic-e2e-001"
     source_config_revisions = model.source_config_revisions(config_revision)
+    emulator_port = _reserve_tcp_port()
     bootstrap_path = _write_bootstrap_config(
         tmp_path,
         agent_id=model.agent.agent_id,
         broker=f"mqtt://127.0.0.1:{local_full_storage_stack.mqtt_port}",
     )
-    plan = build_emulator_plan(
-        model,
+    source_config_payload = _seed_synthetic_config_via_registry(
+        local_stack=local_full_storage_stack,
+        model=model,
+        config_revision=config_revision,
+        source_config_revisions=source_config_revisions,
         host="127.0.0.1",
-        port=0,
-        interval_seconds=0.05,
+        port=emulator_port,
+    )
+    plan = build_emulator_plan_from_source_config(
+        source_config_payload,
+        value_profiles=model.value_profiles,
+        devices=len(model.devices),
+        emission_interval_seconds=0.05,
     )
     point = plan.stream_points[0]
+    source_point = source_config_payload["points"][0]
+    assert point.point_ref == source_point["point_ref"]
+    assert point.point_key == source_point["point_key"]
+    assert point.name == source_point["name"]
+    assert point.description == source_point["description"]
+    assert point.periodic_interval_seconds == (
+        source_point["acquisition"]["periodic_interval_seconds"]
+    )
+    assert point.change_threshold == source_point["publish"]["change_threshold"]
+    assert point.profile.parameters["base"] == 22.0
 
     topic = (
         f"idp/v1/assets/{model.asset.asset_id}/agents/{model.agent.agent_id}"
@@ -113,15 +133,6 @@ def test_synthetic_tcp_emulator_edge_delivery_flow_reaches_mqtt_kafka_and_clickh
     try:
         async def run_emulator_and_agent() -> None:
             async with server:
-                host, port = server.bound_address
-                _seed_synthetic_config_via_registry(
-                    local_stack=local_full_storage_stack,
-                    model=model,
-                    config_revision=config_revision,
-                    source_config_revisions=source_config_revisions,
-                    host=host,
-                    port=port,
-                )
                 result = await asyncio.to_thread(
                     _run_edge_source_adapter_cli,
                     bootstrap_path,
@@ -413,6 +424,13 @@ def _run_edge_source_adapter_cli(
     )
 
 
+def _reserve_tcp_port() -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("127.0.0.1", 0))
+        sock.listen()
+        return int(sock.getsockname()[1])
+
+
 def _seed_config_delivery_records(*, local_stack, bundle) -> None:
     settings = type("BundleSettings", (), {"bundle": bundle})()
     scope = TopicScope(
@@ -476,7 +494,7 @@ def _seed_synthetic_config_via_registry(
     source_config_revisions: dict[str, str],
     host: str,
     port: int,
-) -> None:
+) -> dict[str, object]:
     issued_at = "2026-05-11T07:00:00Z"
     source = model.sources[0]
     seeded_source = replace(
@@ -541,6 +559,7 @@ def _seed_synthetic_config_via_registry(
         source_config_revisions[source.source_id]
     )
     assert source_snapshot["points"][0]["name"].startswith("Температура")
+    return source_message.payload
 
 
 def _config_delivery_record(

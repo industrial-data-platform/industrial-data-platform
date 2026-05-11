@@ -15,8 +15,10 @@ not replace the canonical markdown files in `docs/`, `apps/*/docs/`, or
    `docs/architecture/glossary.md` for orientation.
 4. Read `docs/contracts/README.md` before changing MQTT, Kafka, ClickHouse,
    storage, or schema boundaries.
-5. Use `docs/architecture/decisions.md` for active decisions.
-6. Open `docs/architecture/adrs/archive/` only when you need historical
+5. Use `Local Emulator Runbook` for the manual local platform and emulator
+   startup path.
+6. Use `docs/architecture/decisions.md` for active decisions.
+7. Open `docs/architecture/adrs/archive/` only when you need historical
    rationale or rejected alternatives.
 
 ## Source-of-truth order

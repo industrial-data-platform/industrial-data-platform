@@ -236,14 +236,40 @@ def _handle_run_source_adapter(args: argparse.Namespace) -> int:
     )
 
     runtime = load_agent_runtime_config(args.bootstrap_config)
-    result = asyncio.run(
-        run_knx_source_emulator_ingestion(
-            runtime,
-            source_id=args.source_id,
-            max_events=args.max_events,
-            duration_seconds=args.duration_seconds,
-        )
+    mqtt = runtime.delivery.mqtt
+    if mqtt is None or not mqtt.enabled:
+        raise RuntimeError("MQTT delivery settings are not configured or disabled")
+
+    state_cache = SQLitePointStateCache(runtime.storage.sqlite_path)
+    state_cache.initialize()
+    outbox = SQLiteOutbox(runtime.storage.sqlite_path)
+    outbox.initialize()
+    processor = ObservationProcessor(
+        runtime,
+        agent_id=runtime.agent_id,
+        state_store=state_cache,
     )
+    publisher = connect_mqtt_publisher(mqtt, agent_id=runtime.agent_id)
+    worker = DeliveryWorker(
+        runtime_config=runtime,
+        agent_id=runtime.agent_id,
+        outbox=outbox,
+        publisher=publisher,
+    )
+    try:
+        result = asyncio.run(
+            run_knx_source_emulator_ingestion(
+                runtime,
+                processor=processor,
+                outbox=outbox,
+                worker=worker,
+                source_id=args.source_id,
+                max_events=args.max_events,
+                duration_seconds=args.duration_seconds,
+            )
+        )
+    finally:
+        publisher.close()
     print(
         "Source adapter run: "
         f"observations_read={result.observations_read} "

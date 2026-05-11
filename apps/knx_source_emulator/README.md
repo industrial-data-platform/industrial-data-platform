@@ -14,7 +14,10 @@ publishes MQTT telemetry through `DeliveryWorker`.
 ```bash
 uv run --package knx-source-emulator knx-source-emulator plan --dry-run
 uv run --package knx-source-emulator knx-source-emulator run --duration-seconds 1
+uv run --package knx-source-emulator knx-source-emulator run --forever
 uv run --package knx-source-emulator knx-source-emulator seed-config
+uv run --package knx-source-emulator knx-source-emulator start --port 0 --duration-seconds 1
+uv run --package knx-source-emulator knx-source-emulator start --port 0 --forever
 ```
 
 Useful local flags:
@@ -23,11 +26,21 @@ Useful local flags:
 - `--devices`, `--tags-per-device`
 - `--source-id`, `--seed`
 - `--interval-seconds`
-- `--duration-seconds`
+- `--duration-seconds`, `--forever`
 - `--log-level`
 
 The default port is `3671` to match the synthetic KNX source connection emitted
 by `idp_synthetic_config`.
+
+For manual development runs, use `--forever` to keep the emulator running until
+interrupted. Omitting `--duration-seconds` has the same runtime behavior.
+
+End-to-end local platform startup with this emulator is documented in
+[`infra/local/emulator-runbook.md`](../../infra/local/emulator-runbook.md).
+
+`seed-config` writes the selected `--host` and concrete `--port` into the
+Config Registry source connection. For dynamic local ports, use `start --port 0`;
+it binds the TCP server first, then seeds matching retained/source config.
 
 ## TCP Protocol
 

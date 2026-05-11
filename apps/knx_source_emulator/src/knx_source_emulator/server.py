@@ -123,10 +123,9 @@ class KnxSourceEmulatorServer:
         writer: asyncio.StreamWriter,
         generator: ValueGenerator,
     ) -> None:
-        read_on_start_points = [
-            point for point in self._plan.stream_points if point.read_on_start
-        ]
-        for point in read_on_start_points or list(self._plan.stream_points[:1]):
+        stream_points = self._plan.stream_points
+        read_on_start_points = [point for point in stream_points if point.read_on_start]
+        for point in read_on_start_points:
             await self._write_event(
                 writer,
                 point,
@@ -134,15 +133,33 @@ class KnxSourceEmulatorServer:
                 observation_mode="read_on_start",
             )
 
+        loop = asyncio.get_running_loop()
+        next_due_at = {
+            point.point_key: loop.time() + self._interval_seconds(point)
+            for point in stream_points
+        }
         while True:
-            await asyncio.sleep(self._next_sleep_seconds())
-            for point in self._plan.stream_points:
+            if not next_due_at:
+                await asyncio.Event().wait()
+
+            now = loop.time()
+            due_points = [
+                point
+                for point in stream_points
+                if next_due_at[point.point_key] <= now
+            ]
+            if not due_points:
+                await asyncio.sleep(max(0.001, min(next_due_at.values()) - now))
+                continue
+
+            for point in due_points:
                 await self._write_event(
                     writer,
                     point,
                     generator=generator,
                     observation_mode="periodic_read",
                 )
+                next_due_at[point.point_key] = loop.time() + self._interval_seconds(point)
 
     async def _write_event(
         self,
@@ -225,9 +242,7 @@ class KnxSourceEmulatorServer:
                 await writer.drain()
                 self.stats.errors += 1
 
-    def _next_sleep_seconds(self) -> float:
+    def _interval_seconds(self, point: EmulatorPoint) -> float:
         if self._plan.emission_interval_seconds is not None:
             return self._plan.emission_interval_seconds
-        if not self._plan.stream_points:
-            return 1.0
-        return max(0.001, min(point.periodic_interval_seconds for point in self._plan.stream_points))
+        return max(0.001, point.periodic_interval_seconds)

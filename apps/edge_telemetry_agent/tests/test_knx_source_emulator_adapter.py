@@ -6,10 +6,14 @@ import sqlite3
 from pathlib import Path
 
 from edge_telemetry_agent.application.configuration import build_agent_runtime_config
+from edge_telemetry_agent.application.delivery import DeliveryWorker
+from edge_telemetry_agent.application.processing import ObservationProcessor
 from edge_telemetry_agent.application.southbound import (
     run_knx_source_emulator_ingestion,
 )
 from edge_telemetry_agent.domain.events import MqttPublication
+from edge_telemetry_agent.infrastructure.sqlite_outbox import SQLiteOutbox
+from edge_telemetry_agent.infrastructure.sqlite_point_state import SQLitePointStateCache
 
 
 class FakePublisher:
@@ -39,14 +43,34 @@ async def _run_edge_adapter_smoke(tmp_path: Path) -> None:
     host, port = server.sockets[0].getsockname()[:2]
     publisher = FakePublisher()
     runtime = _runtime_config(tmp_path, host=host, port=port)
+    state_cache = SQLitePointStateCache(runtime.storage.sqlite_path)
+    state_cache.initialize()
+    outbox = SQLiteOutbox(runtime.storage.sqlite_path)
+    outbox.initialize()
+    processor = ObservationProcessor(
+        runtime,
+        agent_id=runtime.agent_id,
+        state_store=state_cache,
+    )
+    worker = DeliveryWorker(
+        runtime_config=runtime,
+        agent_id=runtime.agent_id,
+        outbox=outbox,
+        publisher=publisher,
+    )
 
     async with server:
-        result = await run_knx_source_emulator_ingestion(
-            runtime,
-            source_id="knx_synthetic",
-            max_events=1,
-            publisher=publisher,
-        )
+        try:
+            result = await run_knx_source_emulator_ingestion(
+                runtime,
+                processor=processor,
+                outbox=outbox,
+                worker=worker,
+                source_id="knx_synthetic",
+                max_events=1,
+            )
+        finally:
+            publisher.close()
 
     assert result.observations_read == 1
     assert result.events_enqueued == 1
