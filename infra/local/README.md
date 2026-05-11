@@ -86,6 +86,10 @@ docker compose -f infra/local/compose.yaml --env-file .env up -d mqtt-broker
 ./infra/local/up-platform.sh
 ```
 
+Пошаговый ручной сценарий с synthetic KNX emulator и проверками MQTT, Kafka,
+ClickHouse и Grafana описан в
+[`infra/local/emulator-runbook.md`](./emulator-runbook.md).
+
 `up-platform.sh` делает три шага подряд:
 
 - пересобирает локальные image `idp-config-registry`, `grafana`, `kafka-connect`

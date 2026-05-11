@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 import sys
 from pathlib import Path
@@ -98,6 +99,30 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Lease duration for reserved outbox records",
     )
     deliver_once.set_defaults(handler=_handle_deliver_once)
+
+    run_source_adapter = subparsers.add_parser(
+        "run-source-adapter",
+        help="Read KNX-like TCP source emulator events into the normal outbox/delivery path",
+    )
+    _add_bootstrap_config_argument(run_source_adapter)
+    run_source_adapter.add_argument(
+        "--source-id",
+        default=None,
+        help="Source id to connect; defaults to the first enabled KNX source",
+    )
+    run_source_adapter.add_argument(
+        "--max-events",
+        type=int,
+        default=None,
+        help="Stop after reading this many emulator events.",
+    )
+    run_source_adapter.add_argument(
+        "--duration-seconds",
+        type=float,
+        default=None,
+        help="Stop after this duration.",
+    )
+    run_source_adapter.set_defaults(handler=_handle_run_source_adapter)
 
     return parser
 
@@ -201,6 +226,56 @@ def _handle_deliver_once(args: argparse.Namespace) -> int:
         f"published={result.published_count} "
         f"retry={result.retry_count} "
         f"dead_letter={result.dead_letter_count}"
+    )
+    return 0
+
+
+def _handle_run_source_adapter(args: argparse.Namespace) -> int:
+    from edge_telemetry_agent.application.southbound import (
+        run_knx_source_emulator_ingestion,
+    )
+
+    runtime = load_agent_runtime_config(args.bootstrap_config)
+    mqtt = runtime.delivery.mqtt
+    if mqtt is None or not mqtt.enabled:
+        raise RuntimeError("MQTT delivery settings are not configured or disabled")
+
+    state_cache = SQLitePointStateCache(runtime.storage.sqlite_path)
+    state_cache.initialize()
+    outbox = SQLiteOutbox(runtime.storage.sqlite_path)
+    outbox.initialize()
+    processor = ObservationProcessor(
+        runtime,
+        agent_id=runtime.agent_id,
+        state_store=state_cache,
+    )
+    publisher = connect_mqtt_publisher(mqtt, agent_id=runtime.agent_id)
+    worker = DeliveryWorker(
+        runtime_config=runtime,
+        agent_id=runtime.agent_id,
+        outbox=outbox,
+        publisher=publisher,
+    )
+    try:
+        result = asyncio.run(
+            run_knx_source_emulator_ingestion(
+                runtime,
+                processor=processor,
+                outbox=outbox,
+                worker=worker,
+                source_id=args.source_id,
+                max_events=args.max_events,
+                duration_seconds=args.duration_seconds,
+            )
+        )
+    finally:
+        publisher.close()
+    print(
+        "Source adapter run: "
+        f"observations_read={result.observations_read} "
+        f"events_enqueued={result.events_enqueued} "
+        f"events_delivered={result.events_delivered} "
+        f"suppressed={result.suppressed}"
     )
     return 0
 

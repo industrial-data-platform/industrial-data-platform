@@ -1,24 +1,29 @@
 from __future__ import annotations
 
+import asyncio
 import json
-import sqlite3
+import os
+import socket
+import subprocess
 import threading
-from datetime import UTC, datetime
+from dataclasses import replace
 from pathlib import Path
 
 import paho.mqtt.client as mqtt
 import pytest
 import yaml
 
-from edge_telemetry_agent.application.configuration import load_agent_runtime_config
-from edge_telemetry_agent.application.delivery import DeliveryWorker
-from edge_telemetry_agent.application.processing import ObservationProcessor
-from edge_telemetry_agent.domain.events import Observation
-from edge_telemetry_agent.infrastructure.mqtt_publisher import connect_mqtt_publisher
-from edge_telemetry_agent.infrastructure.sqlite_outbox import SQLiteOutbox
 from idp_demo_stack.bundle import load_bundle
 from idp_demo_stack.models import TopicScope
 from idp_demo_stack.scenario import agent_runtime_config_payload, source_config_payload
+from idp_synthetic_config.config_registry_seeder import (
+    ConfigRegistryHttpClient,
+    ConfigRegistrySeeder,
+)
+from idp_synthetic_config.generator import GeneratorOptions, generate_synthetic_config
+from idp_synthetic_config.reset import ResetPolicy
+from knx_source_emulator.plan import build_emulator_plan_from_source_config
+from knx_source_emulator.server import KnxSourceEmulatorServer
 
 pytestmark = pytest.mark.integration
 
@@ -29,29 +34,54 @@ KAFKA_SCHEMAS_ROOT = REPO_ROOT / "docs" / "contracts" / "kafka" / "schemas"
 
 @pytest.mark.integration_smoke
 @pytest.mark.integration_storage
-def test_demo_knx_edge_delivery_flow_reaches_mqtt_kafka_and_clickhouse(
-    local_storage_stack,
+def test_synthetic_tcp_emulator_edge_delivery_flow_reaches_mqtt_kafka_and_clickhouse(
+    local_full_storage_stack,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("MQTT_USERNAME", local_storage_stack.mqtt_username)
-    monkeypatch.setenv("MQTT_PASSWORD", local_storage_stack.mqtt_password)
-    monkeypatch.setenv("KNX_LOCAL_GATEWAY_IP", "127.0.0.1")
-    monkeypatch.setenv("KNX_LOCAL_GATEWAY_PORT", "3671")
-    monkeypatch.setenv("KNX_LOCAL_ROUTE_BACK", "false")
+    monkeypatch.setenv("MQTT_USERNAME", local_full_storage_stack.mqtt_username)
+    monkeypatch.setenv("MQTT_PASSWORD", local_full_storage_stack.mqtt_password)
 
-    bundle = load_bundle(DEMO_BUNDLE_PATH)
+    model = generate_synthetic_config(
+        GeneratorOptions(devices=1, tags_per_device=4, seed=20260511)
+    )
+    config_revision = "rev-synthetic-e2e-001"
+    source_config_revisions = model.source_config_revisions(config_revision)
+    emulator_port = _reserve_tcp_port()
     bootstrap_path = _write_bootstrap_config(
         tmp_path,
-        agent_id=bundle.agent_id,
-        broker=f"mqtt://127.0.0.1:{local_storage_stack.mqtt_port}",
+        agent_id=model.agent.agent_id,
+        broker=f"mqtt://127.0.0.1:{local_full_storage_stack.mqtt_port}",
     )
-    _seed_config_delivery_records(local_stack=local_storage_stack, bundle=bundle)
+    source_config_payload = _seed_synthetic_config_via_registry(
+        local_stack=local_full_storage_stack,
+        model=model,
+        config_revision=config_revision,
+        source_config_revisions=source_config_revisions,
+        host="127.0.0.1",
+        port=emulator_port,
+    )
+    plan = build_emulator_plan_from_source_config(
+        source_config_payload,
+        value_profiles=model.value_profiles,
+        devices=len(model.devices),
+        emission_interval_seconds=0.05,
+    )
+    point = plan.stream_points[0]
+    source_point = source_config_payload["points"][0]
+    assert point.point_ref == source_point["point_ref"]
+    assert point.point_key == source_point["point_key"]
+    assert point.name == source_point["name"]
+    assert point.description == source_point["description"]
+    assert point.periodic_interval_seconds == (
+        source_point["acquisition"]["periodic_interval_seconds"]
+    )
+    assert point.change_threshold == source_point["publish"]["change_threshold"]
+    assert point.profile.parameters["base"] == 22.0
 
-    point = bundle.source("knx_main").points[2]
     topic = (
-        f"idp/v1/assets/{bundle.asset_id}/agents/{bundle.agent_id}"
-        f"/sources/knx_main/points/{point.point_key}/event"
+        f"idp/v1/assets/{model.asset.asset_id}/agents/{model.agent.agent_id}"
+        f"/sources/{plan.source_id}/points/{point.point_key}/event"
     )
     connected = threading.Event()
     received = threading.Event()
@@ -60,8 +90,8 @@ def test_demo_knx_edge_delivery_flow_reaches_mqtt_kafka_and_clickhouse(
 
     subscriber = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
     subscriber.username_pw_set(
-        local_storage_stack.mqtt_username,
-        local_storage_stack.mqtt_password,
+        local_full_storage_stack.mqtt_username,
+        local_full_storage_stack.mqtt_password,
     )
 
     def on_message(
@@ -93,79 +123,70 @@ def test_demo_knx_edge_delivery_flow_reaches_mqtt_kafka_and_clickhouse(
     subscriber.on_message = on_message
     subscriber.on_connect = on_connect
     subscriber.on_subscribe = on_subscribe
-    subscriber.connect("127.0.0.1", local_storage_stack.mqtt_port, keepalive=20)
+    subscriber.connect("127.0.0.1", local_full_storage_stack.mqtt_port, keepalive=20)
     subscriber.loop_start()
     assert connected.wait(timeout=10), "MQTT subscriber did not connect in time"
     subscriber.subscribe(topic, qos=1)
     assert subscribed.wait(timeout=10), "MQTT subscriber did not subscribe in time"
 
-    runtime = load_agent_runtime_config(bootstrap_path)
-    processor = ObservationProcessor(runtime, agent_id=runtime.agent_id)
-    observed_at = datetime.now(tz=UTC).replace(microsecond=0)
-    result = processor.process(
-        Observation(
-            source_id="knx_main",
-            point_ref=point.point_ref,
-            observation_mode="listen",
-            value=24.8,
-            value_raw="24.8",
-            observed_at=observed_at,
-        )
-    )
-    assert result.event is not None
-
-    outbox = SQLiteOutbox(runtime.storage.sqlite_path)
-    outbox.initialize()
-    record_id = outbox.append(result.event, available_at=observed_at)
-    assert _outbox_row(runtime.storage.sqlite_path, record_id) == ("pending", 0)
-
-    publisher = connect_mqtt_publisher(runtime.delivery.mqtt, agent_id=runtime.agent_id)
-    worker = DeliveryWorker(
-        runtime_config=runtime,
-        agent_id=runtime.agent_id,
-        outbox=outbox,
-        publisher=publisher,
-    )
+    server = KnxSourceEmulatorServer(plan, seed=model.seed)
     try:
-        delivery_result = worker.deliver_once(now=observed_at)
-        assert delivery_result.reserved_count == 1
-        assert delivery_result.published_count == 1
-        assert delivery_result.retry_count == 0
-        assert delivery_result.dead_letter_count == 0
-        assert _outbox_row(runtime.storage.sqlite_path, record_id) == ("sent", 1)
+        async def run_emulator_and_agent() -> None:
+            async with server:
+                result = await asyncio.to_thread(
+                    _run_edge_source_adapter_cli,
+                    bootstrap_path,
+                    plan.source_id,
+                )
+                assert result.returncode == 0, result.stderr
+                assert "observations_read=1" in result.stdout
+                assert "events_enqueued=1" in result.stdout
+                assert "events_delivered=1" in result.stdout
+
+        asyncio.run(run_emulator_and_agent())
+
         assert received.wait(timeout=10), "MQTT subscriber did not receive outbox event"
         assert received_payloads[0]["message_type"] == "idp.edge.telemetry.event.v1"
-        assert received_payloads[0]["tenant_id"] == bundle.tenant_id
+        assert received_payloads[0]["tenant_id"] == model.tenant.tenant_id
         assert received_payloads[0]["event_type"] == "telemetry.sample"
-        assert received_payloads[0]["source_config_revision"] == "rev-demo-stand-knx-main-001"
-        assert received_payloads[0]["value"] == 24.8
+        assert received_payloads[0]["source_config_revision"] == (
+            source_config_revisions[plan.source_id]
+        )
+        assert received_payloads[0]["value"] == 22.0
 
-        kafka_key, kafka_payload = local_storage_stack.consume_kafka_json(
+        kafka_key, kafka_payload = local_full_storage_stack.consume_kafka_json(
             "idp.telemetry.events.v1",
             expected_key=(
-                f"{bundle.tenant_id}|{bundle.asset_id}|knx_main|{point.point_key}"
+                f"{model.tenant.tenant_id}|{model.asset.asset_id}|"
+                f"{plan.source_id}|{point.point_key}"
             ),
         )
         _assert_schema_subset(
             kafka_payload,
             KAFKA_SCHEMAS_ROOT / "idp.telemetry.event.v1.schema.json",
         )
-        assert kafka_key == f"{bundle.tenant_id}|{bundle.asset_id}|knx_main|{point.point_key}"
+        assert kafka_key == (
+            f"{model.tenant.tenant_id}|{model.asset.asset_id}|"
+            f"{plan.source_id}|{point.point_key}"
+        )
         assert kafka_payload["message_type"] == "idp.telemetry.event.v1"
-        assert kafka_payload["tenant_id"] == bundle.tenant_id
-        assert kafka_payload["asset_id"] == bundle.asset_id
-        assert kafka_payload["agent_id"] == bundle.agent_id
-        assert kafka_payload["source_id"] == "knx_main"
+        assert kafka_payload["tenant_id"] == model.tenant.tenant_id
+        assert kafka_payload["asset_id"] == model.asset.asset_id
+        assert kafka_payload["agent_id"] == model.agent.agent_id
+        assert kafka_payload["source_id"] == plan.source_id
         assert kafka_payload["source_type"] == "knx"
-        assert kafka_payload["source_config_revision"] == "rev-demo-stand-knx-main-001"
+        assert kafka_payload["source_config_revision"] == (
+            source_config_revisions[plan.source_id]
+        )
         assert kafka_payload["point_id"] == (
-            f"{bundle.tenant_id}|{bundle.asset_id}|knx_main|{point.point_key}"
+            f"{model.tenant.tenant_id}|{model.asset.asset_id}|"
+            f"{plan.source_id}|{point.point_key}"
         )
         assert kafka_payload["point_ref"] == point.point_ref
-        assert kafka_payload["value"] == 24.8
+        assert kafka_payload["value"] == 22.0
         assert kafka_payload["quality"] == "good"
 
-        clickhouse_row = local_storage_stack.wait_for_clickhouse_value(
+        clickhouse_row = local_full_storage_stack.wait_for_clickhouse_value(
             f"""
             SELECT tenant_id, asset_id, agent_id, source_id, point_key, value_type, value_float
             FROM telemetry_events_v1
@@ -174,11 +195,10 @@ def test_demo_knx_edge_delivery_flow_reaches_mqtt_kafka_and_clickhouse(
             """.strip()
         )
         assert clickhouse_row == (
-            f"{bundle.tenant_id}\t{bundle.asset_id}\t{bundle.agent_id}"
-            f"\tknx_main\t{point.point_key}\tnumber\t24.8"
+            f"{model.tenant.tenant_id}\t{model.asset.asset_id}\t{model.agent.agent_id}"
+            f"\t{plan.source_id}\t{point.point_key}\tnumber\t22"
         )
     finally:
-        publisher.close()
         subscriber.disconnect()
         subscriber.loop_stop()
 
@@ -309,17 +329,6 @@ def test_mqtt_to_kafka_status_ingestion_does_not_require_config_cache(
     assert agent_payload["status"] == "online"
 
 
-def _outbox_row(sqlite_path: Path, record_id: int) -> tuple[str, int]:
-    with sqlite3.connect(sqlite_path) as connection:
-        row = connection.execute(
-            "SELECT status, attempt_count FROM outbox WHERE id = ?",
-            (record_id,),
-        ).fetchone()
-    if row is None:
-        raise AssertionError(f"Outbox record {record_id} was not found")
-    return str(row[0]), int(row[1])
-
-
 def _assert_schema_subset(payload: dict[str, object], schema_path: Path) -> None:
     schema = json.loads(schema_path.read_text(encoding="utf-8"))
     properties = schema["properties"]
@@ -387,6 +396,41 @@ def _matches_json_type(value: object, expected_type: object) -> bool:
             raise AssertionError(f"Unsupported schema type {expected_type!r}")
 
 
+def _run_edge_source_adapter_cli(
+    bootstrap_path: Path,
+    source_id: str,
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [
+            "uv",
+            "run",
+            "--package",
+            "edge-telemetry-agent",
+            "edge-telemetry-agent",
+            "run-source-adapter",
+            "--bootstrap-config",
+            str(bootstrap_path),
+            "--source-id",
+            source_id,
+            "--max-events",
+            "1",
+        ],
+        cwd=REPO_ROOT,
+        env=os.environ.copy(),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=60,
+    )
+
+
+def _reserve_tcp_port() -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("127.0.0.1", 0))
+        sock.listen()
+        return int(sock.getsockname()[1])
+
+
 def _seed_config_delivery_records(*, local_stack, bundle) -> None:
     settings = type("BundleSettings", (), {"bundle": bundle})()
     scope = TopicScope(
@@ -440,6 +484,82 @@ def _seed_config_delivery_records(*, local_stack, bundle) -> None:
         assert source_message.payload["source_config_revision"] == (
             source.source_config_revision
         )
+
+
+def _seed_synthetic_config_via_registry(
+    *,
+    local_stack,
+    model,
+    config_revision: str,
+    source_config_revisions: dict[str, str],
+    host: str,
+    port: int,
+) -> dict[str, object]:
+    issued_at = "2026-05-11T07:00:00Z"
+    source = model.sources[0]
+    seeded_source = replace(
+        source,
+        connection_json={
+            **source.connection_json,
+            "mode": "synthetic",
+            "host": host,
+            "port": port,
+            "gateway_ip": host,
+            "gateway_port": port,
+        },
+    )
+    seeded_model = replace(model, sources=(seeded_source,))
+    config_registry_url = f"http://127.0.0.1:{local_stack.config_registry_port}"
+    summary = ConfigRegistrySeeder(
+        ConfigRegistryHttpClient(config_registry_url),
+        reset_policy=ResetPolicy(enabled=False),
+    ).seed(
+        seeded_model,
+        config_registry_url=config_registry_url,
+        config_revision=config_revision,
+        issued_at=issued_at,
+        source_config_revisions=source_config_revisions,
+    )
+    assert summary.ok, summary.to_dict()
+
+    agent_runtime_topic = f"idp/v1/agents/{model.agent.agent_id}/config/agent-runtime"
+    runtime_message = local_stack.wait_for_retained_mqtt_json(
+        agent_runtime_topic,
+        predicate=lambda message: message.payload.get("config_revision")
+        == config_revision,
+    )
+    assert runtime_message.retained is True
+
+    source_topic = (
+        f"idp/v1/agents/{model.agent.agent_id}/sources/{source.source_id}/config"
+    )
+    source_message = local_stack.wait_for_retained_mqtt_json(
+        source_topic,
+        predicate=lambda message: message.payload.get("source_config_revision")
+        == source_config_revisions[source.source_id],
+    )
+    source_snapshot_key, source_snapshot = local_stack.consume_kafka_json(
+        "idp.source.configs.v1",
+        expected_key=(
+            f"{model.tenant.tenant_id}|{model.asset.asset_id}|"
+            f"{model.agent.agent_id}|{source.source_id}"
+        ),
+        timeout=60,
+    )
+
+    assert source_message.retained is True
+    assert source_message.payload["source_config_revision"] == (
+        source_config_revisions[source.source_id]
+    )
+    assert source_snapshot_key == (
+        f"{model.tenant.tenant_id}|{model.asset.asset_id}|"
+        f"{model.agent.agent_id}|{source.source_id}"
+    )
+    assert source_snapshot["source_config_revision"] == (
+        source_config_revisions[source.source_id]
+    )
+    assert source_snapshot["points"][0]["name"].startswith("Температура")
+    return source_message.payload
 
 
 def _config_delivery_record(

@@ -20,6 +20,10 @@ export default defineConfig({
           items: [{ slug: 'contracts' }],
         },
         {
+          label: 'Operations',
+          items: [{ slug: 'local-emulator' }],
+        },
+        {
           label: 'Agent Workflow',
           items: [{ slug: 'agents' }],
         },

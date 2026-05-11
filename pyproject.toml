@@ -9,6 +9,7 @@ dependencies = [
     "knx-project-parser",
     "idp-demo-stack",
     "idp-synthetic-config",
+    "knx-source-emulator",
     "idp-telemetry-store",
 ]
 
@@ -36,6 +37,7 @@ idp-config-registry = { workspace = true }
 knx-project-parser = { workspace = true }
 idp-demo-stack = { workspace = true }
 idp-synthetic-config = { workspace = true }
+knx-source-emulator = { workspace = true }
 idp-telemetry-store = { workspace = true }
 
 [tool.uv.workspace]
@@ -64,6 +66,7 @@ src = [
     "apps/edge_telemetry_agent/src",
     "apps/knx_demo/src",
     "apps/idp_config_registry/src",
+    "apps/knx_source_emulator/src",
     "libs/knx_project_parser/src",
     "libs/idp_demo_stack/src",
     "libs/idp_synthetic_config/src",
@@ -84,6 +87,7 @@ source = [
     "libs/knx_project_parser/src/knx_project_parser",
     "libs/idp_demo_stack/src/idp_demo_stack",
     "libs/idp_synthetic_config/src/idp_synthetic_config",
+    "apps/knx_source_emulator/src/knx_source_emulator",
     "tools/idp_telemetry_store/src/idp_telemetry_store",
 ]
 
