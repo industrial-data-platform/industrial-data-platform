@@ -9,11 +9,14 @@ from idp_config_registry.api.dependencies import (
 from idp_config_registry.api.schemas.points import PointCreateRequest, PointResponse
 from idp_config_registry.application.errors import (
     DuplicatePointError,
+    PointNotFoundError,
     SourceNotFoundError,
 )
 from idp_config_registry.application.use_cases.points import (
     CreatePoint,
     CreatePointCommand,
+    DeletePoint,
+    DeletePointCommand,
     ListPoints,
 )
 from idp_config_registry.domain.value_objects import DomainValidationError
@@ -102,3 +105,32 @@ async def list_points(
             detail=str(exc),
         ) from exc
     return [PointResponse.from_domain(point) for point in points]
+
+
+@router.delete(
+    "/{point_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_point(
+    tenant_id: str,
+    asset_id: str,
+    agent_id: str,
+    source_id: str,
+    point_id: str,
+    unit_of_work_factory: UnitOfWorkFactory = Depends(get_unit_of_work_factory),
+) -> None:
+    try:
+        await DeletePoint(unit_of_work_factory()).execute(
+            DeletePointCommand(
+                tenant_id=tenant_id,
+                asset_id=asset_id,
+                agent_id=agent_id,
+                source_id=source_id,
+                point_id=point_id,
+            )
+        )
+    except PointNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc

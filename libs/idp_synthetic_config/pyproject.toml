@@ -1,0 +1,23 @@
+[project]
+name = "idp-synthetic-config"
+version = "0.1.0"
+description = "Synthetic Industrial Data Platform config generator and Config Registry seeder"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+idp-synthetic-config = "idp_synthetic_config.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.11.2,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+

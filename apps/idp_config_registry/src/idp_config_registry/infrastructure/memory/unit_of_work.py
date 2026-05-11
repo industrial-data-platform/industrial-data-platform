@@ -134,6 +134,21 @@ class InMemorySourceRepository:
     ) -> None:
         self._items.pop((tenant_id, asset_id, agent_id, source_id), None)
 
+    async def delete_for_agent(
+        self,
+        tenant_id: str,
+        asset_id: str,
+        agent_id: str,
+    ) -> int:
+        keys = [
+            key
+            for key in self._items
+            if key[0] == tenant_id and key[1] == asset_id and key[2] == agent_id
+        ]
+        for key in keys:
+            self._items.pop(key, None)
+        return len(keys)
+
     async def list_for_agent(
         self,
         tenant_id: str,
@@ -172,6 +187,23 @@ class InMemoryPointRepository:
 
     async def delete(self, tenant_id: str, point_id: str) -> None:
         self._items.pop((tenant_id, point_id), None)
+
+    async def delete_for_agent(
+        self,
+        tenant_id: str,
+        asset_id: str,
+        agent_id: str,
+    ) -> int:
+        keys = [
+            key
+            for key, point in self._items.items()
+            if point.tenant_id == tenant_id
+            and point.asset_id == asset_id
+            and point.agent_id == agent_id
+        ]
+        for key in keys:
+            self._items.pop(key, None)
+        return len(keys)
 
     async def get_by_key(
         self,
@@ -269,6 +301,23 @@ class InMemoryAgentRuntimeConfigRevisionRepository:
             for revision in self._items.values()
         )
 
+    async def delete_for_agent(
+        self,
+        tenant_id: str,
+        asset_id: str,
+        agent_id: str,
+    ) -> int:
+        keys = [
+            key
+            for key, revision in self._items.items()
+            if revision.tenant_id == tenant_id
+            and revision.asset_id == asset_id
+            and revision.agent_id == agent_id
+        ]
+        for key in keys:
+            self._items.pop(key, None)
+        return len(keys)
+
 
 @dataclass
 class InMemorySourceConfigRevisionRepository:
@@ -333,6 +382,23 @@ class InMemorySourceConfigRevisionRepository:
             for revision in self._items.values()
         )
 
+    async def delete_for_agent(
+        self,
+        tenant_id: str,
+        asset_id: str,
+        agent_id: str,
+    ) -> int:
+        keys = [
+            key
+            for key, revision in self._items.items()
+            if revision.tenant_id == tenant_id
+            and revision.asset_id == asset_id
+            and revision.agent_id == agent_id
+        ]
+        for key in keys:
+            self._items.pop(key, None)
+        return len(keys)
+
 
 @dataclass
 class InMemoryConfigOutboxRepository:
@@ -378,6 +444,23 @@ class InMemoryConfigOutboxRepository:
             and record.agent_id == agent_id
             for record in self._items.values()
         )
+
+    async def delete_for_agent(
+        self,
+        tenant_id: str,
+        asset_id: str,
+        agent_id: str,
+    ) -> int:
+        keys = [
+            key
+            for key, record in self._items.items()
+            if record.tenant_id == tenant_id
+            and record.asset_id == asset_id
+            and record.agent_id == agent_id
+        ]
+        for key in keys:
+            self._items.pop(key, None)
+        return len(keys)
 
     async def has_any_for_source(
         self,

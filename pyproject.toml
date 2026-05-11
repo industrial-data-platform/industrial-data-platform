@@ -8,6 +8,7 @@ dependencies = [
     "idp-config-registry",
     "knx-project-parser",
     "idp-demo-stack",
+    "idp-synthetic-config",
     "idp-telemetry-store",
 ]
 
@@ -34,6 +35,7 @@ knx-demo = { workspace = true }
 idp-config-registry = { workspace = true }
 knx-project-parser = { workspace = true }
 idp-demo-stack = { workspace = true }
+idp-synthetic-config = { workspace = true }
 idp-telemetry-store = { workspace = true }
 
 [tool.uv.workspace]
@@ -64,6 +66,7 @@ src = [
     "apps/idp_config_registry/src",
     "libs/knx_project_parser/src",
     "libs/idp_demo_stack/src",
+    "libs/idp_synthetic_config/src",
     "tools/idp_telemetry_store/src",
     "tests",
 ]
@@ -80,6 +83,7 @@ source = [
     "apps/idp_config_registry/src/idp_config_registry",
     "libs/knx_project_parser/src/knx_project_parser",
     "libs/idp_demo_stack/src/idp_demo_stack",
+    "libs/idp_synthetic_config/src/idp_synthetic_config",
     "tools/idp_telemetry_store/src/idp_telemetry_store",
 ]
 
