@@ -18,6 +18,7 @@ It does not import `idp_demo_stack`, `apps/*`, `edge_telemetry_agent`,
 uv run --package idp-synthetic-config idp-synthetic-config plan --format json
 uv run --package idp-synthetic-config idp-synthetic-config plan --format yaml
 uv run --package idp-synthetic-config idp-synthetic-config seed --config-registry-url http://localhost:8000
+uv run --package idp-synthetic-config idp-synthetic-config delete --config-registry-url http://localhost:8000
 ```
 
 Default generation is intentionally small for local smoke runs: `3` devices and
@@ -31,3 +32,8 @@ points, sources, agent, and empty parent asset/tenant records in one request
 before recreating the desired model. ClickHouse and MQTT retained cleanup are
 reported in the machine-readable reset summary as `unsupported` when configured;
 they are not executed by this package yet.
+
+`delete` uses the same generated ids and calls the Config Registry
+`DELETE /tenants/{tenant_id}/assets/{asset_id}/agents/{agent_id}/registry-graph`
+API with `delete_empty_asset=true&delete_empty_tenant=true`. This is the
+operator path for undoing a synthetic seed without direct database access.

@@ -61,6 +61,28 @@ def main(
         _write_document(summary.to_dict(), args.format, out)
         return 0 if summary.ok else 1
 
+    if args.command == "delete":
+        config_registry_url = args.config_registry_url
+        reset_policy = ResetPolicy(
+            enabled=True,
+            allow_destructive_reset=args.allow_destructive_reset,
+        )
+        client = ConfigRegistryHttpClient(
+            config_registry_url,
+            timeout_seconds=args.timeout_seconds,
+        )
+        seeder = ConfigRegistrySeeder(client, reset_policy=reset_policy)
+        try:
+            summary = seeder.delete_generated(
+                model,
+                config_registry_url=config_registry_url,
+            )
+        except (ConfigRegistryError, DestructiveResetRefused, ValueError) as exc:
+            print(str(exc), file=err)
+            return 2
+        _write_document(summary.to_dict(), args.format, out)
+        return 0 if summary.ok else 1
+
     parser.error(f"unknown command {args.command!r}")
     return 2
 
@@ -93,6 +115,25 @@ def _parser() -> argparse.ArgumentParser:
     seed.add_argument("--allow-destructive-reset", action="store_true")
     seed.add_argument("--clickhouse-url", default=os.getenv("CLICKHOUSE_HTTP_URL"))
     seed.add_argument("--mqtt-broker-url", default=os.getenv("MQTT_BROKER"))
+
+    delete = subparsers.add_parser(
+        "delete",
+        help="Delete generated model from Config Registry",
+    )
+    _add_generator_args(delete)
+    _add_format_arg(delete)
+    delete.add_argument(
+        "--config-registry-url",
+        default=os.getenv("CONFIG_REGISTRY_URL", "http://localhost:8000"),
+        help="Config Registry base URL.",
+    )
+    delete.add_argument(
+        "--timeout-seconds",
+        type=float,
+        default=30.0,
+        help="HTTP request timeout for Config Registry API.",
+    )
+    delete.add_argument("--allow-destructive-reset", action="store_true")
     return parser
 
 
@@ -191,4 +232,3 @@ def _scalar_yaml(value: Any) -> str:
 
 if __name__ == "__main__":  # pragma: no cover
     raise SystemExit(main())
-

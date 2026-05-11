@@ -3,6 +3,7 @@ from __future__ import annotations
 from idp_synthetic_config.config_registry_seeder import (
     ConfigRegistryHttpClient,
     ConfigRegistrySeeder,
+    DeleteSummary,
     SeedSummary,
 )
 from idp_synthetic_config.generator import (
@@ -20,6 +21,7 @@ from idp_synthetic_config.reset import ResetPolicy, ResetSummary
 __all__ = [
     "ConfigRegistryHttpClient",
     "ConfigRegistrySeeder",
+    "DeleteSummary",
     "GeneratorOptions",
     "ResetPolicy",
     "ResetSummary",
@@ -30,4 +32,3 @@ __all__ = [
     "ValueProfile",
     "generate_synthetic_config",
 ]
-

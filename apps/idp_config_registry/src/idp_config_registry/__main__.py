@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import uvicorn
 
@@ -26,7 +27,7 @@ def main() -> None:
     args = parser.parse_args()
     command = args.command or "serve"
     if command == "serve":
-        _serve()
+        _serve(reload=getattr(args, "reload", False))
         return
     if command == "publish-config-outbox-once":
         asyncio.run(_publish_config_outbox_once(args))
@@ -37,20 +38,31 @@ def main() -> None:
     parser.error(f"Unknown command {command!r}")
 
 
-def _serve() -> None:
+def _serve(*, reload: bool = False) -> None:
     settings = ConfigRegistrySettings.from_env()
+    package_source_dir = Path(__file__).resolve().parents[1]
     uvicorn.run(
         "idp_config_registry.main:create_app",
         factory=True,
         host=settings.host,
         port=settings.port,
+        reload=reload,
+        reload_dirs=[str(package_source_dir)] if reload else None,
     )
 
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="idp-config-registry")
     subparsers = parser.add_subparsers(dest="command")
-    subparsers.add_parser("serve", help="Run the Config Registry HTTP API")
+    serve_parser = subparsers.add_parser(
+        "serve",
+        help="Run the Config Registry HTTP API",
+    )
+    serve_parser.add_argument(
+        "--reload",
+        action="store_true",
+        help="Reload the HTTP API when Config Registry source files change",
+    )
     publish_parser = subparsers.add_parser(
         "publish-config-outbox-once",
         help="Publish one batch of pending config outbox records to Kafka",

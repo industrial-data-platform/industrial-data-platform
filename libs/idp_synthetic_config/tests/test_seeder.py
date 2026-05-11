@@ -201,3 +201,34 @@ def test_default_reset_deletes_existing_generated_graph_before_seed() -> None:
     ]
     assert config_registry_reset.status == "cleared"
     assert config_registry_reset.records_affected == 10
+
+
+def test_delete_generated_deletes_generated_graph_through_api() -> None:
+    model = generate_synthetic_config(
+        GeneratorOptions(seed=2, devices=1, tags_per_device=1)
+    )
+    client = FakeConfigRegistryApi()
+    point_path = (
+        "/tenants/synthetic-tenant/assets/mall-synthetic-01"
+        "/agents/edge-synthetic-01/sources/knx_synthetic/points"
+    )
+    client.records[point_path] = [model.sources[0].points[0].to_create_payload()]
+
+    summary = ConfigRegistrySeeder(client).delete_generated(
+        model,
+        config_registry_url="http://localhost:8000",
+    )
+
+    config_registry_reset = next(
+        target for target in summary.reset.targets if target.name == "config_registry"
+    )
+    assert summary.ok is True
+    assert summary.counts == {"deleted": 1}
+    assert client.deleted == [
+        "/tenants/synthetic-tenant/assets/mall-synthetic-01"
+        "/agents/edge-synthetic-01/registry-graph"
+        "?delete_empty_asset=true&delete_empty_tenant=true"
+    ]
+    assert config_registry_reset.status == "cleared"
+    assert config_registry_reset.records_affected == 9
+    assert summary.entries[0].record_type == "registry_graph"
