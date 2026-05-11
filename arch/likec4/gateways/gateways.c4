@@ -11,6 +11,12 @@ model {
             icon @/knx.svg
         }
 
+        knx-source-emulator = field-gateway 'KNX-like TCP Source Emulator' {
+            description 'Local/dev TCP endpoint from apps/knx_source_emulator that streams synthetic JSON Lines observations for edge_telemetry_agent tests and demos.'
+            technology 'asyncio TCP / JSON Lines / idp_synthetic_config'
+            icon @/knx.svg
+        }
+
         modbus-gateway = field-gateway 'Modbus Gateway' {
             technology 'Modbus TCP / Modbus RTU'
             icon @/modbus.svg

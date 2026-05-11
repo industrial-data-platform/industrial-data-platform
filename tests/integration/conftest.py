@@ -908,6 +908,19 @@ class LocalConfigDeliveryStack(LocalPlatformStack):
         return json.loads(response_text) if response_text else {}
 
 
+@dataclass(frozen=True)
+class LocalFullStorageStack(LocalStorageStack):
+    postgres_port: int
+    config_registry_port: int
+    database_url: str
+
+    wait_for_postgres = LocalConfigDeliveryStack.wait_for_postgres
+    wait_for_config_outbox_worker = LocalConfigDeliveryStack.wait_for_config_outbox_worker
+    wait_for_config_registry_api = LocalConfigDeliveryStack.wait_for_config_registry_api
+    run_config_registry_migrations = LocalConfigDeliveryStack.run_config_registry_migrations
+    config_registry_json = LocalConfigDeliveryStack.config_registry_json
+
+
 def publish_json_message(
     *,
     host: str,
@@ -1146,6 +1159,131 @@ def local_storage_stack(tmp_path_factory: pytest.TempPathFactory) -> LocalStorag
     except subprocess.CalledProcessError as exc:
         raise AssertionError(
             "Failed to start the local storage stack.\n\n"
+            f"stdout:\n{exc.stdout}\n\nstderr:\n{exc.stderr}"
+        ) from exc
+    finally:
+        stack.compose("down", "-v", "--remove-orphans", check=False, timeout=300)
+
+
+@pytest.fixture(scope="session")
+def local_full_storage_stack(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> LocalFullStorageStack:
+    if not _docker_is_available():
+        pytest.skip("Docker Compose is required for full storage integration tests.")
+
+    env_values = _read_env_file(BASE_ENV_FILE)
+    mqtt_port = _reserve_free_port()
+    mqtt_ws_port = _reserve_free_port()
+    kafka_port = _reserve_free_port()
+    redpanda_connect_port = _reserve_free_port()
+    redpanda_connect_config_port = _reserve_free_port()
+    redpanda_connect_source_config_port = _reserve_free_port()
+    clickhouse_http_port = _reserve_free_port()
+    clickhouse_native_port = _reserve_free_port()
+    kafka_connect_rest_port = _reserve_free_port()
+    kafka_connect_jmx_port = _reserve_free_port()
+    postgres_port = _reserve_free_port()
+    config_registry_port = _reserve_free_port()
+    mqtt_username = f"idp_test_{uuid.uuid4().hex[:8]}"
+    mqtt_password = secrets.token_urlsafe(18)
+    database_url = (
+        "postgresql+asyncpg://idp:change-me-local-postgres"
+        f"@127.0.0.1:{postgres_port}/idp_config_registry"
+    )
+
+    env_values.update(
+        {
+            "MQTT_PORT": str(mqtt_port),
+            "MQTT_WS_PORT": str(mqtt_ws_port),
+            "MQTT_USERNAME": mqtt_username,
+            "MQTT_PASSWORD": mqtt_password,
+            "MQTT_BROKER": f"mqtt://127.0.0.1:{mqtt_port}",
+            "KAFKA_PORT": str(kafka_port),
+            "KAFKA_BOOTSTRAP_SERVERS": f"127.0.0.1:{kafka_port}",
+            "REDPANDA_CONNECT_PORT": str(redpanda_connect_port),
+            "REDPANDA_CONNECT_CONFIG_PORT": str(redpanda_connect_config_port),
+            "REDPANDA_CONNECT_SOURCE_CONFIG_PORT": str(
+                redpanda_connect_source_config_port
+            ),
+            "CLICKHOUSE_HOST": "127.0.0.1",
+            "CLICKHOUSE_HTTP_PORT": str(clickhouse_http_port),
+            "CLICKHOUSE_NATIVE_PORT": str(clickhouse_native_port),
+            "KAFKA_CONNECT_REST_PORT": str(kafka_connect_rest_port),
+            "KAFKA_CONNECT_JMX_PORT": str(kafka_connect_jmx_port),
+            "KAFKA_CONNECT_URL": f"http://127.0.0.1:{kafka_connect_rest_port}",
+            "POSTGRES_HOST": "127.0.0.1",
+            "POSTGRES_PORT": str(postgres_port),
+            "CONFIG_REGISTRY_PORT": str(config_registry_port),
+            "CONFIG_REGISTRY_DATABASE_URL": database_url,
+            "CONFIG_REGISTRY_KAFKA_CLIENT_ID": "idp-config-registry-full-it",
+            "CONFIG_REGISTRY_OUTBOX_POLL_INTERVAL_SECONDS": "0.5",
+        }
+    )
+
+    env_dir = tmp_path_factory.mktemp("full-storage-stack")
+    env_file = env_dir / ".env.integration"
+    _write_env_file(env_file, env_values)
+
+    stack = LocalFullStorageStack(
+        project_name=f"idp-it-{uuid.uuid4().hex[:10]}",
+        env_file=env_file,
+        mqtt_port=mqtt_port,
+        mqtt_username=mqtt_username,
+        mqtt_password=mqtt_password,
+        kafka_port=kafka_port,
+        redpanda_connect_port=redpanda_connect_port,
+        redpanda_connect_config_port=redpanda_connect_config_port,
+        redpanda_connect_source_config_port=redpanda_connect_source_config_port,
+        clickhouse_http_port=clickhouse_http_port,
+        clickhouse_native_port=clickhouse_native_port,
+        kafka_connect_rest_port=kafka_connect_rest_port,
+        kafka_connect_jmx_port=kafka_connect_jmx_port,
+        postgres_port=postgres_port,
+        config_registry_port=config_registry_port,
+        database_url=database_url,
+    )
+
+    try:
+        stack.compose(
+            "up",
+            "-d",
+            "mqtt-broker",
+            "kafka",
+            "postgres",
+            "clickhouse",
+            timeout=900,
+        )
+        stack.wait_for_mqtt()
+        stack.wait_for_kafka()
+        stack.wait_for_postgres()
+        stack.wait_for_clickhouse()
+        stack.run_config_registry_migrations(timeout=900)
+        stack.apply_clickhouse_migrations()
+        stack.compose(
+            "up",
+            "-d",
+            "kafka-init",
+            "redpanda-connect",
+            "redpanda-connect-config-projection",
+            "redpanda-connect-source-config-snapshot",
+            "idp-config-registry",
+            "idp-config-registry-outbox-worker",
+            "kafka-connect",
+            timeout=900,
+        )
+        stack.wait_for_redpanda_connect()
+        stack.wait_for_redpanda_connect_config_projection()
+        stack.wait_for_redpanda_connect_source_config_snapshot()
+        stack.wait_for_config_registry_api()
+        stack.wait_for_config_outbox_worker()
+        stack.wait_for_kafka_connect()
+        stack.apply_kafka_connect_connector()
+        stack.wait_for_kafka_connect_connector()
+        yield stack
+    except subprocess.CalledProcessError as exc:
+        raise AssertionError(
+            "Failed to start the full local storage stack.\n\n"
             f"stdout:\n{exc.stdout}\n\nstderr:\n{exc.stderr}"
         ) from exc
     finally:

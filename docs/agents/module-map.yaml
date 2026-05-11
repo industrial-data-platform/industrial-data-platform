@@ -86,6 +86,7 @@ modules:
     status: active
     paths:
       - apps/knx_demo
+      - apps/knx_source_emulator
       - libs/knx_project_parser
       - libs/idp_demo_stack
       - libs/idp_synthetic_config
@@ -94,6 +95,7 @@ modules:
       - environments
     validation:
       - "uv run --package knx-demo pytest apps/knx_demo/tests"
+      - "uv run --package knx-source-emulator pytest apps/knx_source_emulator/tests"
       - "uv run --package knx-project-parser pytest libs/knx_project_parser/tests"
       - "uv run --package idp-synthetic-config pytest libs/idp_synthetic_config/tests"
       - "uv run --group integration pytest libs/idp_demo_stack/tests/test_scenario.py"
