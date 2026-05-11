@@ -18,6 +18,7 @@ class FakeConfigRegistryApi:
     def __init__(self) -> None:
         self.records: dict[str, list[dict[str, Any]]] = {}
         self.posted: list[tuple[str, dict[str, Any]]] = []
+        self.deleted: list[str] = []
         self.conflict_paths: set[str] = set()
 
     def get_json(self, path: str) -> object:
@@ -30,6 +31,30 @@ class FakeConfigRegistryApi:
         return {"status": "created", **payload}
 
     def delete_json(self, path: str) -> dict[str, Any]:
+        self.deleted.append(path)
+        graph_path, _, _ = path.partition("?")
+        if graph_path.endswith("/registry-graph"):
+            prefix = graph_path[: -len("/registry-graph")]
+            deleted_points = 0
+            for record_path in tuple(self.records):
+                if record_path.startswith(f"{prefix}/sources/") and record_path.endswith(
+                    "/points"
+                ):
+                    deleted_points += len(self.records[record_path])
+                    self.records[record_path] = []
+            return {
+                "tenant_id": "synthetic-tenant",
+                "asset_id": "mall-synthetic-01",
+                "agent_id": "edge-synthetic-01",
+                "config_outbox_records_deleted": 2,
+                "source_config_revisions_deleted": 1,
+                "agent_runtime_config_revisions_deleted": 1,
+                "points_deleted": deleted_points,
+                "sources_deleted": 1,
+                "agents_deleted": 1,
+                "assets_deleted": 1,
+                "tenants_deleted": 1,
+            }
         list_path, _, raw_point_id = path.rpartition("/")
         point_id = unquote(raw_point_id)
         self.records[list_path] = [
@@ -141,7 +166,7 @@ def test_render_conflict_is_not_silently_accepted() -> None:
         raise ConfigRegistryConflict(path=render_path, body="duplicate")
 
 
-def test_default_reset_deletes_existing_generated_points_before_seed() -> None:
+def test_default_reset_deletes_existing_generated_graph_before_seed() -> None:
     model = generate_synthetic_config(
         GeneratorOptions(seed=2, devices=1, tags_per_device=1)
     )
@@ -156,11 +181,6 @@ def test_default_reset_deletes_existing_generated_points_before_seed() -> None:
             **model.sources[0].points[0].to_create_payload(),
             "point_id": "synthetic-tenant|mall-synthetic-01|knx_synthetic|stale",
         },
-        {
-            **model.sources[0].points[0].to_create_payload(),
-            "point_id": "manual-point",
-            "tags_json": {"generated_by": "operator"},
-        },
     ]
 
     summary = ConfigRegistrySeeder(client).seed(
@@ -174,5 +194,10 @@ def test_default_reset_deletes_existing_generated_points_before_seed() -> None:
         target for target in summary.reset.targets if target.name == "config_registry"
     )
     assert summary.ok is True
+    assert client.deleted == [
+        "/tenants/synthetic-tenant/assets/mall-synthetic-01"
+        "/agents/edge-synthetic-01/registry-graph"
+        "?delete_empty_asset=true&delete_empty_tenant=true"
+    ]
     assert config_registry_reset.status == "cleared"
-    assert config_registry_reset.records_affected == 2
+    assert config_registry_reset.records_affected == 10

@@ -81,6 +81,13 @@ class SourceRepository(Protocol):
         source_id: str,
     ) -> None: ...
 
+    async def delete_for_agent(
+        self,
+        tenant_id: str,
+        asset_id: str,
+        agent_id: str,
+    ) -> int: ...
+
 
 class PointRepository(Protocol):
     async def add(self, point: Point) -> None: ...
@@ -117,6 +124,13 @@ class PointRepository(Protocol):
 
     async def delete(self, tenant_id: str, point_id: str) -> None: ...
 
+    async def delete_for_agent(
+        self,
+        tenant_id: str,
+        asset_id: str,
+        agent_id: str,
+    ) -> int: ...
+
 
 class AgentRuntimeConfigRevisionRepository(Protocol):
     async def add(self, revision: AgentRuntimeConfigRevision) -> None: ...
@@ -135,6 +149,13 @@ class AgentRuntimeConfigRevisionRepository(Protocol):
         asset_id: str,
         agent_id: str,
     ) -> bool: ...
+
+    async def delete_for_agent(
+        self,
+        tenant_id: str,
+        asset_id: str,
+        agent_id: str,
+    ) -> int: ...
 
 
 class SourceConfigRevisionRepository(Protocol):
@@ -164,6 +185,13 @@ class SourceConfigRevisionRepository(Protocol):
         agent_id: str,
         source_id: str,
     ) -> bool: ...
+
+    async def delete_for_agent(
+        self,
+        tenant_id: str,
+        asset_id: str,
+        agent_id: str,
+    ) -> int: ...
 
 
 class ConfigOutboxRepository(Protocol):
@@ -196,6 +224,13 @@ class ConfigOutboxRepository(Protocol):
         agent_id: str,
         source_id: str,
     ) -> bool: ...
+
+    async def delete_for_agent(
+        self,
+        tenant_id: str,
+        asset_id: str,
+        agent_id: str,
+    ) -> int: ...
 
     async def reserve_available(
         self,

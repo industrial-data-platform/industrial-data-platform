@@ -106,8 +106,9 @@ class ResetPolicy:
                 status="planned",
                 records_affected=0,
                 detail=(
-                    "Seeder will delete existing generated Config Registry point "
-                    f"records before recreating {points} desired points."
+                    "Seeder will delete the existing generated Config Registry "
+                    "agent graph before recreating "
+                    f"{points} desired points."
                 ),
             ),
             ResetTargetSummary(

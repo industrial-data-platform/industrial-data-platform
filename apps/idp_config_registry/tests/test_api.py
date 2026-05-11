@@ -283,6 +283,66 @@ def test_delete_point_removes_existing_point() -> None:
     assert list_response.json() == []
 
 
+def test_delete_agent_registry_graph_removes_rendered_slice() -> None:
+    client = TestClient(create_app())
+    _create_renderable_graph(client)
+    render_response = client.post(
+        "/tenants/tenant-a/assets/asset-a/agents/agent-a/render-config",
+        json={
+            "config_revision": "rev-api-reset-001",
+            "issued_at": "2026-05-03T10:00:00Z",
+            "source_config_revisions": {"knx-main": "rev-api-reset-001-knx-main"},
+        },
+    )
+
+    delete_response = client.delete(
+        "/tenants/tenant-a/assets/asset-a/agents/agent-a/registry-graph"
+        "?delete_empty_asset=true&delete_empty_tenant=true"
+    )
+    tenants_response = client.get("/tenants")
+
+    assert render_response.status_code == 201
+    assert delete_response.status_code == 200
+    assert delete_response.json() == {
+        "tenant_id": "tenant-a",
+        "asset_id": "asset-a",
+        "agent_id": "agent-a",
+        "config_outbox_records_deleted": 2,
+        "source_config_revisions_deleted": 1,
+        "agent_runtime_config_revisions_deleted": 1,
+        "points_deleted": 1,
+        "sources_deleted": 1,
+        "agents_deleted": 1,
+        "assets_deleted": 1,
+        "tenants_deleted": 1,
+    }
+    assert tenants_response.json() == []
+
+
+def test_delete_agent_registry_graph_is_idempotent_for_missing_slice() -> None:
+    client = TestClient(create_app())
+
+    response = client.delete(
+        "/tenants/tenant-a/assets/asset-a/agents/agent-a/registry-graph"
+        "?delete_empty_asset=true&delete_empty_tenant=true"
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "tenant_id": "tenant-a",
+        "asset_id": "asset-a",
+        "agent_id": "agent-a",
+        "config_outbox_records_deleted": 0,
+        "source_config_revisions_deleted": 0,
+        "agent_runtime_config_revisions_deleted": 0,
+        "points_deleted": 0,
+        "sources_deleted": 0,
+        "agents_deleted": 0,
+        "assets_deleted": 0,
+        "tenants_deleted": 0,
+    }
+
+
 def test_render_config_endpoint_stores_revision_and_outbox_records() -> None:
     client = TestClient(create_app())
     _create_renderable_graph(client)

@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from types import TracebackType
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from idp_config_registry.domain.entities import (
@@ -312,6 +312,10 @@ def _config_outbox_from_model(model: ConfigOutboxModel) -> ConfigOutboxRecord:
     )
 
 
+def _rowcount(value: int | None) -> int:
+    return int(value or 0)
+
+
 @dataclass
 class PostgresTenantRepository:
     session: AsyncSession
@@ -442,6 +446,22 @@ class PostgresSourceRepository:
             await self.session.delete(model)
             await self.session.flush()
 
+    async def delete_for_agent(
+        self,
+        tenant_id: str,
+        asset_id: str,
+        agent_id: str,
+    ) -> int:
+        result = await self.session.execute(
+            delete(SourceModel).where(
+                SourceModel.tenant_id == tenant_id,
+                SourceModel.asset_id == asset_id,
+                SourceModel.agent_id == agent_id,
+            )
+        )
+        await self.session.flush()
+        return _rowcount(result.rowcount)
+
     async def list_for_agent(
         self,
         tenant_id: str,
@@ -480,6 +500,22 @@ class PostgresPointRepository:
         if model is not None:
             await self.session.delete(model)
             await self.session.flush()
+
+    async def delete_for_agent(
+        self,
+        tenant_id: str,
+        asset_id: str,
+        agent_id: str,
+    ) -> int:
+        result = await self.session.execute(
+            delete(PointModel).where(
+                PointModel.tenant_id == tenant_id,
+                PointModel.asset_id == asset_id,
+                PointModel.agent_id == agent_id,
+            )
+        )
+        await self.session.flush()
+        return _rowcount(result.rowcount)
 
     async def get_by_key(
         self,
@@ -582,6 +618,22 @@ class PostgresAgentRuntimeConfigRevisionRepository:
         )
         return result.first() is not None
 
+    async def delete_for_agent(
+        self,
+        tenant_id: str,
+        asset_id: str,
+        agent_id: str,
+    ) -> int:
+        result = await self.session.execute(
+            delete(AgentRuntimeConfigRevisionModel).where(
+                AgentRuntimeConfigRevisionModel.tenant_id == tenant_id,
+                AgentRuntimeConfigRevisionModel.asset_id == asset_id,
+                AgentRuntimeConfigRevisionModel.agent_id == agent_id,
+            )
+        )
+        await self.session.flush()
+        return _rowcount(result.rowcount)
+
 
 @dataclass
 class PostgresSourceConfigRevisionRepository:
@@ -645,6 +697,22 @@ class PostgresSourceConfigRevisionRepository:
             .limit(1)
         )
         return result.first() is not None
+
+    async def delete_for_agent(
+        self,
+        tenant_id: str,
+        asset_id: str,
+        agent_id: str,
+    ) -> int:
+        result = await self.session.execute(
+            delete(SourceConfigRevisionModel).where(
+                SourceConfigRevisionModel.tenant_id == tenant_id,
+                SourceConfigRevisionModel.asset_id == asset_id,
+                SourceConfigRevisionModel.agent_id == agent_id,
+            )
+        )
+        await self.session.flush()
+        return _rowcount(result.rowcount)
 
 
 @dataclass
@@ -720,6 +788,22 @@ class PostgresConfigOutboxRepository:
             .limit(1)
         )
         return result.first() is not None
+
+    async def delete_for_agent(
+        self,
+        tenant_id: str,
+        asset_id: str,
+        agent_id: str,
+    ) -> int:
+        result = await self.session.execute(
+            delete(ConfigOutboxModel).where(
+                ConfigOutboxModel.tenant_id == tenant_id,
+                ConfigOutboxModel.asset_id == asset_id,
+                ConfigOutboxModel.agent_id == agent_id,
+            )
+        )
+        await self.session.flush()
+        return _rowcount(result.rowcount)
 
     async def reserve_available(
         self,

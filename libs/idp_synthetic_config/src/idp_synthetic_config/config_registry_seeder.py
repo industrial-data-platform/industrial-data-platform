@@ -426,64 +426,39 @@ class ConfigRegistrySeeder:
         if not reset_summary.enabled:
             return reset_summary, ()
 
-        deleted = 0
-        entries: list[SeedEntry] = []
-        for source in model.sources:
-            point_path = _path(
+        reset_path = (
+            _path(
                 "tenants",
                 model.tenant.tenant_id,
                 "assets",
                 model.asset.asset_id,
                 "agents",
                 model.agent.agent_id,
-                "sources",
-                source.source_id,
-                "points",
+                "registry-graph",
             )
-            try:
-                response = self._client.get_json(point_path)
-            except ConfigRegistryNotFound:
-                continue
-            except ConfigRegistryError as exc:
-                entries.append(
-                    SeedEntry(
-                        action="error",
-                        record_type="reset",
-                        record_id=source.source_id,
-                        path=point_path,
-                        detail=str(exc),
-                    )
+            + "?delete_empty_asset=true&delete_empty_tenant=true"
+        )
+        entries: list[SeedEntry] = []
+        deleted = 0
+        try:
+            response = self._client.delete_json(reset_path)
+            deleted = _registry_graph_records_deleted(response)
+        except ConfigRegistryError as exc:
+            entries.append(
+                SeedEntry(
+                    action="error",
+                    record_type="reset",
+                    record_id=model.agent.agent_id,
+                    path=reset_path,
+                    detail=str(exc),
                 )
-                continue
-            if not isinstance(response, list):
-                continue
-            for item in response:
-                point_id = _generated_point_id(item)
-                if point_id is None:
-                    continue
-                delete_path = f"{point_path}/{urllib.parse.quote(point_id, safe='')}"
-                try:
-                    self._client.delete_json(delete_path)
-                except ConfigRegistryNotFound:
-                    continue
-                except ConfigRegistryError as exc:
-                    entries.append(
-                        SeedEntry(
-                            action="error",
-                            record_type="reset",
-                            record_id=point_id,
-                            path=delete_path,
-                            detail=str(exc),
-                        )
-                    )
-                    continue
-                deleted += 1
+            )
 
         status = "error" if entries else "cleared"
         detail = (
-            f"Deleted {deleted} existing generated Config Registry point records."
+            f"Deleted {deleted} existing generated Config Registry records."
             if not entries
-            else "Config Registry reset failed for at least one generated point."
+            else "Config Registry reset failed for the generated agent graph."
         )
         return (
             reset_summary.with_target(
@@ -564,22 +539,30 @@ def _stale_generated_point(
     return None
 
 
-def _generated_point_id(item: object) -> str | None:
-    if not isinstance(item, dict):
-        return None
-    point_id = item.get("point_id")
-    tags = item.get("tags_json")
-    if isinstance(point_id, str) and isinstance(tags, dict):
-        if tags.get("generated_by") == "idp_synthetic_config":
-            return point_id
-    return None
-
-
 def _payload_matches(existing: JsonObject, expected: JsonObject) -> bool:
     for key, expected_value in expected.items():
         if existing.get(key) != expected_value:
             return False
     return True
+
+
+def _registry_graph_records_deleted(response: JsonObject) -> int:
+    count_fields = (
+        "config_outbox_records_deleted",
+        "source_config_revisions_deleted",
+        "agent_runtime_config_revisions_deleted",
+        "points_deleted",
+        "sources_deleted",
+        "agents_deleted",
+        "assets_deleted",
+        "tenants_deleted",
+    )
+    total = 0
+    for field in count_fields:
+        value = response.get(field)
+        if isinstance(value, int):
+            total += value
+    return total
 
 
 def _has_drift_or_error(entries: list[SeedEntry]) -> bool:

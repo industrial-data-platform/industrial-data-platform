@@ -25,7 +25,8 @@ Default generation is intentionally small for local smoke runs: `3` devices and
 
 `seed` evaluates a local reset policy by default. Non-local targets refuse
 destructive reset unless `--allow-destructive-reset` is provided. The current
-Config Registry API exposes scoped point deletion, so the seeder clears existing
-generated point records before recreating them. Other reset targets are reported
-in the machine-readable reset summary and are skipped unless explicitly
-configured.
+Config Registry API exposes an agent-scoped registry graph cleanup endpoint, so
+the seeder clears generated config outbox records, rendered config revisions,
+points, sources, agent, and empty parent asset/tenant records in one request
+before recreating the desired model. Other reset targets are reported in the
+machine-readable reset summary and are skipped unless explicitly configured.

@@ -7,7 +7,11 @@ from idp_config_registry.api.dependencies import (
     get_config_payload_validator,
     get_unit_of_work_factory,
 )
-from idp_config_registry.api.schemas.agents import AgentCreateRequest, AgentResponse
+from idp_config_registry.api.schemas.agents import (
+    AgentCreateRequest,
+    AgentRegistryGraphDeleteResponse,
+    AgentResponse,
+)
 from idp_config_registry.api.schemas.config_revisions import (
     RenderAgentRuntimeConfigRequest,
     RenderAgentRuntimeConfigResponse,
@@ -27,6 +31,10 @@ from idp_config_registry.application.use_cases.agents import (
     CreateAgent,
     CreateAgentCommand,
     ListAgents,
+)
+from idp_config_registry.application.use_cases.registry_graph import (
+    DeleteAgentRegistryGraph,
+    DeleteAgentRegistryGraphCommand,
 )
 from idp_config_registry.application.use_cases.render_config import (
     RenderAgentRuntimeConfig,
@@ -95,6 +103,30 @@ async def list_agents(
             detail=str(exc),
         ) from exc
     return [AgentResponse.from_domain(agent) for agent in agents]
+
+
+@router.delete(
+    "/{agent_id}/registry-graph",
+    response_model=AgentRegistryGraphDeleteResponse,
+)
+async def delete_agent_registry_graph(
+    tenant_id: str,
+    asset_id: str,
+    agent_id: str,
+    delete_empty_asset: bool = False,
+    delete_empty_tenant: bool = False,
+    unit_of_work_factory: UnitOfWorkFactory = Depends(get_unit_of_work_factory),
+) -> AgentRegistryGraphDeleteResponse:
+    result = await DeleteAgentRegistryGraph(unit_of_work_factory()).execute(
+        DeleteAgentRegistryGraphCommand(
+            tenant_id=tenant_id,
+            asset_id=asset_id,
+            agent_id=agent_id,
+            delete_empty_asset=delete_empty_asset,
+            delete_empty_tenant=delete_empty_tenant,
+        )
+    )
+    return AgentRegistryGraphDeleteResponse.from_result(result)
 
 
 @router.post(
