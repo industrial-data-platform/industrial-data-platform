@@ -242,6 +242,47 @@ def test_create_and_list_points() -> None:
     assert [point["point_key"] for point in list_response.json()] == ["lights.main"]
 
 
+def test_delete_point_removes_existing_point() -> None:
+    client = TestClient(create_app())
+    client.post("/tenants", json={"tenant_id": "tenant-a", "name": "Tenant A"})
+    client.post(
+        "/tenants/tenant-a/assets",
+        json={"asset_id": "asset-a", "name": "Asset A"},
+    )
+    client.post(
+        "/tenants/tenant-a/assets/asset-a/agents",
+        json={"agent_id": "agent-a"},
+    )
+    client.post(
+        "/tenants/tenant-a/assets/asset-a/agents/agent-a/sources",
+        json={"source_id": "knx-main", "source_type": "knx"},
+    )
+    client.post(
+        "/tenants/tenant-a/assets/asset-a/agents/agent-a/sources/knx-main/points",
+        json={
+            "point_id": "tenant-a|asset-a|knx-main|lights.main",
+            "point_key": "lights.main",
+            "point_ref": "1/1/1",
+            "name": "Main Light",
+            "value_type": "boolean",
+            "value_model": "1.001",
+            "signal_type": "feedback",
+        },
+    )
+
+    delete_response = client.delete(
+        "/tenants/tenant-a/assets/asset-a/agents/agent-a"
+        "/sources/knx-main/points/tenant-a%7Casset-a%7Cknx-main%7Clights.main"
+    )
+    list_response = client.get(
+        "/tenants/tenant-a/assets/asset-a/agents/agent-a"
+        "/sources/knx-main/points"
+    )
+
+    assert delete_response.status_code == 204
+    assert list_response.json() == []
+
+
 def test_render_config_endpoint_stores_revision_and_outbox_records() -> None:
     client = TestClient(create_app())
     _create_renderable_graph(client)

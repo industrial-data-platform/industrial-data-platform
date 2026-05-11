@@ -7,6 +7,7 @@ members = [
     "edge-telemetry-agent",
     "idp-config-registry",
     "idp-demo-stack",
+    "idp-synthetic-config",
     "idp-telemetry-store",
     "industrial-data-platform",
     "knx-demo",
@@ -661,6 +662,21 @@ requires-dist = [
 dev = [{ name = "pytest", specifier = ">=9.0.2" }]
 
 [[package]]
+name = "idp-synthetic-config"
+version = "0.1.0"
+source = { editable = "libs/idp_synthetic_config" }
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=9.0.2" }]
+
+[[package]]
 name = "idp-telemetry-store"
 version = "0.1.0"
 source = { editable = "tools/idp_telemetry_store" }
@@ -692,6 +708,7 @@ dependencies = [
     { name = "edge-telemetry-agent" },
     { name = "idp-config-registry" },
     { name = "idp-demo-stack" },
+    { name = "idp-synthetic-config" },
     { name = "idp-telemetry-store" },
     { name = "knx-demo" },
     { name = "knx-project-parser" },
@@ -716,6 +733,7 @@ requires-dist = [
     { name = "edge-telemetry-agent", editable = "apps/edge_telemetry_agent" },
     { name = "idp-config-registry", editable = "apps/idp_config_registry" },
     { name = "idp-demo-stack", editable = "libs/idp_demo_stack" },
+    { name = "idp-synthetic-config", editable = "libs/idp_synthetic_config" },
     { name = "idp-telemetry-store", editable = "tools/idp_telemetry_store" },
     { name = "knx-demo", editable = "apps/knx_demo" },
     { name = "knx-project-parser", editable = "libs/knx_project_parser" },

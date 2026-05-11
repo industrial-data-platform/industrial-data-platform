@@ -43,7 +43,8 @@ stable identifiers: `idp_config_registry`, `idp-config-registry`,
   `POST /tenants/{tenant_id}/assets/{asset_id}/agents/{agent_id}/sources`,
   `GET /tenants/{tenant_id}/assets/{asset_id}/agents/{agent_id}/sources`,
   `POST /tenants/{tenant_id}/assets/{asset_id}/agents/{agent_id}/sources/{source_id}/points`,
-  `GET /tenants/{tenant_id}/assets/{asset_id}/agents/{agent_id}/sources/{source_id}/points`
+  `GET /tenants/{tenant_id}/assets/{asset_id}/agents/{agent_id}/sources/{source_id}/points`,
+  `DELETE /tenants/{tenant_id}/assets/{asset_id}/agents/{agent_id}/sources/{source_id}/points/{point_id}`
 
 CLI/runtime упаковка publisher-а и local Redpanda Connect
 `Kafka -> MQTT retained` projection реализованы как первый delivery baseline
