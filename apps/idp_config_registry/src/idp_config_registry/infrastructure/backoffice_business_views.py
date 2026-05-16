@@ -1271,12 +1271,12 @@ async def _tenant_public_identifier_values_by_uuid(
 ) -> tuple[str]:
     factory = _require_postgres_uow_factory(request)
     async with factory.session_manager.session_factory() as session:
-        tenant_id = await session.scalar(
+        tenant_code = await session.scalar(
             select(TenantModel.code).where(TenantModel.id == pk)
         )
-    if tenant_id is None:
+    if tenant_code is None:
         raise ValueError(f"Tenant backoffice row {pk} does not exist")
-    return (str(tenant_id),)
+    return (str(tenant_code),)
 
 
 async def _asset_public_identifier_values_by_uuid(
@@ -1341,13 +1341,13 @@ async def _point_public_identifier_values_by_uuid(
     pk: UUID,
 ) -> tuple[str, str]:
     (
-        tenant_id,
-        _asset_id,
-        _agent_id,
-        _source_id,
-        point_id,
+        tenant_code,
+        _asset_code,
+        _agent_code,
+        _source_code,
+        point_code,
     ) = await _point_public_context_by_uuid(request, pk)
-    return tenant_id, point_id
+    return tenant_code, point_code
 
 
 async def _point_public_context_by_uuid(
@@ -1377,20 +1377,20 @@ async def _point_public_context_by_uuid(
     return str(row[0]), str(row[1]), str(row[2]), str(row[3]), str(row[4])
 
 
-async def _tenant_uuid_by_code(request: Request, tenant_id: str) -> UUID | None:
+async def _tenant_uuid_by_code(request: Request, tenant_code: str) -> UUID | None:
     factory = _postgres_uow_factory_for_request(request)
     if factory is None:
         return None
     async with factory.session_manager.session_factory() as session:
         return await session.scalar(
-            select(TenantModel.id).where(TenantModel.code == tenant_id)
+            select(TenantModel.id).where(TenantModel.code == tenant_code)
         )
 
 
 async def _asset_internal_ids_by_codes(
     request: Request,
-    tenant_id: str,
-    asset_id: str,
+    tenant_code: str,
+    asset_code: str,
 ) -> tuple[UUID, UUID] | None:
     factory = _postgres_uow_factory_for_request(request)
     if factory is None:
@@ -1399,7 +1399,7 @@ async def _asset_internal_ids_by_codes(
         result = await session.execute(
             select(AssetModel.id, AssetModel.tenant_id)
             .join(TenantModel, AssetModel.tenant_id == TenantModel.id)
-            .where(TenantModel.code == tenant_id, AssetModel.code == asset_id)
+            .where(TenantModel.code == tenant_code, AssetModel.code == asset_code)
         )
         row = result.first()
     return (row[0], row[1]) if row is not None else None
@@ -1407,9 +1407,9 @@ async def _asset_internal_ids_by_codes(
 
 async def _agent_internal_ids_by_codes(
     request: Request,
-    tenant_id: str,
-    asset_id: str,
-    agent_id: str,
+    tenant_code: str,
+    asset_code: str,
+    agent_code: str,
 ) -> tuple[UUID, UUID, UUID] | None:
     factory = _postgres_uow_factory_for_request(request)
     if factory is None:
@@ -1420,9 +1420,9 @@ async def _agent_internal_ids_by_codes(
             .join(AssetModel, AgentModel.asset_id == AssetModel.id)
             .join(TenantModel, AgentModel.tenant_id == TenantModel.id)
             .where(
-                TenantModel.code == tenant_id,
-                AssetModel.code == asset_id,
-                AgentModel.code == agent_id,
+                TenantModel.code == tenant_code,
+                AssetModel.code == asset_code,
+                AgentModel.code == agent_code,
             )
         )
         row = result.first()
@@ -1431,10 +1431,10 @@ async def _agent_internal_ids_by_codes(
 
 async def _source_internal_ids_by_codes(
     request: Request,
-    tenant_id: str,
-    asset_id: str,
-    agent_id: str,
-    source_id: str,
+    tenant_code: str,
+    asset_code: str,
+    agent_code: str,
+    source_code: str,
 ) -> tuple[UUID, UUID, UUID] | None:
     factory = _postgres_uow_factory_for_request(request)
     if factory is None:
@@ -1446,10 +1446,10 @@ async def _source_internal_ids_by_codes(
             .join(AssetModel, AgentModel.asset_id == AssetModel.id)
             .join(TenantModel, SourceModel.tenant_id == TenantModel.id)
             .where(
-                TenantModel.code == tenant_id,
-                AssetModel.code == asset_id,
-                AgentModel.code == agent_id,
-                SourceModel.code == source_id,
+                TenantModel.code == tenant_code,
+                AssetModel.code == asset_code,
+                AgentModel.code == agent_code,
+                SourceModel.code == source_code,
             )
         )
         row = result.first()
@@ -1458,8 +1458,8 @@ async def _source_internal_ids_by_codes(
 
 async def _point_internal_ids_by_codes(
     request: Request,
-    tenant_id: str,
-    point_id: str,
+    tenant_code: str,
+    point_code: str,
 ) -> tuple[UUID, UUID, UUID] | None:
     factory = _postgres_uow_factory_for_request(request)
     if factory is None:
@@ -1468,7 +1468,7 @@ async def _point_internal_ids_by_codes(
         result = await session.execute(
             select(PointModel.id, PointModel.tenant_id, PointModel.source_id)
             .join(TenantModel, PointModel.tenant_id == TenantModel.id)
-            .where(TenantModel.code == tenant_id, PointModel.code == point_id)
+            .where(TenantModel.code == tenant_code, PointModel.code == point_code)
         )
         row = result.first()
     return (row[0], row[1], row[2]) if row is not None else None

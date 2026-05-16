@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -168,6 +169,14 @@ BUSINESS_VIEWS: tuple[type[object], ...] = (
     SourceBackofficeView,
     PointBackofficeView,
 )
+
+
+def _is_code_attribute(node: ast.expr) -> bool:
+    return isinstance(node, ast.Attribute) and node.attr == "code"
+
+
+def _name(node: ast.expr) -> str | None:
+    return node.id if isinstance(node, ast.Name) else None
 
 
 def test_backoffice_mounts_in_internal_mode_with_postgres_uow() -> None:
@@ -1238,6 +1247,40 @@ def test_sqladmin_dependency_stays_out_of_domain_and_application_layers() -> Non
     for root in guarded_roots:
         for path in root.rglob("*.py"):
             assert "sqladmin" not in path.read_text(encoding="utf-8")
+
+
+def test_storage_code_lookups_use_code_named_values() -> None:
+    guarded_paths = [
+        CONFIG_REGISTRY_SRC / "infrastructure" / "postgres" / "unit_of_work.py",
+        CONFIG_REGISTRY_SRC / "infrastructure" / "backoffice_business_views.py",
+        CONFIG_REGISTRY_SRC / "infrastructure" / "backoffice_config_views.py",
+    ]
+    public_id_names = {
+        "tenant_id",
+        "asset_id",
+        "agent_id",
+        "source_id",
+        "point_id",
+        "config_revision",
+        "source_config_revision",
+    }
+    violations: list[str] = []
+
+    for path in guarded_paths:
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Compare):
+                continue
+            operands = [node.left, *node.comparators]
+            for left, right, operator in zip(operands, operands[1:], node.ops):
+                if not isinstance(operator, ast.Eq):
+                    continue
+                if _is_code_attribute(left) and _name(right) in public_id_names:
+                    violations.append(f"{path}:{node.lineno}")
+                if _is_code_attribute(right) and _name(left) in public_id_names:
+                    violations.append(f"{path}:{node.lineno}")
+
+    assert violations == []
 
 
 def test_custom_list_template_keeps_sqladmin_bulk_action_modals() -> None:

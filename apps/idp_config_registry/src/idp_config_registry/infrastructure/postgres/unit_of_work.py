@@ -211,23 +211,23 @@ def _config_outbox_from_row(
 
 async def _tenant_model_by_code(
     session: AsyncSession,
-    tenant_id: str,
+    tenant_code: str,
 ) -> TenantModel | None:
     result = await session.scalars(
-        select(TenantModel).where(TenantModel.code == tenant_id)
+        select(TenantModel).where(TenantModel.code == tenant_code)
     )
     return result.first()
 
 
 async def _asset_row_by_codes(
     session: AsyncSession,
-    tenant_id: str,
-    asset_id: str,
+    tenant_code: str,
+    asset_code: str,
 ) -> tuple[AssetModel, TenantModel] | None:
     result = await session.execute(
         select(AssetModel, TenantModel)
         .join(TenantModel, AssetModel.tenant_id == TenantModel.id)
-        .where(TenantModel.code == tenant_id, AssetModel.code == asset_id)
+        .where(TenantModel.code == tenant_code, AssetModel.code == asset_code)
     )
     row = result.first()
     return (row[0], row[1]) if row is not None else None
@@ -235,18 +235,18 @@ async def _asset_row_by_codes(
 
 async def _agent_row_by_codes(
     session: AsyncSession,
-    tenant_id: str,
-    asset_id: str,
-    agent_id: str,
+    tenant_code: str,
+    asset_code: str,
+    agent_code: str,
 ) -> tuple[AgentModel, AssetModel, TenantModel] | None:
     result = await session.execute(
         select(AgentModel, AssetModel, TenantModel)
         .join(AssetModel, AgentModel.asset_id == AssetModel.id)
         .join(TenantModel, AgentModel.tenant_id == TenantModel.id)
         .where(
-            TenantModel.code == tenant_id,
-            AssetModel.code == asset_id,
-            AgentModel.code == agent_id,
+            TenantModel.code == tenant_code,
+            AssetModel.code == asset_code,
+            AgentModel.code == agent_code,
         )
     )
     row = result.first()
@@ -255,10 +255,10 @@ async def _agent_row_by_codes(
 
 async def _source_row_by_codes(
     session: AsyncSession,
-    tenant_id: str,
-    asset_id: str,
-    agent_id: str,
-    source_id: str,
+    tenant_code: str,
+    asset_code: str,
+    agent_code: str,
+    source_code: str,
 ) -> tuple[SourceModel, AgentModel, AssetModel, TenantModel] | None:
     result = await session.execute(
         select(SourceModel, AgentModel, AssetModel, TenantModel)
@@ -266,20 +266,20 @@ async def _source_row_by_codes(
         .join(AssetModel, AgentModel.asset_id == AssetModel.id)
         .join(TenantModel, SourceModel.tenant_id == TenantModel.id)
         .where(
-            TenantModel.code == tenant_id,
-            AssetModel.code == asset_id,
-            AgentModel.code == agent_id,
-            SourceModel.code == source_id,
+            TenantModel.code == tenant_code,
+            AssetModel.code == asset_code,
+            AgentModel.code == agent_code,
+            SourceModel.code == source_code,
         )
     )
     row = result.first()
     return (row[0], row[1], row[2], row[3]) if row is not None else None
 
 
-async def _point_row_by_id(
+async def _point_row_by_code(
     session: AsyncSession,
-    tenant_id: str,
-    point_id: str,
+    tenant_code: str,
+    point_code: str,
 ) -> tuple[PointModel, SourceModel, AgentModel, AssetModel, TenantModel] | None:
     result = await session.execute(
         select(PointModel, SourceModel, AgentModel, AssetModel, TenantModel)
@@ -287,7 +287,7 @@ async def _point_row_by_id(
         .join(AgentModel, SourceModel.agent_id == AgentModel.id)
         .join(AssetModel, AgentModel.asset_id == AssetModel.id)
         .join(TenantModel, PointModel.tenant_id == TenantModel.id)
-        .where(TenantModel.code == tenant_id, PointModel.code == point_id)
+        .where(TenantModel.code == tenant_code, PointModel.code == point_code)
     )
     row = result.first()
     return (row[0], row[1], row[2], row[3], row[4]) if row is not None else None
@@ -295,10 +295,10 @@ async def _point_row_by_id(
 
 async def _point_row_by_source_and_field(
     session: AsyncSession,
-    tenant_id: str,
-    asset_id: str,
-    agent_id: str,
-    source_id: str,
+    tenant_code: str,
+    asset_code: str,
+    agent_code: str,
+    source_code: str,
     field_name: str,
     field_value: str,
 ) -> tuple[PointModel, SourceModel, AgentModel, AssetModel, TenantModel] | None:
@@ -310,10 +310,10 @@ async def _point_row_by_source_and_field(
         .join(AssetModel, AgentModel.asset_id == AssetModel.id)
         .join(TenantModel, PointModel.tenant_id == TenantModel.id)
         .where(
-            TenantModel.code == tenant_id,
-            AssetModel.code == asset_id,
-            AgentModel.code == agent_id,
-            SourceModel.code == source_id,
+            TenantModel.code == tenant_code,
+            AssetModel.code == asset_code,
+            AgentModel.code == agent_code,
+            SourceModel.code == source_code,
             field == field_value,
         )
     )
@@ -323,10 +323,10 @@ async def _point_row_by_source_and_field(
 
 async def _agent_runtime_revision_row_by_codes(
     session: AsyncSession,
-    tenant_id: str,
-    asset_id: str,
-    agent_id: str,
-    config_revision: str,
+    tenant_code: str,
+    asset_code: str,
+    agent_code: str,
+    config_revision_code: str,
 ) -> tuple[AgentRuntimeConfigRevisionModel, AgentModel, AssetModel, TenantModel] | None:
     result = await session.execute(
         select(AgentRuntimeConfigRevisionModel, AgentModel, AssetModel, TenantModel)
@@ -334,10 +334,10 @@ async def _agent_runtime_revision_row_by_codes(
         .join(AssetModel, AgentModel.asset_id == AssetModel.id)
         .join(TenantModel, AgentRuntimeConfigRevisionModel.tenant_id == TenantModel.id)
         .where(
-            TenantModel.code == tenant_id,
-            AssetModel.code == asset_id,
-            AgentModel.code == agent_id,
-            AgentRuntimeConfigRevisionModel.code == config_revision,
+            TenantModel.code == tenant_code,
+            AssetModel.code == asset_code,
+            AgentModel.code == agent_code,
+            AgentRuntimeConfigRevisionModel.code == config_revision_code,
         )
     )
     row = result.first()
@@ -346,11 +346,11 @@ async def _agent_runtime_revision_row_by_codes(
 
 async def _source_config_revision_row_by_codes(
     session: AsyncSession,
-    tenant_id: str,
-    asset_id: str,
-    agent_id: str,
-    source_id: str,
-    source_config_revision: str,
+    tenant_code: str,
+    asset_code: str,
+    agent_code: str,
+    source_code: str,
+    source_config_revision_code: str,
 ) -> tuple[SourceConfigRevisionModel, SourceModel, AgentModel, AssetModel, TenantModel] | None:
     result = await session.execute(
         select(SourceConfigRevisionModel, SourceModel, AgentModel, AssetModel, TenantModel)
@@ -359,11 +359,11 @@ async def _source_config_revision_row_by_codes(
         .join(AssetModel, AgentModel.asset_id == AssetModel.id)
         .join(TenantModel, SourceConfigRevisionModel.tenant_id == TenantModel.id)
         .where(
-            TenantModel.code == tenant_id,
-            AssetModel.code == asset_id,
-            AgentModel.code == agent_id,
-            SourceModel.code == source_id,
-            SourceConfigRevisionModel.code == source_config_revision,
+            TenantModel.code == tenant_code,
+            AssetModel.code == asset_code,
+            AgentModel.code == agent_code,
+            SourceModel.code == source_code,
+            SourceConfigRevisionModel.code == source_config_revision_code,
         )
     )
     row = result.first()
@@ -475,10 +475,11 @@ class PostgresAssetRepository:
             await self.session.flush()
 
     async def list_for_tenant(self, tenant_id: str) -> list[Asset]:
+        tenant_code = tenant_id
         result = await self.session.execute(
             select(AssetModel, TenantModel)
             .join(TenantModel, AssetModel.tenant_id == TenantModel.id)
-            .where(TenantModel.code == tenant_id)
+            .where(TenantModel.code == tenant_code)
             .order_by(AssetModel.code)
         )
         return [_asset_from_row(row[0], row[1]) for row in result]
@@ -540,11 +541,13 @@ class PostgresAgentRepository:
             await self.session.flush()
 
     async def list_for_asset(self, tenant_id: str, asset_id: str) -> list[Agent]:
+        tenant_code = tenant_id
+        asset_code = asset_id
         result = await self.session.execute(
             select(AgentModel, AssetModel, TenantModel)
             .join(AssetModel, AgentModel.asset_id == AssetModel.id)
             .join(TenantModel, AgentModel.tenant_id == TenantModel.id)
-            .where(TenantModel.code == tenant_id, AssetModel.code == asset_id)
+            .where(TenantModel.code == tenant_code, AssetModel.code == asset_code)
             .order_by(AgentModel.code)
         )
         return [_agent_from_row(row[0], row[1], row[2]) for row in result]
@@ -663,15 +666,18 @@ class PostgresSourceRepository:
         asset_id: str,
         agent_id: str,
     ) -> list[Source]:
+        tenant_code = tenant_id
+        asset_code = asset_id
+        agent_code = agent_id
         result = await self.session.execute(
             select(SourceModel, AgentModel, AssetModel, TenantModel)
             .join(AgentModel, SourceModel.agent_id == AgentModel.id)
             .join(AssetModel, AgentModel.asset_id == AssetModel.id)
             .join(TenantModel, SourceModel.tenant_id == TenantModel.id)
             .where(
-                TenantModel.code == tenant_id,
-                AssetModel.code == asset_id,
-                AgentModel.code == agent_id,
+                TenantModel.code == tenant_code,
+                AssetModel.code == asset_code,
+                AgentModel.code == agent_code,
             )
             .order_by(SourceModel.code)
         )
@@ -721,11 +727,11 @@ class PostgresPointRepository:
         )
 
     async def get_by_id(self, tenant_id: str, point_id: str) -> Point | None:
-        row = await _point_row_by_id(self.session, tenant_id, point_id)
+        row = await _point_row_by_code(self.session, tenant_id, point_id)
         return _point_from_row(*row) if row is not None else None
 
     async def update(self, point: Point) -> None:
-        row = await _point_row_by_id(self.session, point.tenant_id, point.point_id)
+        row = await _point_row_by_code(self.session, point.tenant_id, point.point_id)
         if row is None:
             return
         model, _source, _agent, _asset, _tenant = row
@@ -745,7 +751,7 @@ class PostgresPointRepository:
         await self.session.flush()
 
     async def delete(self, tenant_id: str, point_id: str) -> None:
-        row = await _point_row_by_id(self.session, tenant_id, point_id)
+        row = await _point_row_by_code(self.session, tenant_id, point_id)
         if row is not None:
             await self.session.delete(row[0])
             await self.session.flush()
@@ -812,6 +818,10 @@ class PostgresPointRepository:
         agent_id: str,
         source_id: str,
     ) -> list[Point]:
+        tenant_code = tenant_id
+        asset_code = asset_id
+        agent_code = agent_id
+        source_code = source_id
         result = await self.session.execute(
             select(PointModel, SourceModel, AgentModel, AssetModel, TenantModel)
             .join(SourceModel, PointModel.source_id == SourceModel.id)
@@ -819,10 +829,10 @@ class PostgresPointRepository:
             .join(AssetModel, AgentModel.asset_id == AssetModel.id)
             .join(TenantModel, PointModel.tenant_id == TenantModel.id)
             .where(
-                TenantModel.code == tenant_id,
-                AssetModel.code == asset_id,
-                AgentModel.code == agent_id,
-                SourceModel.code == source_id,
+                TenantModel.code == tenant_code,
+                AssetModel.code == asset_code,
+                AgentModel.code == agent_code,
+                SourceModel.code == source_code,
             )
             .order_by(PointModel.point_key)
         )
@@ -984,6 +994,9 @@ class PostgresSourceConfigRevisionRepository:
         agent_id: str,
         config_revision: str,
     ) -> list[SourceConfigRevision]:
+        tenant_code = tenant_id
+        asset_code = asset_id
+        agent_code = agent_id
         result = await self.session.execute(
             select(SourceConfigRevisionModel, SourceModel, AgentModel, AssetModel, TenantModel)
             .join(SourceModel, SourceConfigRevisionModel.source_id == SourceModel.id)
@@ -991,9 +1004,9 @@ class PostgresSourceConfigRevisionRepository:
             .join(AssetModel, AgentModel.asset_id == AssetModel.id)
             .join(TenantModel, SourceConfigRevisionModel.tenant_id == TenantModel.id)
             .where(
-                TenantModel.code == tenant_id,
-                AssetModel.code == asset_id,
-                AgentModel.code == agent_id,
+                TenantModel.code == tenant_code,
+                AssetModel.code == asset_code,
+                AgentModel.code == agent_code,
                 SourceConfigRevisionModel.config_revision == config_revision,
             )
             .order_by(SourceModel.code)
@@ -1130,6 +1143,9 @@ class PostgresConfigOutboxRepository:
         agent_id: str,
         config_revision: str,
     ) -> list[ConfigOutboxRecord]:
+        tenant_code = tenant_id
+        asset_code = asset_id
+        agent_code = agent_id
         result = await self.session.execute(
             select(ConfigOutboxModel, TenantModel, AssetModel, AgentModel, SourceModel)
             .join(AgentModel, ConfigOutboxModel.agent_id == AgentModel.id)
@@ -1137,9 +1153,9 @@ class PostgresConfigOutboxRepository:
             .join(TenantModel, ConfigOutboxModel.tenant_id == TenantModel.id)
             .outerjoin(SourceModel, ConfigOutboxModel.source_id == SourceModel.id)
             .where(
-                TenantModel.code == tenant_id,
-                AssetModel.code == asset_id,
-                AgentModel.code == agent_id,
+                TenantModel.code == tenant_code,
+                AssetModel.code == asset_code,
+                AgentModel.code == agent_code,
                 ConfigOutboxModel.config_revision == config_revision,
             )
             .order_by(ConfigOutboxModel.config_scope)

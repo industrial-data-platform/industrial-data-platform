@@ -291,10 +291,10 @@ async def _source_config_revision_model_for_response(
 
 async def _agent_runtime_config_revision_internal_ids_by_codes(
     request: Request,
-    tenant_id: str,
-    asset_id: str,
-    agent_id: str,
-    config_revision: str,
+    tenant_code: str,
+    asset_code: str,
+    agent_code: str,
+    config_revision_code: str,
 ) -> tuple[UUID, UUID, UUID] | None:
     factory = _postgres_uow_factory_for_request(request)
     if factory is None:
@@ -310,10 +310,10 @@ async def _agent_runtime_config_revision_internal_ids_by_codes(
             .join(AssetModel, AgentModel.asset_id == AssetModel.id)
             .join(TenantModel, AgentRuntimeConfigRevisionModel.tenant_id == TenantModel.id)
             .where(
-                TenantModel.code == tenant_id,
-                AssetModel.code == asset_id,
-                AgentModel.code == agent_id,
-                AgentRuntimeConfigRevisionModel.code == config_revision,
+                TenantModel.code == tenant_code,
+                AssetModel.code == asset_code,
+                AgentModel.code == agent_code,
+                AgentRuntimeConfigRevisionModel.code == config_revision_code,
             )
         )
         row = result.first()
@@ -322,11 +322,11 @@ async def _agent_runtime_config_revision_internal_ids_by_codes(
 
 async def _source_config_revision_internal_ids_by_codes(
     request: Request,
-    tenant_id: str,
-    asset_id: str,
-    agent_id: str,
-    source_id: str,
-    source_config_revision: str,
+    tenant_code: str,
+    asset_code: str,
+    agent_code: str,
+    source_code: str,
+    source_config_revision_code: str,
     config_revision: str,
 ) -> tuple[UUID, UUID, UUID, UUID] | None:
     factory = _postgres_uow_factory_for_request(request)
@@ -345,11 +345,11 @@ async def _source_config_revision_internal_ids_by_codes(
             .join(AssetModel, AgentModel.asset_id == AssetModel.id)
             .join(TenantModel, SourceConfigRevisionModel.tenant_id == TenantModel.id)
             .where(
-                TenantModel.code == tenant_id,
-                AssetModel.code == asset_id,
-                AgentModel.code == agent_id,
-                SourceModel.code == source_id,
-                SourceConfigRevisionModel.code == source_config_revision,
+                TenantModel.code == tenant_code,
+                AssetModel.code == asset_code,
+                AgentModel.code == agent_code,
+                SourceModel.code == source_code,
+                SourceConfigRevisionModel.code == source_config_revision_code,
                 SourceConfigRevisionModel.config_revision == config_revision,
             )
         )
