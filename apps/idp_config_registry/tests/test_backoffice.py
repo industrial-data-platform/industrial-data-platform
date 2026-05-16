@@ -1025,7 +1025,7 @@ async def test_agent_runtime_config_revision_create_returns_sqladmin_uuid_ids(
         tenant_uuid,
         agent_uuid,
     )
-    assert model.config_revision == "rev-sqladmin"
+    assert model.code == "rev-sqladmin"
 
 
 @pytest.mark.asyncio
@@ -1166,7 +1166,7 @@ async def test_source_config_revision_create_returns_sqladmin_uuid_ids(
         source_uuid,
         runtime_revision_uuid,
     )
-    assert model.source_config_revision == "src-rev-sqladmin"
+    assert model.code == "src-rev-sqladmin"
 
 
 @pytest.mark.asyncio

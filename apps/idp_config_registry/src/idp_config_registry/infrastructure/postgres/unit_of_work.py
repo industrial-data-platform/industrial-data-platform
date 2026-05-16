@@ -40,9 +40,14 @@ from idp_config_registry.infrastructure.postgres.models import (
 )
 
 
+def _public_identifier(model: object) -> str:
+    # PostgreSQL stores public contract identifiers in each table's code column.
+    return str(getattr(model, "code"))
+
+
 def _tenant_from_model(model: TenantModel) -> Tenant:
     return Tenant(
-        tenant_id=model.tenant_id,
+        tenant_id=_public_identifier(model),
         name=model.name,
         status=TenantStatus(model.status),
         created_at=model.created_at,
@@ -52,8 +57,8 @@ def _tenant_from_model(model: TenantModel) -> Tenant:
 
 def _asset_from_row(model: AssetModel, tenant: TenantModel) -> Asset:
     return Asset(
-        tenant_id=tenant.tenant_id,
-        asset_id=model.asset_id,
+        tenant_id=_public_identifier(tenant),
+        asset_id=_public_identifier(model),
         name=model.name,
         description=model.description,
         status=AssetStatus(model.status),
@@ -68,9 +73,9 @@ def _agent_from_row(
     tenant: TenantModel,
 ) -> Agent:
     return Agent(
-        tenant_id=tenant.tenant_id,
-        asset_id=asset.asset_id,
-        agent_id=model.agent_id,
+        tenant_id=_public_identifier(tenant),
+        asset_id=_public_identifier(asset),
+        agent_id=_public_identifier(model),
         name=model.name,
         status=AgentStatus(model.status),
         bootstrap_hint_json=dict(model.bootstrap_hint_json),
@@ -86,10 +91,10 @@ def _source_from_row(
     tenant: TenantModel,
 ) -> Source:
     return Source(
-        tenant_id=tenant.tenant_id,
-        asset_id=asset.asset_id,
-        agent_id=agent.agent_id,
-        source_id=model.source_id,
+        tenant_id=_public_identifier(tenant),
+        asset_id=_public_identifier(asset),
+        agent_id=_public_identifier(agent),
+        source_id=_public_identifier(model),
         source_type=model.source_type,
         enabled=model.enabled,
         name=model.name,
@@ -110,11 +115,11 @@ def _point_from_row(
     tenant: TenantModel,
 ) -> Point:
     return Point(
-        tenant_id=tenant.tenant_id,
-        asset_id=asset.asset_id,
-        agent_id=agent.agent_id,
-        source_id=source.source_id,
-        point_id=model.point_id,
+        tenant_id=_public_identifier(tenant),
+        asset_id=_public_identifier(asset),
+        agent_id=_public_identifier(agent),
+        source_id=_public_identifier(source),
+        point_id=_public_identifier(model),
         point_key=model.point_key,
         point_ref=model.point_ref,
         name=model.name,
@@ -139,10 +144,10 @@ def _agent_runtime_config_revision_from_row(
     tenant: TenantModel,
 ) -> AgentRuntimeConfigRevision:
     return AgentRuntimeConfigRevision(
-        tenant_id=tenant.tenant_id,
-        asset_id=asset.asset_id,
-        agent_id=agent.agent_id,
-        config_revision=model.config_revision,
+        tenant_id=_public_identifier(tenant),
+        asset_id=_public_identifier(asset),
+        agent_id=_public_identifier(agent),
+        config_revision=_public_identifier(model),
         status=ConfigRevisionStatus(model.status),
         issued_at=model.issued_at,
         agent_runtime_payload_json=dict(model.agent_runtime_payload_json),
@@ -158,11 +163,11 @@ def _source_config_revision_from_row(
     tenant: TenantModel,
 ) -> SourceConfigRevision:
     return SourceConfigRevision(
-        tenant_id=tenant.tenant_id,
-        asset_id=asset.asset_id,
-        agent_id=agent.agent_id,
-        source_id=source.source_id,
-        source_config_revision=model.source_config_revision,
+        tenant_id=_public_identifier(tenant),
+        asset_id=_public_identifier(asset),
+        agent_id=_public_identifier(agent),
+        source_id=_public_identifier(source),
+        source_config_revision=_public_identifier(model),
         config_revision=model.config_revision,
         status=ConfigRevisionStatus(model.status),
         issued_at=model.issued_at,
@@ -179,14 +184,14 @@ def _config_outbox_from_row(
     source: SourceModel | None,
 ) -> ConfigOutboxRecord:
     return ConfigOutboxRecord(
-        tenant_id=tenant.tenant_id,
+        tenant_id=_public_identifier(tenant),
         outbox_id=model.id,
         idempotency_key=model.idempotency_key,
-        asset_id=asset.asset_id,
-        agent_id=agent.agent_id,
+        asset_id=_public_identifier(asset),
+        agent_id=_public_identifier(agent),
         config_revision=model.config_revision,
         config_scope=model.config_scope,
-        source_id=source.source_id if source is not None else None,
+        source_id=_public_identifier(source) if source is not None else None,
         source_config_revision=model.source_config_revision,
         message_type=model.message_type,
         kafka_topic=model.kafka_topic,
@@ -393,7 +398,7 @@ class PostgresTenantRepository:
         self.session.add(
             TenantModel(
                 id=uuid4(),
-                tenant_id=tenant.tenant_id,
+                code=tenant.tenant_id,
                 name=tenant.name,
                 status=tenant.status.value,
                 created_at=tenant.created_at,
@@ -439,7 +444,7 @@ class PostgresAssetRepository:
             AssetModel(
                 id=uuid4(),
                 tenant_id=tenant.id,
-                asset_id=asset.asset_id,
+                code=asset.asset_id,
                 name=asset.name,
                 description=asset.description,
                 status=asset.status.value,
@@ -499,7 +504,7 @@ class PostgresAgentRepository:
                 id=uuid4(),
                 tenant_id=tenant.id,
                 asset_id=asset.id,
-                agent_id=agent.agent_id,
+                code=agent.agent_id,
                 name=agent.name,
                 status=agent.status.value,
                 bootstrap_hint_json=dict(agent.bootstrap_hint_json),
@@ -568,7 +573,7 @@ class PostgresSourceRepository:
                 id=uuid4(),
                 tenant_id=tenant.id,
                 agent_id=agent.id,
-                source_id=source.source_id,
+                code=source.source_id,
                 source_type=source.source_type,
                 enabled=source.enabled,
                 name=source.name,
@@ -697,7 +702,7 @@ class PostgresPointRepository:
                 id=uuid4(),
                 tenant_id=tenant.id,
                 source_id=source.id,
-                point_id=point.point_id,
+                code=point.point_id,
                 point_key=point.point_key,
                 point_ref=point.point_ref,
                 name=point.name,
@@ -847,7 +852,7 @@ class PostgresAgentRuntimeConfigRevisionRepository:
                 id=uuid4(),
                 tenant_id=tenant.id,
                 agent_id=agent.id,
-                config_revision=revision.config_revision,
+                code=revision.config_revision,
                 status=revision.status.value,
                 issued_at=revision.issued_at,
                 agent_runtime_payload_json=dict(revision.agent_runtime_payload_json),
@@ -945,7 +950,7 @@ class PostgresSourceConfigRevisionRepository:
                 tenant_id=tenant.id,
                 source_id=source.id,
                 agent_runtime_config_revision_id=runtime.id,
-                source_config_revision=revision.source_config_revision,
+                code=revision.source_config_revision,
                 config_revision=revision.config_revision,
                 status=revision.status.value,
                 issued_at=revision.issued_at,

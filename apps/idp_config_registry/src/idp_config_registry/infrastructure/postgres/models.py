@@ -19,7 +19,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, synonym
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class Base(DeclarativeBase):
@@ -37,7 +37,6 @@ class TenantModel(Base):
 
     id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
     code: Mapped[str] = mapped_column(Text, nullable=False)
-    tenant_id = synonym("code")
     name: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
@@ -72,7 +71,6 @@ class AssetModel(Base):
     id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
     tenant_id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
     code: Mapped[str] = mapped_column(Text, nullable=False)
-    asset_id = synonym("code")
     name: Mapped[str] = mapped_column(Text, nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
     status: Mapped[str] = mapped_column(Text, nullable=False)
@@ -117,7 +115,6 @@ class AgentModel(Base):
     tenant_id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
     asset_id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
     code: Mapped[str] = mapped_column(Text, nullable=False)
-    agent_id = synonym("code")
     name: Mapped[str | None] = mapped_column(Text)
     status: Mapped[str] = mapped_column(Text, nullable=False)
     bootstrap_hint_json: Mapped[dict[str, Any]] = mapped_column(
@@ -168,7 +165,6 @@ class SourceModel(Base):
     tenant_id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
     agent_id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
     code: Mapped[str] = mapped_column(Text, nullable=False)
-    source_id = synonym("code")
     source_type: Mapped[str] = mapped_column(Text, nullable=False)
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     name: Mapped[str | None] = mapped_column(Text)
@@ -234,7 +230,6 @@ class PointModel(Base):
     tenant_id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
     source_id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
     code: Mapped[str] = mapped_column(Text, nullable=False)
-    point_id = synonym("code")
     point_key: Mapped[str] = mapped_column(String(512), nullable=False)
     point_ref: Mapped[str] = mapped_column(Text, nullable=False)
     name: Mapped[str] = mapped_column(Text, nullable=False)
@@ -309,7 +304,6 @@ class AgentRuntimeConfigRevisionModel(Base):
     tenant_id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
     agent_id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
     code: Mapped[str] = mapped_column(Text, nullable=False)
-    config_revision = synonym("code")
     status: Mapped[str] = mapped_column(Text, nullable=False)
     issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     agent_runtime_payload_json: Mapped[dict[str, Any]] = mapped_column(
@@ -365,7 +359,6 @@ class SourceConfigRevisionModel(Base):
         nullable=False,
     )
     code: Mapped[str] = mapped_column(Text, nullable=False)
-    source_config_revision = synonym("code")
     config_revision: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(Text, nullable=False)
     issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

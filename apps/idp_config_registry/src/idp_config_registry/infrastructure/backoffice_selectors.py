@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 from sqladmin.fields import SelectField
-from wtforms import validators
+from wtforms import StringField, validators
 
 from idp_config_registry.application.use_cases.agents import ListAgents
 from idp_config_registry.application.use_cases.assets import ListAssets
@@ -65,6 +65,27 @@ def bind_select_field(
             coerce=coerce,
             validators=field_validators,
             render_kw=render_kw,
+        ),
+    )
+
+
+def bind_string_field(
+    form: type,
+    *,
+    field_name: str,
+    label: str,
+    required: bool,
+) -> None:
+    field_validators = (
+        [validators.InputRequired()] if required else [validators.Optional()]
+    )
+    setattr(
+        form,
+        field_name,
+        StringField(
+            label,
+            validators=field_validators,
+            render_kw={"class": "form-control"},
         ),
     )
 

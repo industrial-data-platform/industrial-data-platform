@@ -72,6 +72,7 @@ from idp_config_registry.infrastructure.backoffice_selectors import (
     asset_select_choices,
     attach_selector_value,
     bind_select_field,
+    bind_string_field,
     decode_agent_selection,
     decode_asset_selection,
     decode_source_selection,
@@ -156,7 +157,7 @@ class TenantBackofficeView(ApplicationLookupBackofficeView, model=TenantModel):
     column_list = model_columns(TenantModel, "code", "name", "status", "updated_at")
     column_details_list = all_model_columns(TenantModel)
     form_columns = [
-        "tenant_id",
+        "code",
         "name",
         "status",
     ]
@@ -168,6 +169,17 @@ class TenantBackofficeView(ApplicationLookupBackofficeView, model=TenantModel):
         "name",
         "status",
     ]
+
+    async def scaffold_form(self, rules: list[str] | None = None) -> type:
+        form = await super().scaffold_form(rules)
+        if rules == self._form_create_rules:
+            bind_string_field(
+                form,
+                field_name="tenant_id",
+                label="tenant_id",
+                required=True,
+            )
+        return form
 
     async def insert_model(self, request: Request, data: dict[str, object]) -> object:
         tenant = await CreateTenant(
@@ -224,7 +236,7 @@ class AssetBackofficeView(ApplicationLookupBackofficeView, model=AssetModel):
     )
     column_details_list = all_model_columns(AssetModel)
     form_columns = [
-        "asset_id",
+        "code",
         "name",
         "description",
         "status",
@@ -245,6 +257,12 @@ class AssetBackofficeView(ApplicationLookupBackofficeView, model=AssetModel):
     async def scaffold_form(self, rules: list[str] | None = None) -> type:
         form = await super().scaffold_form(rules)
         if rules == self._form_create_rules:
+            bind_string_field(
+                form,
+                field_name="asset_id",
+                label="asset_id",
+                required=True,
+            )
             bind_select_field(
                 form,
                 field_name=TENANT_SELECTOR_FIELD,
@@ -338,7 +356,7 @@ class AgentBackofficeView(ApplicationLookupBackofficeView, model=AgentModel):
     )
     column_details_list = all_model_columns(AgentModel)
     form_columns = [
-        "agent_id",
+        "code",
         "name",
         "status",
         "bootstrap_hint_json",
@@ -394,6 +412,12 @@ class AgentBackofficeView(ApplicationLookupBackofficeView, model=AgentModel):
     async def scaffold_form(self, rules: list[str] | None = None) -> type:
         form = await super().scaffold_form(rules)
         if rules == self._form_create_rules:
+            bind_string_field(
+                form,
+                field_name="agent_id",
+                label="agent_id",
+                required=True,
+            )
             bind_select_field(
                 form,
                 field_name=ASSET_SELECTOR_FIELD,
@@ -509,7 +533,7 @@ class SourceBackofficeView(ApplicationLookupBackofficeView, model=SourceModel):
     )
     column_details_list = all_model_columns(SourceModel)
     form_columns = [
-        "source_id",
+        "code",
         "source_type",
         "enabled",
         "name",
@@ -540,6 +564,12 @@ class SourceBackofficeView(ApplicationLookupBackofficeView, model=SourceModel):
     async def scaffold_form(self, rules: list[str] | None = None) -> type:
         form = await super().scaffold_form(rules)
         if rules == self._form_create_rules:
+            bind_string_field(
+                form,
+                field_name="source_id",
+                label="source_id",
+                required=True,
+            )
             bind_select_field(
                 form,
                 field_name=AGENT_SELECTOR_FIELD,
@@ -681,7 +711,7 @@ class PointBackofficeView(ApplicationLookupBackofficeView, model=PointModel):
     )
     column_details_list = all_model_columns(PointModel)
     form_columns = [
-        "point_id",
+        "code",
         "point_key",
         "point_ref",
         "name",
@@ -727,6 +757,12 @@ class PointBackofficeView(ApplicationLookupBackofficeView, model=PointModel):
     async def scaffold_form(self, rules: list[str] | None = None) -> type:
         form = await super().scaffold_form(rules)
         if rules == self._form_create_rules:
+            bind_string_field(
+                form,
+                field_name="point_id",
+                label="point_id",
+                required=True,
+            )
             bind_select_field(
                 form,
                 field_name=SOURCE_SELECTOR_FIELD,
@@ -848,7 +884,7 @@ def _tenant_model(tenant: Tenant) -> TenantModel:
     return _attach_public_ids(
         TenantModel(
             id=uuid4(),
-            tenant_id=tenant.tenant_id,
+            code=tenant.tenant_id,
             name=tenant.name,
             status=tenant.status.value,
             created_at=tenant.created_at,
@@ -864,7 +900,7 @@ def _asset_model(asset: Asset) -> AssetModel:
         AssetModel(
             id=uuid4(),
             tenant_id=uuid4(),
-            asset_id=asset.asset_id,
+            code=asset.asset_id,
             name=asset.name,
             description=asset.description,
             status=asset.status.value,
@@ -882,7 +918,7 @@ def _agent_model(agent: Agent) -> AgentModel:
             id=uuid4(),
             tenant_id=uuid4(),
             asset_id=uuid4(),
-            agent_id=agent.agent_id,
+            code=agent.agent_id,
             name=agent.name,
             status=agent.status.value,
             bootstrap_hint_json=dict(agent.bootstrap_hint_json),
@@ -901,7 +937,7 @@ def _source_model(source: Source) -> SourceModel:
             id=uuid4(),
             tenant_id=uuid4(),
             agent_id=uuid4(),
-            source_id=source.source_id,
+            code=source.source_id,
             source_type=source.source_type,
             enabled=source.enabled,
             name=source.name,
@@ -925,7 +961,7 @@ def _point_model(point: Point) -> PointModel:
             id=uuid4(),
             tenant_id=uuid4(),
             source_id=uuid4(),
-            point_id=point.point_id,
+            code=point.point_id,
             point_key=point.point_key,
             point_ref=point.point_ref,
             name=point.name,

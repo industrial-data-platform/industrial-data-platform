@@ -23,6 +23,7 @@ from idp_config_registry.infrastructure.backoffice_selectors import (
     SourceSelection,
     agent_select_choices,
     bind_select_field,
+    bind_string_field,
     decode_agent_selection,
     decode_source_selection,
     source_select_choices,
@@ -68,7 +69,7 @@ class AgentRuntimeConfigRevisionBackofficeView(
     )
     column_details_list = all_model_columns(AgentRuntimeConfigRevisionModel)
     form_columns = [
-        "config_revision",
+        "code",
         "issued_at",
         "agent_runtime_payload_json",
     ]
@@ -83,6 +84,12 @@ class AgentRuntimeConfigRevisionBackofficeView(
     async def scaffold_form(self, rules: list[str] | None = None) -> type:
         form = await super().scaffold_form(rules)
         if rules == self._form_create_rules:
+            bind_string_field(
+                form,
+                field_name="config_revision",
+                label="config_revision",
+                required=True,
+            )
             bind_select_field(
                 form,
                 field_name=AGENT_SELECTOR_FIELD,
@@ -135,7 +142,7 @@ class SourceConfigRevisionBackofficeView(
     )
     column_details_list = all_model_columns(SourceConfigRevisionModel)
     form_columns = [
-        "source_config_revision",
+        "code",
         "config_revision",
         "issued_at",
         "source_payload_json",
@@ -152,6 +159,12 @@ class SourceConfigRevisionBackofficeView(
     async def scaffold_form(self, rules: list[str] | None = None) -> type:
         form = await super().scaffold_form(rules)
         if rules == self._form_create_rules:
+            bind_string_field(
+                form,
+                field_name="source_config_revision",
+                label="source_config_revision",
+                required=True,
+            )
             bind_select_field(
                 form,
                 field_name=SOURCE_SELECTOR_FIELD,
@@ -210,7 +223,7 @@ def _agent_runtime_config_revision_model(
         id=uuid4(),
         tenant_id=uuid4(),
         agent_id=uuid4(),
-        config_revision=revision.config_revision,
+        code=revision.config_revision,
         status=revision.status.value,
         issued_at=revision.issued_at,
         agent_runtime_payload_json=dict(revision.agent_runtime_payload_json),
@@ -226,7 +239,7 @@ def _source_config_revision_model(
         tenant_id=uuid4(),
         source_id=uuid4(),
         agent_runtime_config_revision_id=uuid4(),
-        source_config_revision=revision.source_config_revision,
+        code=revision.source_config_revision,
         config_revision=revision.config_revision,
         status=revision.status.value,
         issued_at=revision.issued_at,

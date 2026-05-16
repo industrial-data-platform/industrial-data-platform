@@ -6,11 +6,8 @@ from datetime import UTC, datetime
 from typing import Any
 
 from sqladmin import ModelView
-from sqladmin.forms import ModelConverter
-from sqlalchemy.orm import SynonymProperty
 from starlette.requests import Request
 from starlette.types import ASGIApp, Receive, Scope, Send
-from wtforms.fields.core import UnboundField
 
 from idp_config_registry.application.config_defaults import (
     default_acquisition_settings as _default_acquisition_settings,
@@ -44,39 +41,9 @@ class BackofficeStateContextMiddleware:
             _CURRENT_BACKOFFICE_STATE.reset(token)
 
 
-class PublicSynonymModelConverter(ModelConverter):
-    async def convert(
-        self,
-        *,
-        model: type,
-        prop: Any,
-        session_maker: Any,
-        field_args: dict[str, Any],
-        field_widget_args: dict[str, Any],
-        form_include_pk: bool,
-        label: str | None = None,
-        override: type[Any] | None = None,
-        form_ajax_refs: dict[str, Any] | None = None,
-    ) -> UnboundField | None:
-        if isinstance(prop, SynonymProperty):
-            prop = prop.parent.attrs[prop.name]
-        return await super().convert(
-            model=model,
-            prop=prop,
-            session_maker=session_maker,
-            field_args=field_args,
-            field_widget_args=field_widget_args,
-            form_include_pk=form_include_pk,
-            label=label,
-            override=override,
-            form_ajax_refs=form_ajax_refs,
-        )
-
-
 class BackofficeModelView(ModelView):
     can_view_details = True
     can_export = True
-    form_converter = PublicSynonymModelConverter
     form_include_pk = True
     page_size = 50
     page_size_options = [25, 50, 100]
