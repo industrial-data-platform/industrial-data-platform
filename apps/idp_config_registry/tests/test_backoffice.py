@@ -4,6 +4,7 @@ import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
@@ -33,6 +34,9 @@ from idp_config_registry.application.use_cases.tenants import (
     CreateTenantCommand,
 )
 from idp_config_registry.domain.value_objects import SignalType, ValueType
+from idp_config_registry.infrastructure import (
+    backoffice_business_views as business_views,
+)
 from idp_config_registry.infrastructure.backoffice import (
     BACKOFFICE_CUSTOM_VIEWS,
     BACKOFFICE_VIEWS,
@@ -621,6 +625,54 @@ async def test_backoffice_can_update_asset_via_mounted_form() -> None:
 
 
 @pytest.mark.asyncio
+async def test_backoffice_asset_update_accepts_sqladmin_uuid_pk(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = create_app(settings=_settings(internal_mode=True))
+    app.state.unit_of_work_factory = InMemoryUnitOfWorkFactory()
+    await _seed_registry_tree(app)
+    sqladmin_asset_pk = uuid4()
+
+    monkeypatch.setattr(
+        business_views,
+        "_is_postgres_request",
+        lambda _request: True,
+        raising=False,
+    )
+
+    async def resolve_asset_uuid(_request: object, pk: object) -> tuple[str, str]:
+        assert pk == sqladmin_asset_pk
+        return "tenant-backoffice", "asset-backoffice"
+
+    monkeypatch.setattr(
+        business_views,
+        "_asset_public_identifier_values_by_uuid",
+        resolve_asset_uuid,
+        raising=False,
+    )
+    asset_view = next(
+        view for view in app.state.backoffice.views if isinstance(view, AssetBackofficeView)
+    )
+
+    await asset_view.update_model(
+        FakePageRequest(app),
+        str(sqladmin_asset_pk),
+        {
+            "name": "Asset Backoffice Updated",
+            "description": "Updated through SQLAdmin UUID pk",
+            "status": "active",
+        },
+    )
+
+    async with app.state.unit_of_work_factory() as unit_of_work:
+        asset = await unit_of_work.assets.get("tenant-backoffice", "asset-backoffice")
+
+    assert asset is not None
+    assert asset.name == "Asset Backoffice Updated"
+    assert asset.description == "Updated through SQLAdmin UUID pk"
+
+
+@pytest.mark.asyncio
 async def test_backoffice_can_update_agent_via_mounted_form() -> None:
     app = create_app(settings=_settings(internal_mode=True))
     app.state.unit_of_work_factory = InMemoryUnitOfWorkFactory()
@@ -1068,6 +1120,47 @@ async def test_backoffice_agent_render_config_action_uses_application_use_cases(
     assert "revision=backoffice-" in html
     assert "outbox_records=2" in html
     assert "Вернуться в список" in html
+
+
+@pytest.mark.asyncio
+async def test_backoffice_agent_render_config_action_accepts_sqladmin_uuid_pk(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = create_app(settings=_settings(internal_mode=True))
+    app.state.unit_of_work_factory = InMemoryUnitOfWorkFactory()
+    await _seed_registry_tree(app)
+    sqladmin_agent_pk = uuid4()
+
+    monkeypatch.setattr(
+        business_views,
+        "_is_postgres_request",
+        lambda _request: True,
+        raising=False,
+    )
+
+    async def resolve_agent_uuid(_request: object, pk: object) -> tuple[str, str, str]:
+        assert pk == sqladmin_agent_pk
+        return "tenant-backoffice", "asset-backoffice", "agent-backoffice"
+
+    monkeypatch.setattr(
+        business_views,
+        "_agent_public_identifier_values_by_uuid",
+        resolve_agent_uuid,
+        raising=False,
+    )
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/backoffice/agent-model/action/render-agent-config",
+            params={"pks": str(sqladmin_agent_pk)},
+            headers={"referer": "http://testserver/backoffice/agent-model/list"},
+        )
+
+    html = response.text
+    assert response.status_code == 200
+    assert "Успешно обработано агентов: 1." in html
+    assert "agent-backoffice" in html
+    assert "revision=backoffice-" in html
 
 
 @pytest.mark.asyncio

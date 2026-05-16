@@ -61,6 +61,7 @@ def upgrade() -> None:
             name="fk_assets_tenant",
         ),
         sa.PrimaryKeyConstraint("id", name="pk_assets"),
+        sa.UniqueConstraint("id", "tenant_id", name="uq_assets_id_tenant"),
         sa.UniqueConstraint("tenant_id", "code", name="uq_assets_tenant_code"),
     )
     op.create_index(
@@ -99,11 +100,12 @@ def upgrade() -> None:
             name="fk_agents_tenant",
         ),
         sa.ForeignKeyConstraint(
-            ["asset_id"],
-            ["assets.id"],
+            ["asset_id", "tenant_id"],
+            ["assets.id", "assets.tenant_id"],
             name="fk_agents_asset",
         ),
         sa.PrimaryKeyConstraint("id", name="pk_agents"),
+        sa.UniqueConstraint("id", "tenant_id", name="uq_agents_id_tenant"),
         sa.UniqueConstraint("asset_id", "code", name="uq_agents_asset_code"),
     )
     op.create_index(
@@ -157,11 +159,18 @@ def upgrade() -> None:
             name="fk_sources_tenant",
         ),
         sa.ForeignKeyConstraint(
-            ["agent_id"],
-            ["agents.id"],
+            ["agent_id", "tenant_id"],
+            ["agents.id", "agents.tenant_id"],
             name="fk_sources_agent",
         ),
         sa.PrimaryKeyConstraint("id", name="pk_sources"),
+        sa.UniqueConstraint("id", "tenant_id", name="uq_sources_id_tenant"),
+        sa.UniqueConstraint(
+            "id",
+            "agent_id",
+            "tenant_id",
+            name="uq_sources_id_agent_tenant",
+        ),
         sa.UniqueConstraint("agent_id", "code", name="uq_sources_agent_code"),
     )
     op.create_index(
@@ -228,8 +237,8 @@ def upgrade() -> None:
             name="fk_points_tenant",
         ),
         sa.ForeignKeyConstraint(
-            ["source_id"],
-            ["sources.id"],
+            ["source_id", "tenant_id"],
+            ["sources.id", "sources.tenant_id"],
             name="fk_points_source",
         ),
         sa.PrimaryKeyConstraint("id", name="pk_points"),
@@ -267,11 +276,16 @@ def upgrade() -> None:
             name="fk_agent_runtime_config_revisions_tenant",
         ),
         sa.ForeignKeyConstraint(
-            ["agent_id"],
-            ["agents.id"],
+            ["agent_id", "tenant_id"],
+            ["agents.id", "agents.tenant_id"],
             name="fk_agent_runtime_config_revisions_agent",
         ),
         sa.PrimaryKeyConstraint("id", name="pk_agent_runtime_config_revisions"),
+        sa.UniqueConstraint(
+            "id",
+            "tenant_id",
+            name="uq_agent_runtime_config_revisions_id_tenant",
+        ),
         sa.UniqueConstraint(
             "agent_id",
             "code",
@@ -316,13 +330,16 @@ def upgrade() -> None:
             name="fk_source_config_revisions_tenant",
         ),
         sa.ForeignKeyConstraint(
-            ["source_id"],
-            ["sources.id"],
+            ["source_id", "tenant_id"],
+            ["sources.id", "sources.tenant_id"],
             name="fk_source_config_revisions_source",
         ),
         sa.ForeignKeyConstraint(
-            ["agent_runtime_config_revision_id"],
-            ["agent_runtime_config_revisions.id"],
+            ["agent_runtime_config_revision_id", "tenant_id"],
+            [
+                "agent_runtime_config_revisions.id",
+                "agent_runtime_config_revisions.tenant_id",
+            ],
             name="fk_source_config_revisions_runtime",
         ),
         sa.PrimaryKeyConstraint("id", name="pk_source_config_revisions"),
@@ -384,13 +401,13 @@ def upgrade() -> None:
             name="fk_config_outbox_tenant",
         ),
         sa.ForeignKeyConstraint(
-            ["agent_id"],
-            ["agents.id"],
+            ["agent_id", "tenant_id"],
+            ["agents.id", "agents.tenant_id"],
             name="fk_config_outbox_agent",
         ),
         sa.ForeignKeyConstraint(
-            ["source_id"],
-            ["sources.id"],
+            ["source_id", "agent_id", "tenant_id"],
+            ["sources.id", "sources.agent_id", "sources.tenant_id"],
             name="fk_config_outbox_source",
         ),
         sa.PrimaryKeyConstraint("id", name="pk_config_outbox"),

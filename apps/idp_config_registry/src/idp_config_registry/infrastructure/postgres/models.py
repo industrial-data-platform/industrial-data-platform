@@ -59,6 +59,7 @@ class AssetModel(Base):
             ["tenants.id"],
             name="fk_assets_tenant",
         ),
+        UniqueConstraint("id", "tenant_id", name="uq_assets_id_tenant"),
         UniqueConstraint("tenant_id", "code", name="uq_assets_tenant_code"),
         CheckConstraint("status in ('active', 'disabled')", name="ck_assets_status"),
         CheckConstraint(
@@ -95,10 +96,11 @@ class AgentModel(Base):
             name="fk_agents_tenant",
         ),
         ForeignKeyConstraint(
-            ["asset_id"],
-            ["assets.id"],
+            ["asset_id", "tenant_id"],
+            ["assets.id", "assets.tenant_id"],
             name="fk_agents_asset",
         ),
+        UniqueConstraint("id", "tenant_id", name="uq_agents_id_tenant"),
         UniqueConstraint("asset_id", "code", name="uq_agents_asset_code"),
         CheckConstraint(
             "status in ('active', 'disabled', 'retired')",
@@ -143,9 +145,16 @@ class SourceModel(Base):
             name="fk_sources_tenant",
         ),
         ForeignKeyConstraint(
-            ["agent_id"],
-            ["agents.id"],
+            ["agent_id", "tenant_id"],
+            ["agents.id", "agents.tenant_id"],
             name="fk_sources_agent",
+        ),
+        UniqueConstraint("id", "tenant_id", name="uq_sources_id_tenant"),
+        UniqueConstraint(
+            "id",
+            "agent_id",
+            "tenant_id",
+            name="uq_sources_id_agent_tenant",
         ),
         UniqueConstraint("agent_id", "code", name="uq_sources_agent_code"),
         CheckConstraint(
@@ -199,8 +208,8 @@ class PointModel(Base):
             name="fk_points_tenant",
         ),
         ForeignKeyConstraint(
-            ["source_id"],
-            ["sources.id"],
+            ["source_id", "tenant_id"],
+            ["sources.id", "sources.tenant_id"],
             name="fk_points_source",
         ),
         UniqueConstraint("tenant_id", "code", name="uq_points_tenant_code"),
@@ -270,9 +279,14 @@ class AgentRuntimeConfigRevisionModel(Base):
             name="fk_agent_runtime_config_revisions_tenant",
         ),
         ForeignKeyConstraint(
-            ["agent_id"],
-            ["agents.id"],
+            ["agent_id", "tenant_id"],
+            ["agents.id", "agents.tenant_id"],
             name="fk_agent_runtime_config_revisions_agent",
+        ),
+        UniqueConstraint(
+            "id",
+            "tenant_id",
+            name="uq_agent_runtime_config_revisions_id_tenant",
         ),
         UniqueConstraint(
             "agent_id",
@@ -298,8 +312,12 @@ class AgentRuntimeConfigRevisionModel(Base):
     config_revision = synonym("code")
     status: Mapped[str] = mapped_column(Text, nullable=False)
     issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    agent_runtime_payload_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    agent_runtime_payload_json: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
 
 
 class SourceConfigRevisionModel(Base):
@@ -312,16 +330,21 @@ class SourceConfigRevisionModel(Base):
             name="fk_source_config_revisions_tenant",
         ),
         ForeignKeyConstraint(
-            ["source_id"],
-            ["sources.id"],
+            ["source_id", "tenant_id"],
+            ["sources.id", "sources.tenant_id"],
             name="fk_source_config_revisions_source",
         ),
         ForeignKeyConstraint(
-            ["agent_runtime_config_revision_id"],
-            ["agent_runtime_config_revisions.id"],
+            ["agent_runtime_config_revision_id", "tenant_id"],
+            [
+                "agent_runtime_config_revisions.id",
+                "agent_runtime_config_revisions.tenant_id",
+            ],
             name="fk_source_config_revisions_runtime",
         ),
-        UniqueConstraint("source_id", "code", name="uq_source_config_revisions_source_code"),
+        UniqueConstraint(
+            "source_id", "code", name="uq_source_config_revisions_source_code"
+        ),
         CheckConstraint(
             "status in ('draft', 'rendered', 'active', 'superseded', 'failed')",
             name="ck_source_config_revisions_status",
@@ -347,7 +370,9 @@ class SourceConfigRevisionModel(Base):
     status: Mapped[str] = mapped_column(Text, nullable=False)
     issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     source_payload_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
 
 
 class ConfigOutboxModel(Base):
@@ -360,13 +385,13 @@ class ConfigOutboxModel(Base):
             name="fk_config_outbox_tenant",
         ),
         ForeignKeyConstraint(
-            ["agent_id"],
-            ["agents.id"],
+            ["agent_id", "tenant_id"],
+            ["agents.id", "agents.tenant_id"],
             name="fk_config_outbox_agent",
         ),
         ForeignKeyConstraint(
-            ["source_id"],
-            ["sources.id"],
+            ["source_id", "agent_id", "tenant_id"],
+            ["sources.id", "sources.agent_id", "sources.tenant_id"],
             name="fk_config_outbox_source",
         ),
         UniqueConstraint("idempotency_key", name="uq_config_outbox_idempotency_key"),
@@ -404,11 +429,17 @@ class ConfigOutboxModel(Base):
     kafka_key: Mapped[str] = mapped_column(Text, nullable=False)
     payload_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     status: Mapped[str] = mapped_column(Text, nullable=False)
-    available_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    available_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
     lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     next_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_error: Mapped[str | None] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )

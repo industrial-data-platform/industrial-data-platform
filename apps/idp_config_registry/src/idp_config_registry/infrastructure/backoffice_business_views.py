@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from typing import Any
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from sqladmin import action
+from sqlalchemy import select
 from starlette.requests import Request
 from starlette.responses import HTMLResponse
 
@@ -108,7 +109,12 @@ class ApplicationLookupBackofficeView(BusinessBackofficeModelView):
     async def get_object_for_details(self, request: Request) -> Any:
         state = get_request_state(request)
         if isinstance(state.unit_of_work_factory, PostgresUnitOfWorkFactory):
-            return await super().get_object_for_details(request)
+            try:
+                model = await super().get_object_for_details(request)
+            except ValueError:
+                model = None
+            if model is not None:
+                return model
         return await self._get_object_from_uow(
             request.path_params["pk"],
             state.unit_of_work_factory(),
@@ -117,7 +123,12 @@ class ApplicationLookupBackofficeView(BusinessBackofficeModelView):
     async def get_object_for_edit(self, request: Request) -> Any:
         state = get_request_state(request)
         if isinstance(state.unit_of_work_factory, PostgresUnitOfWorkFactory):
-            return await super().get_object_for_edit(request)
+            try:
+                model = await super().get_object_for_edit(request)
+            except ValueError:
+                model = None
+            if model is not None:
+                return model
         return await self._get_object_from_uow(
             request.path_params["pk"],
             state.unit_of_work_factory(),
@@ -126,7 +137,12 @@ class ApplicationLookupBackofficeView(BusinessBackofficeModelView):
     async def get_object_for_delete(self, value: Any) -> Any:
         state = get_current_state()
         if isinstance(state.unit_of_work_factory, PostgresUnitOfWorkFactory):
-            return await super().get_object_for_delete(value)
+            try:
+                model = await super().get_object_for_delete(value)
+            except ValueError:
+                model = None
+            if model is not None:
+                return model
         return await self._get_object_from_uow(str(value), state.unit_of_work_factory())
 
     async def _get_object_from_uow(self, pk: str, unit_of_work: Any) -> Any:
@@ -154,13 +170,15 @@ class TenantBackofficeView(ApplicationLookupBackofficeView, model=TenantModel):
     ]
 
     async def insert_model(self, request: Request, data: dict[str, object]) -> object:
-        tenant = await CreateTenant(get_request_state(request).unit_of_work_factory()).execute(
+        tenant = await CreateTenant(
+            get_request_state(request).unit_of_work_factory()
+        ).execute(
             CreateTenantCommand(
                 tenant_id=str(data["tenant_id"]),
                 name=str(data["name"]),
             )
         )
-        return _tenant_model(tenant)
+        return await _tenant_model_for_response(request, tenant)
 
     async def update_model(
         self,
@@ -168,18 +186,22 @@ class TenantBackofficeView(ApplicationLookupBackofficeView, model=TenantModel):
         pk: str,
         data: dict[str, object],
     ) -> object:
-        tenant = await UpdateTenant(get_request_state(request).unit_of_work_factory()).execute(
+        tenant_id = await _tenant_public_identifier_value(request, pk)
+        tenant = await UpdateTenant(
+            get_request_state(request).unit_of_work_factory()
+        ).execute(
             UpdateTenantCommand(
-                tenant_id=str(pk),
+                tenant_id=tenant_id,
                 name=str(data["name"]),
                 status=TenantStatus(str(data["status"])),
             )
         )
-        return _tenant_model(tenant)
+        return await _tenant_model_for_response(request, tenant)
 
     async def delete_model(self, request: Request, pk: Any) -> None:
+        tenant_id = await _tenant_public_identifier_value(request, str(pk))
         await DeleteTenant(get_request_state(request).unit_of_work_factory()).execute(
-            DeleteTenantCommand(tenant_id=str(pk))
+            DeleteTenantCommand(tenant_id=tenant_id)
         )
 
     async def _get_object_from_uow(self, pk: str, unit_of_work: Any) -> Any:
@@ -245,6 +267,7 @@ class AssetBackofficeView(ApplicationLookupBackofficeView, model=AssetModel):
 
     async def get_object_for_edit(self, request: Request) -> Any:
         model = await super().get_object_for_edit(request)
+        model = await _attach_asset_public_ids(request, model)
         return attach_selector_value(
             model,
             field_name=TENANT_SELECTOR_FIELD,
@@ -252,7 +275,9 @@ class AssetBackofficeView(ApplicationLookupBackofficeView, model=AssetModel):
         )
 
     async def insert_model(self, request: Request, data: dict[str, object]) -> object:
-        asset = await CreateAsset(get_request_state(request).unit_of_work_factory()).execute(
+        asset = await CreateAsset(
+            get_request_state(request).unit_of_work_factory()
+        ).execute(
             CreateAssetCommand(
                 tenant_id=str(data[TENANT_SELECTOR_FIELD]),
                 asset_id=str(data["asset_id"]),
@@ -260,7 +285,7 @@ class AssetBackofficeView(ApplicationLookupBackofficeView, model=AssetModel):
                 description=optional_string(data.get("description")),
             )
         )
-        return _asset_model(asset)
+        return await _asset_model_for_response(request, asset)
 
     async def update_model(
         self,
@@ -268,8 +293,10 @@ class AssetBackofficeView(ApplicationLookupBackofficeView, model=AssetModel):
         pk: str,
         data: dict[str, object],
     ) -> object:
-        tenant_id, asset_id = _public_identifier_values(pk, 2)
-        asset = await UpdateAsset(get_request_state(request).unit_of_work_factory()).execute(
+        tenant_id, asset_id = await _asset_public_identifier_values(request, pk)
+        asset = await UpdateAsset(
+            get_request_state(request).unit_of_work_factory()
+        ).execute(
             UpdateAssetCommand(
                 tenant_id=str(tenant_id),
                 asset_id=str(asset_id),
@@ -278,10 +305,10 @@ class AssetBackofficeView(ApplicationLookupBackofficeView, model=AssetModel):
                 status=AssetStatus(str(data["status"])),
             )
         )
-        return _asset_model(asset)
+        return await _asset_model_for_response(request, asset)
 
     async def delete_model(self, request: Request, pk: Any) -> None:
-        tenant_id, asset_id = _public_identifier_values(str(pk), 2)
+        tenant_id, asset_id = await _asset_public_identifier_values(request, str(pk))
         await DeleteAsset(get_request_state(request).unit_of_work_factory()).execute(
             DeleteAssetCommand(
                 tenant_id=str(tenant_id),
@@ -344,7 +371,10 @@ class AgentBackofficeView(ApplicationLookupBackofficeView, model=AgentModel):
         for pk in raw_pks.split(","):
             if not pk:
                 continue
-            tenant_id, asset_id, agent_id = _public_identifier_values(pk, 3)
+            tenant_id, asset_id, agent_id = await _agent_public_identifier_values(
+                request,
+                pk,
+            )
             agent_targets.append(
                 AgentRenderTarget(
                     tenant_id=tenant_id,
@@ -386,6 +416,7 @@ class AgentBackofficeView(ApplicationLookupBackofficeView, model=AgentModel):
 
     async def get_object_for_edit(self, request: Request) -> Any:
         model = await super().get_object_for_edit(request)
+        model = await _attach_agent_public_ids(request, model)
         return attach_selector_value(
             model,
             field_name=ASSET_SELECTOR_FIELD,
@@ -399,7 +430,9 @@ class AgentBackofficeView(ApplicationLookupBackofficeView, model=AgentModel):
 
     async def insert_model(self, request: Request, data: dict[str, object]) -> object:
         asset_selection = _require_asset_selection(data.get(ASSET_SELECTOR_FIELD))
-        agent = await CreateAgent(get_request_state(request).unit_of_work_factory()).execute(
+        agent = await CreateAgent(
+            get_request_state(request).unit_of_work_factory()
+        ).execute(
             CreateAgentCommand(
                 tenant_id=asset_selection.tenant_id,
                 asset_id=asset_selection.asset_id,
@@ -407,7 +440,7 @@ class AgentBackofficeView(ApplicationLookupBackofficeView, model=AgentModel):
                 name=optional_string(data.get("name")),
             )
         )
-        return _agent_model(agent)
+        return await _agent_model_for_response(request, agent)
 
     async def update_model(
         self,
@@ -415,8 +448,13 @@ class AgentBackofficeView(ApplicationLookupBackofficeView, model=AgentModel):
         pk: str,
         data: dict[str, object],
     ) -> object:
-        tenant_id, asset_id, agent_id = _public_identifier_values(pk, 3)
-        agent = await UpdateAgent(get_request_state(request).unit_of_work_factory()).execute(
+        tenant_id, asset_id, agent_id = await _agent_public_identifier_values(
+            request,
+            pk,
+        )
+        agent = await UpdateAgent(
+            get_request_state(request).unit_of_work_factory()
+        ).execute(
             UpdateAgentCommand(
                 tenant_id=str(tenant_id),
                 asset_id=str(asset_id),
@@ -429,10 +467,13 @@ class AgentBackofficeView(ApplicationLookupBackofficeView, model=AgentModel):
                 ),
             )
         )
-        return _agent_model(agent)
+        return await _agent_model_for_response(request, agent)
 
     async def delete_model(self, request: Request, pk: Any) -> None:
-        tenant_id, asset_id, agent_id = _public_identifier_values(str(pk), 3)
+        tenant_id, asset_id, agent_id = await _agent_public_identifier_values(
+            request,
+            str(pk),
+        )
         await DeleteAgent(get_request_state(request).unit_of_work_factory()).execute(
             DeleteAgentCommand(
                 tenant_id=str(tenant_id),
@@ -521,6 +562,7 @@ class SourceBackofficeView(ApplicationLookupBackofficeView, model=SourceModel):
 
     async def get_object_for_edit(self, request: Request) -> Any:
         model = await super().get_object_for_edit(request)
+        model = await _attach_source_public_ids(request, model)
         return attach_selector_value(
             model,
             field_name=AGENT_SELECTOR_FIELD,
@@ -529,7 +571,9 @@ class SourceBackofficeView(ApplicationLookupBackofficeView, model=SourceModel):
 
     async def insert_model(self, request: Request, data: dict[str, object]) -> object:
         agent_selection = _require_agent_selection(data.get(AGENT_SELECTOR_FIELD))
-        source = await CreateSource(get_request_state(request).unit_of_work_factory()).execute(
+        source = await CreateSource(
+            get_request_state(request).unit_of_work_factory()
+        ).execute(
             CreateSourceCommand(
                 tenant_id=agent_selection.tenant_id,
                 asset_id=agent_selection.asset_id,
@@ -543,7 +587,7 @@ class SourceBackofficeView(ApplicationLookupBackofficeView, model=SourceModel):
                 publish_defaults_json=default_publish_settings(),
             )
         )
-        return _source_model(source)
+        return await _source_model_for_response(request, source)
 
     async def update_model(
         self,
@@ -551,8 +595,18 @@ class SourceBackofficeView(ApplicationLookupBackofficeView, model=SourceModel):
         pk: str,
         data: dict[str, object],
     ) -> object:
-        tenant_id, asset_id, agent_id, source_id = _public_identifier_values(pk, 4)
-        source = await UpdateSource(get_request_state(request).unit_of_work_factory()).execute(
+        (
+            tenant_id,
+            asset_id,
+            agent_id,
+            source_id,
+        ) = await _source_public_identifier_values(
+            request,
+            pk,
+        )
+        source = await UpdateSource(
+            get_request_state(request).unit_of_work_factory()
+        ).execute(
             UpdateSourceCommand(
                 tenant_id=str(tenant_id),
                 asset_id=str(asset_id),
@@ -576,10 +630,18 @@ class SourceBackofficeView(ApplicationLookupBackofficeView, model=SourceModel):
                 ),
             )
         )
-        return _source_model(source)
+        return await _source_model_for_response(request, source)
 
     async def delete_model(self, request: Request, pk: Any) -> None:
-        tenant_id, asset_id, agent_id, source_id = _public_identifier_values(str(pk), 4)
+        (
+            tenant_id,
+            asset_id,
+            agent_id,
+            source_id,
+        ) = await _source_public_identifier_values(
+            request,
+            str(pk),
+        )
         await DeleteSource(get_request_state(request).unit_of_work_factory()).execute(
             DeleteSourceCommand(
                 tenant_id=str(tenant_id),
@@ -687,6 +749,7 @@ class PointBackofficeView(ApplicationLookupBackofficeView, model=PointModel):
 
     async def get_object_for_edit(self, request: Request) -> Any:
         model = await super().get_object_for_edit(request)
+        model = await _attach_point_public_ids(request, model)
         return attach_selector_value(
             model,
             field_name=SOURCE_SELECTOR_FIELD,
@@ -702,7 +765,9 @@ class PointBackofficeView(ApplicationLookupBackofficeView, model=PointModel):
 
     async def insert_model(self, request: Request, data: dict[str, object]) -> object:
         source_selection = _require_source_selection(data.get(SOURCE_SELECTOR_FIELD))
-        point = await CreatePoint(get_request_state(request).unit_of_work_factory()).execute(
+        point = await CreatePoint(
+            get_request_state(request).unit_of_work_factory()
+        ).execute(
             CreatePointCommand(
                 tenant_id=source_selection.tenant_id,
                 asset_id=source_selection.asset_id,
@@ -720,7 +785,7 @@ class PointBackofficeView(ApplicationLookupBackofficeView, model=PointModel):
                 enabled=optional_bool(data.get("enabled"), default=True),
             )
         )
-        return _point_model(point)
+        return await _point_model_for_response(request, point)
 
     async def update_model(
         self,
@@ -728,8 +793,10 @@ class PointBackofficeView(ApplicationLookupBackofficeView, model=PointModel):
         pk: str,
         data: dict[str, object],
     ) -> object:
-        tenant_id, point_id = _public_identifier_values(pk, 2)
-        point = await UpdatePoint(get_request_state(request).unit_of_work_factory()).execute(
+        tenant_id, point_id = await _point_public_identifier_values(request, pk)
+        point = await UpdatePoint(
+            get_request_state(request).unit_of_work_factory()
+        ).execute(
             UpdatePointCommand(
                 tenant_id=str(tenant_id),
                 point_id=str(point_id),
@@ -756,10 +823,10 @@ class PointBackofficeView(ApplicationLookupBackofficeView, model=PointModel):
                 ),
             )
         )
-        return _point_model(point)
+        return await _point_model_for_response(request, point)
 
     async def delete_model(self, request: Request, pk: Any) -> None:
-        tenant_id, point_id = _public_identifier_values(str(pk), 2)
+        tenant_id, point_id = await _point_public_identifier_values(request, str(pk))
         await DeletePoint(get_request_state(request).unit_of_work_factory()).execute(
             DeletePointCommand(
                 tenant_id=str(tenant_id),
@@ -882,6 +949,151 @@ def _point_model(point: Point) -> PointModel:
     )
 
 
+async def _tenant_model_for_response(
+    request: Request,
+    tenant: Tenant,
+) -> TenantModel:
+    model = _tenant_model(tenant)
+    tenant_uuid = await _tenant_uuid_by_code(request, tenant.tenant_id)
+    if tenant_uuid is not None:
+        model.id = tenant_uuid
+    return model
+
+
+async def _asset_model_for_response(
+    request: Request,
+    asset: Asset,
+) -> AssetModel:
+    model = _asset_model(asset)
+    row = await _asset_internal_ids_by_codes(request, asset.tenant_id, asset.asset_id)
+    if row is not None:
+        model.id, model.tenant_id = row
+    return model
+
+
+async def _agent_model_for_response(
+    request: Request,
+    agent: Agent,
+) -> AgentModel:
+    model = _agent_model(agent)
+    row = await _agent_internal_ids_by_codes(
+        request,
+        agent.tenant_id,
+        agent.asset_id,
+        agent.agent_id,
+    )
+    if row is not None:
+        model.id, model.tenant_id, model.asset_id = row
+    return model
+
+
+async def _source_model_for_response(
+    request: Request,
+    source: Source,
+) -> SourceModel:
+    model = _source_model(source)
+    row = await _source_internal_ids_by_codes(
+        request,
+        source.tenant_id,
+        source.asset_id,
+        source.agent_id,
+        source.source_id,
+    )
+    if row is not None:
+        model.id, model.tenant_id, model.agent_id = row
+    return model
+
+
+async def _point_model_for_response(
+    request: Request,
+    point: Point,
+) -> PointModel:
+    model = _point_model(point)
+    row = await _point_internal_ids_by_codes(request, point.tenant_id, point.point_id)
+    if row is not None:
+        model.id, model.tenant_id, model.source_id = row
+    return model
+
+
+async def _attach_asset_public_ids(request: Request, model: Any) -> Any:
+    if (
+        model is None
+        or not _is_postgres_request(request)
+        or getattr(model, "_public_asset_id", None) is not None
+    ):
+        return model
+    tenant_id, asset_id = await _asset_public_identifier_values_by_uuid(
+        request,
+        model.id,
+    )
+    return _attach_public_ids(model, tenant_id=tenant_id, asset_id=asset_id)
+
+
+async def _attach_agent_public_ids(request: Request, model: Any) -> Any:
+    if (
+        model is None
+        or not _is_postgres_request(request)
+        or getattr(model, "_public_agent_id", None) is not None
+    ):
+        return model
+    tenant_id, asset_id, agent_id = await _agent_public_identifier_values_by_uuid(
+        request,
+        model.id,
+    )
+    return _attach_public_ids(
+        model,
+        tenant_id=tenant_id,
+        asset_id=asset_id,
+        agent_id=agent_id,
+    )
+
+
+async def _attach_source_public_ids(request: Request, model: Any) -> Any:
+    if (
+        model is None
+        or not _is_postgres_request(request)
+        or getattr(model, "_public_source_id", None) is not None
+    ):
+        return model
+    (
+        tenant_id,
+        asset_id,
+        agent_id,
+        source_id,
+    ) = await _source_public_identifier_values_by_uuid(request, model.id)
+    return _attach_public_ids(
+        model,
+        tenant_id=tenant_id,
+        asset_id=asset_id,
+        agent_id=agent_id,
+        source_id=source_id,
+    )
+
+
+async def _attach_point_public_ids(request: Request, model: Any) -> Any:
+    if (
+        model is None
+        or not _is_postgres_request(request)
+        or getattr(model, "_public_point_id", None) is not None
+    ):
+        return model
+    (
+        tenant_id,
+        asset_id,
+        agent_id,
+        source_id,
+        point_id,
+    ) = await _point_public_context_by_uuid(request, model.id)
+    return _attach_public_ids(
+        model,
+        tenant_id=tenant_id,
+        asset_id=asset_id,
+        agent_id=agent_id,
+        source_id=source_id,
+        point_id=point_id,
+    )
+
+
 def _require_asset_selection(value: object | None) -> AssetSelection:
     if isinstance(value, AssetSelection):
         return value
@@ -910,13 +1122,327 @@ def _encode_agent_model_selection(model: Any) -> str:
     )
 
 
-def _public_identifier_values(pk: str, expected_parts: int) -> tuple[str, ...]:
+def _postgres_uow_factory_for_request(
+    request: Request,
+) -> PostgresUnitOfWorkFactory | None:
+    factory = get_request_state(request).unit_of_work_factory
+    return factory if isinstance(factory, PostgresUnitOfWorkFactory) else None
+
+
+def _is_postgres_request(request: Request) -> bool:
+    return _postgres_uow_factory_for_request(request) is not None
+
+
+def _uuid_identifier(value: object) -> UUID | None:
+    try:
+        return UUID(str(value))
+    except ValueError:
+        return None
+
+
+def _public_identifier_values_or_none(
+    pk: str,
+    expected_parts: int,
+) -> tuple[str, ...] | None:
     parts = tuple(str(pk).split(";"))
-    if len(parts) != expected_parts:
+    return parts if len(parts) == expected_parts else None
+
+
+def _public_identifier_values(pk: str, expected_parts: int) -> tuple[str, ...]:
+    parts = _public_identifier_values_or_none(pk, expected_parts)
+    if parts is None:
+        actual_parts = len(tuple(str(pk).split(";")))
         raise ValueError(
-            f"Expected {expected_parts} public identifier parts, got {len(parts)}"
+            f"Expected {expected_parts} public identifier parts, got {actual_parts}"
         )
     return parts
+
+
+async def _tenant_public_identifier_value(request: Request, pk: str) -> str:
+    pk_uuid = _uuid_identifier(pk)
+    if _is_postgres_request(request) and pk_uuid is not None:
+        return (await _tenant_public_identifier_values_by_uuid(request, pk_uuid))[0]
+    return _public_identifier_values(pk, 1)[0]
+
+
+async def _asset_public_identifier_values(
+    request: Request,
+    pk: str,
+) -> tuple[str, str]:
+    return await _public_identifier_values_for_request(
+        request,
+        pk,
+        expected_parts=2,
+        resolver=_asset_public_identifier_values_by_uuid,
+    )
+
+
+async def _agent_public_identifier_values(
+    request: Request,
+    pk: str,
+) -> tuple[str, str, str]:
+    return await _public_identifier_values_for_request(
+        request,
+        pk,
+        expected_parts=3,
+        resolver=_agent_public_identifier_values_by_uuid,
+    )
+
+
+async def _source_public_identifier_values(
+    request: Request,
+    pk: str,
+) -> tuple[str, str, str, str]:
+    return await _public_identifier_values_for_request(
+        request,
+        pk,
+        expected_parts=4,
+        resolver=_source_public_identifier_values_by_uuid,
+    )
+
+
+async def _point_public_identifier_values(
+    request: Request,
+    pk: str,
+) -> tuple[str, str]:
+    return await _public_identifier_values_for_request(
+        request,
+        pk,
+        expected_parts=2,
+        resolver=_point_public_identifier_values_by_uuid,
+    )
+
+
+async def _public_identifier_values_for_request(
+    request: Request,
+    pk: str,
+    *,
+    expected_parts: int,
+    resolver: Any,
+) -> tuple[str, ...]:
+    parts = _public_identifier_values_or_none(pk, expected_parts)
+    if parts is not None:
+        return parts
+    pk_uuid = _uuid_identifier(pk)
+    if _is_postgres_request(request) and pk_uuid is not None:
+        return await resolver(request, pk_uuid)
+    return _public_identifier_values(pk, expected_parts)
+
+
+async def _tenant_public_identifier_values_by_uuid(
+    request: Request,
+    pk: UUID,
+) -> tuple[str]:
+    factory = _require_postgres_uow_factory(request)
+    async with factory.session_manager.session_factory() as session:
+        tenant_id = await session.scalar(
+            select(TenantModel.code).where(TenantModel.id == pk)
+        )
+    if tenant_id is None:
+        raise ValueError(f"Tenant backoffice row {pk} does not exist")
+    return (str(tenant_id),)
+
+
+async def _asset_public_identifier_values_by_uuid(
+    request: Request,
+    pk: UUID,
+) -> tuple[str, str]:
+    factory = _require_postgres_uow_factory(request)
+    async with factory.session_manager.session_factory() as session:
+        result = await session.execute(
+            select(TenantModel.code, AssetModel.code)
+            .select_from(AssetModel)
+            .join(TenantModel, AssetModel.tenant_id == TenantModel.id)
+            .where(AssetModel.id == pk)
+        )
+        row = result.first()
+    if row is None:
+        raise ValueError(f"Asset backoffice row {pk} does not exist")
+    return str(row[0]), str(row[1])
+
+
+async def _agent_public_identifier_values_by_uuid(
+    request: Request,
+    pk: UUID,
+) -> tuple[str, str, str]:
+    factory = _require_postgres_uow_factory(request)
+    async with factory.session_manager.session_factory() as session:
+        result = await session.execute(
+            select(TenantModel.code, AssetModel.code, AgentModel.code)
+            .select_from(AgentModel)
+            .join(AssetModel, AgentModel.asset_id == AssetModel.id)
+            .join(TenantModel, AgentModel.tenant_id == TenantModel.id)
+            .where(AgentModel.id == pk)
+        )
+        row = result.first()
+    if row is None:
+        raise ValueError(f"Agent backoffice row {pk} does not exist")
+    return str(row[0]), str(row[1]), str(row[2])
+
+
+async def _source_public_identifier_values_by_uuid(
+    request: Request,
+    pk: UUID,
+) -> tuple[str, str, str, str]:
+    factory = _require_postgres_uow_factory(request)
+    async with factory.session_manager.session_factory() as session:
+        result = await session.execute(
+            select(TenantModel.code, AssetModel.code, AgentModel.code, SourceModel.code)
+            .select_from(SourceModel)
+            .join(AgentModel, SourceModel.agent_id == AgentModel.id)
+            .join(AssetModel, AgentModel.asset_id == AssetModel.id)
+            .join(TenantModel, SourceModel.tenant_id == TenantModel.id)
+            .where(SourceModel.id == pk)
+        )
+        row = result.first()
+    if row is None:
+        raise ValueError(f"Source backoffice row {pk} does not exist")
+    return str(row[0]), str(row[1]), str(row[2]), str(row[3])
+
+
+async def _point_public_identifier_values_by_uuid(
+    request: Request,
+    pk: UUID,
+) -> tuple[str, str]:
+    (
+        tenant_id,
+        _asset_id,
+        _agent_id,
+        _source_id,
+        point_id,
+    ) = await _point_public_context_by_uuid(request, pk)
+    return tenant_id, point_id
+
+
+async def _point_public_context_by_uuid(
+    request: Request,
+    pk: UUID,
+) -> tuple[str, str, str, str, str]:
+    factory = _require_postgres_uow_factory(request)
+    async with factory.session_manager.session_factory() as session:
+        result = await session.execute(
+            select(
+                TenantModel.code,
+                AssetModel.code,
+                AgentModel.code,
+                SourceModel.code,
+                PointModel.code,
+            )
+            .select_from(PointModel)
+            .join(SourceModel, PointModel.source_id == SourceModel.id)
+            .join(AgentModel, SourceModel.agent_id == AgentModel.id)
+            .join(AssetModel, AgentModel.asset_id == AssetModel.id)
+            .join(TenantModel, PointModel.tenant_id == TenantModel.id)
+            .where(PointModel.id == pk)
+        )
+        row = result.first()
+    if row is None:
+        raise ValueError(f"Point backoffice row {pk} does not exist")
+    return str(row[0]), str(row[1]), str(row[2]), str(row[3]), str(row[4])
+
+
+async def _tenant_uuid_by_code(request: Request, tenant_id: str) -> UUID | None:
+    factory = _postgres_uow_factory_for_request(request)
+    if factory is None:
+        return None
+    async with factory.session_manager.session_factory() as session:
+        return await session.scalar(
+            select(TenantModel.id).where(TenantModel.code == tenant_id)
+        )
+
+
+async def _asset_internal_ids_by_codes(
+    request: Request,
+    tenant_id: str,
+    asset_id: str,
+) -> tuple[UUID, UUID] | None:
+    factory = _postgres_uow_factory_for_request(request)
+    if factory is None:
+        return None
+    async with factory.session_manager.session_factory() as session:
+        result = await session.execute(
+            select(AssetModel.id, AssetModel.tenant_id)
+            .join(TenantModel, AssetModel.tenant_id == TenantModel.id)
+            .where(TenantModel.code == tenant_id, AssetModel.code == asset_id)
+        )
+        row = result.first()
+    return (row[0], row[1]) if row is not None else None
+
+
+async def _agent_internal_ids_by_codes(
+    request: Request,
+    tenant_id: str,
+    asset_id: str,
+    agent_id: str,
+) -> tuple[UUID, UUID, UUID] | None:
+    factory = _postgres_uow_factory_for_request(request)
+    if factory is None:
+        return None
+    async with factory.session_manager.session_factory() as session:
+        result = await session.execute(
+            select(AgentModel.id, AgentModel.tenant_id, AgentModel.asset_id)
+            .join(AssetModel, AgentModel.asset_id == AssetModel.id)
+            .join(TenantModel, AgentModel.tenant_id == TenantModel.id)
+            .where(
+                TenantModel.code == tenant_id,
+                AssetModel.code == asset_id,
+                AgentModel.code == agent_id,
+            )
+        )
+        row = result.first()
+    return (row[0], row[1], row[2]) if row is not None else None
+
+
+async def _source_internal_ids_by_codes(
+    request: Request,
+    tenant_id: str,
+    asset_id: str,
+    agent_id: str,
+    source_id: str,
+) -> tuple[UUID, UUID, UUID] | None:
+    factory = _postgres_uow_factory_for_request(request)
+    if factory is None:
+        return None
+    async with factory.session_manager.session_factory() as session:
+        result = await session.execute(
+            select(SourceModel.id, SourceModel.tenant_id, SourceModel.agent_id)
+            .join(AgentModel, SourceModel.agent_id == AgentModel.id)
+            .join(AssetModel, AgentModel.asset_id == AssetModel.id)
+            .join(TenantModel, SourceModel.tenant_id == TenantModel.id)
+            .where(
+                TenantModel.code == tenant_id,
+                AssetModel.code == asset_id,
+                AgentModel.code == agent_id,
+                SourceModel.code == source_id,
+            )
+        )
+        row = result.first()
+    return (row[0], row[1], row[2]) if row is not None else None
+
+
+async def _point_internal_ids_by_codes(
+    request: Request,
+    tenant_id: str,
+    point_id: str,
+) -> tuple[UUID, UUID, UUID] | None:
+    factory = _postgres_uow_factory_for_request(request)
+    if factory is None:
+        return None
+    async with factory.session_manager.session_factory() as session:
+        result = await session.execute(
+            select(PointModel.id, PointModel.tenant_id, PointModel.source_id)
+            .join(TenantModel, PointModel.tenant_id == TenantModel.id)
+            .where(TenantModel.code == tenant_id, PointModel.code == point_id)
+        )
+        row = result.first()
+    return (row[0], row[1], row[2]) if row is not None else None
+
+
+def _require_postgres_uow_factory(request: Request) -> PostgresUnitOfWorkFactory:
+    factory = _postgres_uow_factory_for_request(request)
+    if factory is None:
+        raise RuntimeError("Postgres unit of work factory is required")
+    return factory
 
 
 def _attach_public_ids(model: Any, **values: str | None) -> Any:
