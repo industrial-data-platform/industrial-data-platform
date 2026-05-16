@@ -10,6 +10,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKeyConstraint,
     Index,
+    Integer,
     PrimaryKeyConstraint,
     String,
     Text,
@@ -18,7 +19,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, synonym
 
 
 class Base(DeclarativeBase):
@@ -28,10 +29,15 @@ class Base(DeclarativeBase):
 class TenantModel(Base):
     __tablename__ = "tenants"
     __table_args__ = (
+        PrimaryKeyConstraint("id", name="pk_tenants"),
+        UniqueConstraint("code", name="uq_tenants_code"),
+        CheckConstraint("length(code) > 0", name="ck_tenants_code_non_empty"),
         CheckConstraint("status in ('active', 'disabled')", name="ck_tenants_status"),
     )
 
-    tenant_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
+    code: Mapped[str] = mapped_column(Text, nullable=False)
+    tenant_id = synonym("code")
     name: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
@@ -47,22 +53,25 @@ class TenantModel(Base):
 class AssetModel(Base):
     __tablename__ = "assets"
     __table_args__ = (
-        PrimaryKeyConstraint("tenant_id", "asset_id", name="pk_assets"),
+        PrimaryKeyConstraint("id", name="pk_assets"),
         ForeignKeyConstraint(
             ["tenant_id"],
-            ["tenants.tenant_id"],
+            ["tenants.id"],
             name="fk_assets_tenant",
         ),
+        UniqueConstraint("tenant_id", "code", name="uq_assets_tenant_code"),
         CheckConstraint("status in ('active', 'disabled')", name="ck_assets_status"),
         CheckConstraint(
-            "asset_id ~ '^[a-z0-9][a-z0-9_-]{0,127}$'",
-            name="ck_assets_asset_id_path_id",
+            "code ~ '^[a-z0-9][a-z0-9_-]{0,127}$'",
+            name="ck_assets_code_path_id",
         ),
         Index("ix_assets_tenant_status", "tenant_id", "status"),
     )
 
-    tenant_id: Mapped[str] = mapped_column(Text, nullable=False)
-    asset_id: Mapped[str] = mapped_column(Text, nullable=False)
+    id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
+    tenant_id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
+    code: Mapped[str] = mapped_column(Text, nullable=False)
+    asset_id = synonym("code")
     name: Mapped[str] = mapped_column(Text, nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
     status: Mapped[str] = mapped_column(Text, nullable=False)
@@ -79,31 +88,34 @@ class AssetModel(Base):
 class AgentModel(Base):
     __tablename__ = "agents"
     __table_args__ = (
-        PrimaryKeyConstraint(
-            "tenant_id",
-            "asset_id",
-            "agent_id",
-            name="pk_agents",
+        PrimaryKeyConstraint("id", name="pk_agents"),
+        ForeignKeyConstraint(
+            ["tenant_id"],
+            ["tenants.id"],
+            name="fk_agents_tenant",
         ),
         ForeignKeyConstraint(
-            ["tenant_id", "asset_id"],
-            ["assets.tenant_id", "assets.asset_id"],
+            ["asset_id"],
+            ["assets.id"],
             name="fk_agents_asset",
         ),
+        UniqueConstraint("asset_id", "code", name="uq_agents_asset_code"),
         CheckConstraint(
             "status in ('active', 'disabled', 'retired')",
             name="ck_agents_status",
         ),
         CheckConstraint(
-            "agent_id ~ '^[a-z0-9][a-z0-9_-]{0,127}$'",
-            name="ck_agents_agent_id_path_id",
+            "code ~ '^[a-z0-9][a-z0-9_-]{0,127}$'",
+            name="ck_agents_code_path_id",
         ),
-        Index("ix_agents_tenant_agent", "tenant_id", "agent_id"),
+        Index("ix_agents_tenant_code", "tenant_id", "code"),
     )
 
-    tenant_id: Mapped[str] = mapped_column(Text, nullable=False)
-    asset_id: Mapped[str] = mapped_column(Text, nullable=False)
-    agent_id: Mapped[str] = mapped_column(Text, nullable=False)
+    id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
+    tenant_id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
+    asset_id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
+    code: Mapped[str] = mapped_column(Text, nullable=False)
+    agent_id = synonym("code")
     name: Mapped[str | None] = mapped_column(Text)
     status: Mapped[str] = mapped_column(Text, nullable=False)
     bootstrap_hint_json: Mapped[dict[str, Any]] = mapped_column(
@@ -124,29 +136,30 @@ class AgentModel(Base):
 class SourceModel(Base):
     __tablename__ = "sources"
     __table_args__ = (
-        PrimaryKeyConstraint(
-            "tenant_id",
-            "asset_id",
-            "agent_id",
-            "source_id",
-            name="pk_sources",
+        PrimaryKeyConstraint("id", name="pk_sources"),
+        ForeignKeyConstraint(
+            ["tenant_id"],
+            ["tenants.id"],
+            name="fk_sources_tenant",
         ),
         ForeignKeyConstraint(
-            ["tenant_id", "asset_id", "agent_id"],
-            ["agents.tenant_id", "agents.asset_id", "agents.agent_id"],
+            ["agent_id"],
+            ["agents.id"],
             name="fk_sources_agent",
         ),
+        UniqueConstraint("agent_id", "code", name="uq_sources_agent_code"),
         CheckConstraint(
-            "source_id ~ '^[a-z0-9][a-z0-9_-]{0,127}$'",
-            name="ck_sources_source_id_path_id",
+            "code ~ '^[a-z0-9][a-z0-9_-]{0,127}$'",
+            name="ck_sources_code_path_id",
         ),
-        Index("ix_sources_tenant_asset_type", "tenant_id", "asset_id", "source_type"),
+        Index("ix_sources_tenant_type", "tenant_id", "source_type"),
     )
 
-    tenant_id: Mapped[str] = mapped_column(Text, nullable=False)
-    asset_id: Mapped[str] = mapped_column(Text, nullable=False)
-    agent_id: Mapped[str] = mapped_column(Text, nullable=False)
-    source_id: Mapped[str] = mapped_column(Text, nullable=False)
+    id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
+    tenant_id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
+    agent_id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
+    code: Mapped[str] = mapped_column(Text, nullable=False)
+    source_id = synonym("code")
     source_type: Mapped[str] = mapped_column(Text, nullable=False)
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     name: Mapped[str | None] = mapped_column(Text)
@@ -179,33 +192,20 @@ class SourceModel(Base):
 class PointModel(Base):
     __tablename__ = "points"
     __table_args__ = (
-        PrimaryKeyConstraint("tenant_id", "point_id", name="pk_points"),
+        PrimaryKeyConstraint("id", name="pk_points"),
         ForeignKeyConstraint(
-            ["tenant_id", "asset_id", "agent_id", "source_id"],
-            [
-                "sources.tenant_id",
-                "sources.asset_id",
-                "sources.agent_id",
-                "sources.source_id",
-            ],
+            ["tenant_id"],
+            ["tenants.id"],
+            name="fk_points_tenant",
+        ),
+        ForeignKeyConstraint(
+            ["source_id"],
+            ["sources.id"],
             name="fk_points_source",
         ),
-        UniqueConstraint(
-            "tenant_id",
-            "asset_id",
-            "agent_id",
-            "source_id",
-            "point_key",
-            name="uq_points_point_key",
-        ),
-        UniqueConstraint(
-            "tenant_id",
-            "asset_id",
-            "agent_id",
-            "source_id",
-            "point_ref",
-            name="uq_points_point_ref",
-        ),
+        UniqueConstraint("tenant_id", "code", name="uq_points_tenant_code"),
+        UniqueConstraint("source_id", "point_key", name="uq_points_point_key"),
+        UniqueConstraint("source_id", "point_ref", name="uq_points_point_ref"),
         CheckConstraint(
             "point_key ~ '^(?:[A-Za-z0-9._~-]|%[0-9A-F]{2})+$'",
             name="ck_points_point_key",
@@ -218,21 +218,14 @@ class PointModel(Base):
             "signal_type in ('command', 'feedback', 'status', 'sensor')",
             name="ck_points_signal_type",
         ),
-        Index(
-            "ix_points_source_enabled",
-            "tenant_id",
-            "asset_id",
-            "agent_id",
-            "source_id",
-            "enabled",
-        ),
+        Index("ix_points_source_enabled", "source_id", "enabled"),
     )
 
-    tenant_id: Mapped[str] = mapped_column(Text, nullable=False)
-    asset_id: Mapped[str] = mapped_column(Text, nullable=False)
-    agent_id: Mapped[str] = mapped_column(Text, nullable=False)
-    source_id: Mapped[str] = mapped_column(Text, nullable=False)
-    point_id: Mapped[str] = mapped_column(Text, nullable=False)
+    id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
+    tenant_id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
+    source_id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
+    code: Mapped[str] = mapped_column(Text, nullable=False)
+    point_id = synonym("code")
     point_key: Mapped[str] = mapped_column(String(512), nullable=False)
     point_ref: Mapped[str] = mapped_column(Text, nullable=False)
     name: Mapped[str] = mapped_column(Text, nullable=False)
@@ -270,17 +263,21 @@ class PointModel(Base):
 class AgentRuntimeConfigRevisionModel(Base):
     __tablename__ = "agent_runtime_config_revisions"
     __table_args__ = (
-        PrimaryKeyConstraint(
-            "tenant_id",
-            "asset_id",
-            "agent_id",
-            "config_revision",
-            name="pk_agent_runtime_config_revisions",
+        PrimaryKeyConstraint("id", name="pk_agent_runtime_config_revisions"),
+        ForeignKeyConstraint(
+            ["tenant_id"],
+            ["tenants.id"],
+            name="fk_agent_runtime_config_revisions_tenant",
         ),
         ForeignKeyConstraint(
-            ["tenant_id", "asset_id", "agent_id"],
-            ["agents.tenant_id", "agents.asset_id", "agents.agent_id"],
+            ["agent_id"],
+            ["agents.id"],
             name="fk_agent_runtime_config_revisions_agent",
+        ),
+        UniqueConstraint(
+            "agent_id",
+            "code",
+            name="uq_agent_runtime_config_revisions_agent_code",
         ),
         CheckConstraint(
             "status in ('draft', 'rendered', 'active', 'superseded', 'failed')",
@@ -288,18 +285,17 @@ class AgentRuntimeConfigRevisionModel(Base):
         ),
         Index(
             "uq_agent_runtime_config_revisions_active",
-            "tenant_id",
-            "asset_id",
             "agent_id",
             unique=True,
             postgresql_where=text("status = 'active'"),
         ),
     )
 
-    tenant_id: Mapped[str] = mapped_column(Text, nullable=False)
-    asset_id: Mapped[str] = mapped_column(Text, nullable=False)
-    agent_id: Mapped[str] = mapped_column(Text, nullable=False)
-    config_revision: Mapped[str] = mapped_column(Text, nullable=False)
+    id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
+    tenant_id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
+    agent_id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
+    code: Mapped[str] = mapped_column(Text, nullable=False)
+    config_revision = synonym("code")
     status: Mapped[str] = mapped_column(Text, nullable=False)
     issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     agent_runtime_payload_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
@@ -309,54 +305,44 @@ class AgentRuntimeConfigRevisionModel(Base):
 class SourceConfigRevisionModel(Base):
     __tablename__ = "source_config_revisions"
     __table_args__ = (
-        PrimaryKeyConstraint(
-            "tenant_id",
-            "asset_id",
-            "agent_id",
-            "source_id",
-            "source_config_revision",
-            name="pk_source_config_revisions",
+        PrimaryKeyConstraint("id", name="pk_source_config_revisions"),
+        ForeignKeyConstraint(
+            ["tenant_id"],
+            ["tenants.id"],
+            name="fk_source_config_revisions_tenant",
         ),
         ForeignKeyConstraint(
-            ["tenant_id", "asset_id", "agent_id", "source_id"],
-            [
-                "sources.tenant_id",
-                "sources.asset_id",
-                "sources.agent_id",
-                "sources.source_id",
-            ],
+            ["source_id"],
+            ["sources.id"],
             name="fk_source_config_revisions_source",
         ),
         ForeignKeyConstraint(
-            ["tenant_id", "asset_id", "agent_id", "config_revision"],
-            [
-                "agent_runtime_config_revisions.tenant_id",
-                "agent_runtime_config_revisions.asset_id",
-                "agent_runtime_config_revisions.agent_id",
-                "agent_runtime_config_revisions.config_revision",
-            ],
+            ["agent_runtime_config_revision_id"],
+            ["agent_runtime_config_revisions.id"],
             name="fk_source_config_revisions_runtime",
         ),
+        UniqueConstraint("source_id", "code", name="uq_source_config_revisions_source_code"),
         CheckConstraint(
             "status in ('draft', 'rendered', 'active', 'superseded', 'failed')",
             name="ck_source_config_revisions_status",
         ),
         Index(
             "uq_source_config_revisions_active",
-            "tenant_id",
-            "asset_id",
-            "agent_id",
             "source_id",
             unique=True,
             postgresql_where=text("status = 'active'"),
         ),
     )
 
-    tenant_id: Mapped[str] = mapped_column(Text, nullable=False)
-    asset_id: Mapped[str] = mapped_column(Text, nullable=False)
-    agent_id: Mapped[str] = mapped_column(Text, nullable=False)
-    source_id: Mapped[str] = mapped_column(Text, nullable=False)
-    source_config_revision: Mapped[str] = mapped_column(Text, nullable=False)
+    id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
+    tenant_id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
+    source_id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
+    agent_runtime_config_revision_id: Mapped[UUID] = mapped_column(
+        PostgresUUID(as_uuid=True),
+        nullable=False,
+    )
+    code: Mapped[str] = mapped_column(Text, nullable=False)
+    source_config_revision = synonym("code")
     config_revision: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(Text, nullable=False)
     issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
@@ -367,6 +353,22 @@ class SourceConfigRevisionModel(Base):
 class ConfigOutboxModel(Base):
     __tablename__ = "config_outbox"
     __table_args__ = (
+        PrimaryKeyConstraint("id", name="pk_config_outbox"),
+        ForeignKeyConstraint(
+            ["tenant_id"],
+            ["tenants.id"],
+            name="fk_config_outbox_tenant",
+        ),
+        ForeignKeyConstraint(
+            ["agent_id"],
+            ["agents.id"],
+            name="fk_config_outbox_agent",
+        ),
+        ForeignKeyConstraint(
+            ["source_id"],
+            ["sources.id"],
+            name="fk_config_outbox_source",
+        ),
         UniqueConstraint("idempotency_key", name="uq_config_outbox_idempotency_key"),
         CheckConstraint(
             "status in ('pending', 'inflight', 'published', 'retry', 'dead_letter')",
@@ -383,22 +385,19 @@ class ConfigOutboxModel(Base):
         Index("ix_config_outbox_lease", "status", "lease_expires_at"),
         Index(
             "ix_config_outbox_config_scope",
-            "tenant_id",
-            "asset_id",
             "agent_id",
             "config_revision",
             "config_scope",
         ),
     )
 
-    tenant_id: Mapped[str] = mapped_column(Text, nullable=False)
-    outbox_id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), primary_key=True)
+    id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
+    tenant_id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
+    agent_id: Mapped[UUID] = mapped_column(PostgresUUID(as_uuid=True), nullable=False)
+    source_id: Mapped[UUID | None] = mapped_column(PostgresUUID(as_uuid=True))
     idempotency_key: Mapped[str] = mapped_column(Text, nullable=False)
-    asset_id: Mapped[str] = mapped_column(Text, nullable=False)
-    agent_id: Mapped[str] = mapped_column(Text, nullable=False)
     config_revision: Mapped[str] = mapped_column(Text, nullable=False)
     config_scope: Mapped[str] = mapped_column(Text, nullable=False)
-    source_id: Mapped[str | None] = mapped_column(Text)
     source_config_revision: Mapped[str | None] = mapped_column(Text)
     message_type: Mapped[str] = mapped_column(Text, nullable=False)
     kafka_topic: Mapped[str] = mapped_column(Text, nullable=False)
@@ -408,7 +407,7 @@ class ConfigOutboxModel(Base):
     available_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    attempt_count: Mapped[int] = mapped_column(nullable=False, default=0)
+    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     next_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_error: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

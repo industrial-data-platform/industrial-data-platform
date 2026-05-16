@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from uuid import uuid4
+
 from starlette.requests import Request
 from wtforms import StringField
 
@@ -51,7 +53,7 @@ class AgentRuntimeConfigRevisionBackofficeView(
         AgentRuntimeConfigRevisionModel,
         "tenant_id",
         "agent_id",
-        "config_revision",
+        "code",
         "status",
         "issued_at",
         "created_at",
@@ -114,7 +116,7 @@ class SourceConfigRevisionBackofficeView(
         SourceConfigRevisionModel,
         "tenant_id",
         "source_id",
-        "source_config_revision",
+        "code",
         "config_revision",
         "status",
         "issued_at",
@@ -194,10 +196,10 @@ def _agent_runtime_config_revision_model(
     revision: AgentRuntimeConfigRevision,
 ) -> AgentRuntimeConfigRevisionModel:
     return AgentRuntimeConfigRevisionModel(
-        tenant_id=revision.tenant_id,
-        asset_id=revision.asset_id,
-        agent_id=revision.agent_id,
-        config_revision=revision.config_revision,
+        id=uuid4(),
+        tenant_id=uuid4(),
+        agent_id=uuid4(),
+        code=revision.config_revision,
         status=revision.status.value,
         issued_at=revision.issued_at,
         agent_runtime_payload_json=dict(revision.agent_runtime_payload_json),
@@ -209,11 +211,11 @@ def _source_config_revision_model(
     revision: SourceConfigRevision,
 ) -> SourceConfigRevisionModel:
     return SourceConfigRevisionModel(
-        tenant_id=revision.tenant_id,
-        asset_id=revision.asset_id,
-        agent_id=revision.agent_id,
-        source_id=revision.source_id,
-        source_config_revision=revision.source_config_revision,
+        id=uuid4(),
+        tenant_id=uuid4(),
+        source_id=uuid4(),
+        agent_runtime_config_revision_id=uuid4(),
+        code=revision.source_config_revision,
         config_revision=revision.config_revision,
         status=revision.status.value,
         issued_at=revision.issued_at,

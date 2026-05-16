@@ -238,6 +238,21 @@ Fresh Alembic baseline создает registry tables:
 - `agents`
 - `sources`
 - `points`
+- `agent_runtime_config_revisions`
+- `source_config_revisions`
+- `config_outbox`
+
+Baseline `0001` использует surrogate `id uuid` primary keys и UUID foreign keys.
+Публичные registry identifiers (`tenant_id`, `asset_id`, `agent_id`,
+`source_id`, `point_id`, config revision ids) хранятся в `code` columns и
+остаются прежними в API/Kafka/MQTT payloads. Если локальный `postgres-data`
+volume был создан старой baseline-схемой, его нужно удалить перед повторным
+`alembic upgrade head`:
+
+```bash
+docker compose -f infra/local/compose.yaml --env-file .env down
+docker volume rm industrial-data-platform-local_postgres-data
+```
 
 ## Config Registry Outbox Worker
 

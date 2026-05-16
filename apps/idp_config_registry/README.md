@@ -69,6 +69,11 @@ uv run --env-file .env --package idp-config-registry alembic \
   -c apps/idp_config_registry/alembic.ini upgrade head
 ```
 
+Baseline `0001` stores registry rows with surrogate `id uuid` primary keys and
+UUID foreign keys. Public identifiers remain the API/Kafka/MQTT contract fields
+and are persisted in each registry table's `code` column. Local volumes created
+with the old baseline must be recreated before rerunning Alembic.
+
 Для запуска API с PostgreSQL задайте `CONFIG_REGISTRY_DATABASE_URL`, например:
 
 ```bash

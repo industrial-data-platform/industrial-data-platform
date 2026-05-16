@@ -183,6 +183,10 @@ services:
       CONFIG_REGISTRY_OUTBOX_RETRY_DELAY_SECONDS: ${CONFIG_REGISTRY_OUTBOX_RETRY_DELAY_SECONDS:-30}
       CONFIG_REGISTRY_OUTBOX_MAX_ATTEMPTS: ${CONFIG_REGISTRY_OUTBOX_MAX_ATTEMPTS:-5}
       CONFIG_REGISTRY_OUTBOX_POLL_INTERVAL_SECONDS: ${CONFIG_REGISTRY_OUTBOX_POLL_INTERVAL_SECONDS:-2.0}
+      PYTHONPATH: /app/apps/idp_config_registry/src
+    volumes:
+      - ../../apps/idp_config_registry:/app/apps/idp_config_registry
+      - ../../docs/contracts:/app/docs/contracts:ro
 
   grafana:
     build:

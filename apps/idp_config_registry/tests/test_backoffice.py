@@ -80,25 +80,24 @@ from idp_config_registry.settings import ConfigRegistrySettings
 CONFIG_REGISTRY_SRC = Path(__file__).resolve().parents[1] / "src" / "idp_config_registry"
 
 LIST_VIEW_COLUMNS: tuple[tuple[type[object], type[object], tuple[str, ...]], ...] = (
-    (TenantBackofficeView, TenantModel, ("tenant_id", "name", "status", "updated_at")),
+    (TenantBackofficeView, TenantModel, ("code", "name", "status", "updated_at")),
     (
         AssetBackofficeView,
         AssetModel,
-        ("tenant_id", "asset_id", "name", "status", "updated_at"),
+        ("tenant_id", "code", "name", "status", "updated_at"),
     ),
     (
         AgentBackofficeView,
         AgentModel,
-        ("tenant_id", "asset_id", "agent_id", "name", "status", "updated_at"),
+        ("tenant_id", "asset_id", "code", "name", "status", "updated_at"),
     ),
     (
         SourceBackofficeView,
         SourceModel,
         (
             "tenant_id",
-            "asset_id",
             "agent_id",
-            "source_id",
+            "code",
             "source_type",
             "enabled",
             "name",
@@ -111,7 +110,7 @@ LIST_VIEW_COLUMNS: tuple[tuple[type[object], type[object], tuple[str, ...]], ...
         (
             "tenant_id",
             "source_id",
-            "point_id",
+            "code",
             "point_key",
             "name",
             "value_type",
@@ -123,7 +122,7 @@ LIST_VIEW_COLUMNS: tuple[tuple[type[object], type[object], tuple[str, ...]], ...
     (
         AgentRuntimeConfigRevisionBackofficeView,
         AgentRuntimeConfigRevisionModel,
-        ("tenant_id", "agent_id", "config_revision", "status", "issued_at", "created_at"),
+        ("tenant_id", "agent_id", "code", "status", "issued_at", "created_at"),
     ),
     (
         SourceConfigRevisionBackofficeView,
@@ -131,7 +130,7 @@ LIST_VIEW_COLUMNS: tuple[tuple[type[object], type[object], tuple[str, ...]], ...
         (
             "tenant_id",
             "source_id",
-            "source_config_revision",
+            "code",
             "config_revision",
             "status",
             "issued_at",

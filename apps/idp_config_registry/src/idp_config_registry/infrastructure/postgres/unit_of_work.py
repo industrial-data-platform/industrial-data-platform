@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from types import TracebackType
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -40,19 +40,9 @@ from idp_config_registry.infrastructure.postgres.models import (
 )
 
 
-def _tenant_to_model(tenant: Tenant) -> TenantModel:
-    return TenantModel(
-        tenant_id=tenant.tenant_id,
-        name=tenant.name,
-        status=tenant.status.value,
-        created_at=tenant.created_at,
-        updated_at=tenant.updated_at,
-    )
-
-
 def _tenant_from_model(model: TenantModel) -> Tenant:
     return Tenant(
-        tenant_id=model.tenant_id,
+        tenant_id=model.code,
         name=model.name,
         status=TenantStatus(model.status),
         created_at=model.created_at,
@@ -60,22 +50,10 @@ def _tenant_from_model(model: TenantModel) -> Tenant:
     )
 
 
-def _asset_to_model(asset: Asset) -> AssetModel:
-    return AssetModel(
-        tenant_id=asset.tenant_id,
-        asset_id=asset.asset_id,
-        name=asset.name,
-        description=asset.description,
-        status=asset.status.value,
-        created_at=asset.created_at,
-        updated_at=asset.updated_at,
-    )
-
-
-def _asset_from_model(model: AssetModel) -> Asset:
+def _asset_from_row(model: AssetModel, tenant: TenantModel) -> Asset:
     return Asset(
-        tenant_id=model.tenant_id,
-        asset_id=model.asset_id,
+        tenant_id=tenant.code,
+        asset_id=model.code,
         name=model.name,
         description=model.description,
         status=AssetStatus(model.status),
@@ -84,24 +62,15 @@ def _asset_from_model(model: AssetModel) -> Asset:
     )
 
 
-def _agent_to_model(agent: Agent) -> AgentModel:
-    return AgentModel(
-        tenant_id=agent.tenant_id,
-        asset_id=agent.asset_id,
-        agent_id=agent.agent_id,
-        name=agent.name,
-        status=agent.status.value,
-        bootstrap_hint_json=dict(agent.bootstrap_hint_json),
-        created_at=agent.created_at,
-        updated_at=agent.updated_at,
-    )
-
-
-def _agent_from_model(model: AgentModel) -> Agent:
+def _agent_from_row(
+    model: AgentModel,
+    asset: AssetModel,
+    tenant: TenantModel,
+) -> Agent:
     return Agent(
-        tenant_id=model.tenant_id,
-        asset_id=model.asset_id,
-        agent_id=model.agent_id,
+        tenant_id=tenant.code,
+        asset_id=asset.code,
+        agent_id=model.code,
         name=model.name,
         status=AgentStatus(model.status),
         bootstrap_hint_json=dict(model.bootstrap_hint_json),
@@ -110,30 +79,17 @@ def _agent_from_model(model: AgentModel) -> Agent:
     )
 
 
-def _source_to_model(source: Source) -> SourceModel:
-    return SourceModel(
-        tenant_id=source.tenant_id,
-        asset_id=source.asset_id,
-        agent_id=source.agent_id,
-        source_id=source.source_id,
-        source_type=source.source_type,
-        enabled=source.enabled,
-        name=source.name,
-        description=source.description,
-        connection_json=dict(source.connection_json),
-        acquisition_defaults_json=dict(source.acquisition_defaults_json),
-        publish_defaults_json=dict(source.publish_defaults_json),
-        created_at=source.created_at,
-        updated_at=source.updated_at,
-    )
-
-
-def _source_from_model(model: SourceModel) -> Source:
+def _source_from_row(
+    model: SourceModel,
+    agent: AgentModel,
+    asset: AssetModel,
+    tenant: TenantModel,
+) -> Source:
     return Source(
-        tenant_id=model.tenant_id,
-        asset_id=model.asset_id,
-        agent_id=model.agent_id,
-        source_id=model.source_id,
+        tenant_id=tenant.code,
+        asset_id=asset.code,
+        agent_id=agent.code,
+        source_id=model.code,
         source_type=model.source_type,
         enabled=model.enabled,
         name=model.name,
@@ -146,37 +102,19 @@ def _source_from_model(model: SourceModel) -> Source:
     )
 
 
-def _point_to_model(point: Point) -> PointModel:
-    return PointModel(
-        tenant_id=point.tenant_id,
-        asset_id=point.asset_id,
-        agent_id=point.agent_id,
-        source_id=point.source_id,
-        point_id=point.point_id,
-        point_key=point.point_key,
-        point_ref=point.point_ref,
-        name=point.name,
-        description=point.description,
-        value_type=point.value_type.value,
-        value_model=point.value_model,
-        signal_type=point.signal_type.value,
-        unit=point.unit,
-        enabled=point.enabled,
-        acquisition_json=dict(point.acquisition_json),
-        publish_json=dict(point.publish_json),
-        tags_json=dict(point.tags_json),
-        created_at=point.created_at,
-        updated_at=point.updated_at,
-    )
-
-
-def _point_from_model(model: PointModel) -> Point:
+def _point_from_row(
+    model: PointModel,
+    source: SourceModel,
+    agent: AgentModel,
+    asset: AssetModel,
+    tenant: TenantModel,
+) -> Point:
     return Point(
-        tenant_id=model.tenant_id,
-        asset_id=model.asset_id,
-        agent_id=model.agent_id,
-        source_id=model.source_id,
-        point_id=model.point_id,
+        tenant_id=tenant.code,
+        asset_id=asset.code,
+        agent_id=agent.code,
+        source_id=source.code,
+        point_id=model.code,
         point_key=model.point_key,
         point_ref=model.point_ref,
         name=model.name,
@@ -194,29 +132,17 @@ def _point_from_model(model: PointModel) -> Point:
     )
 
 
-def _agent_runtime_config_revision_to_model(
-    revision: AgentRuntimeConfigRevision,
-) -> AgentRuntimeConfigRevisionModel:
-    return AgentRuntimeConfigRevisionModel(
-        tenant_id=revision.tenant_id,
-        asset_id=revision.asset_id,
-        agent_id=revision.agent_id,
-        config_revision=revision.config_revision,
-        status=revision.status.value,
-        issued_at=revision.issued_at,
-        agent_runtime_payload_json=dict(revision.agent_runtime_payload_json),
-        created_at=revision.created_at,
-    )
-
-
-def _agent_runtime_config_revision_from_model(
+def _agent_runtime_config_revision_from_row(
     model: AgentRuntimeConfigRevisionModel,
+    agent: AgentModel,
+    asset: AssetModel,
+    tenant: TenantModel,
 ) -> AgentRuntimeConfigRevision:
     return AgentRuntimeConfigRevision(
-        tenant_id=model.tenant_id,
-        asset_id=model.asset_id,
-        agent_id=model.agent_id,
-        config_revision=model.config_revision,
+        tenant_id=tenant.code,
+        asset_id=asset.code,
+        agent_id=agent.code,
+        config_revision=model.code,
         status=ConfigRevisionStatus(model.status),
         issued_at=model.issued_at,
         agent_runtime_payload_json=dict(model.agent_runtime_payload_json),
@@ -224,32 +150,19 @@ def _agent_runtime_config_revision_from_model(
     )
 
 
-def _source_config_revision_to_model(
-    revision: SourceConfigRevision,
-) -> SourceConfigRevisionModel:
-    return SourceConfigRevisionModel(
-        tenant_id=revision.tenant_id,
-        asset_id=revision.asset_id,
-        agent_id=revision.agent_id,
-        source_id=revision.source_id,
-        source_config_revision=revision.source_config_revision,
-        config_revision=revision.config_revision,
-        status=revision.status.value,
-        issued_at=revision.issued_at,
-        source_payload_json=dict(revision.source_payload_json),
-        created_at=revision.created_at,
-    )
-
-
-def _source_config_revision_from_model(
+def _source_config_revision_from_row(
     model: SourceConfigRevisionModel,
+    source: SourceModel,
+    agent: AgentModel,
+    asset: AssetModel,
+    tenant: TenantModel,
 ) -> SourceConfigRevision:
     return SourceConfigRevision(
-        tenant_id=model.tenant_id,
-        asset_id=model.asset_id,
-        agent_id=model.agent_id,
-        source_id=model.source_id,
-        source_config_revision=model.source_config_revision,
+        tenant_id=tenant.code,
+        asset_id=asset.code,
+        agent_id=agent.code,
+        source_id=source.code,
+        source_config_revision=model.code,
         config_revision=model.config_revision,
         status=ConfigRevisionStatus(model.status),
         issued_at=model.issued_at,
@@ -258,43 +171,22 @@ def _source_config_revision_from_model(
     )
 
 
-def _config_outbox_to_model(record: ConfigOutboxRecord) -> ConfigOutboxModel:
-    return ConfigOutboxModel(
-        tenant_id=record.tenant_id,
-        outbox_id=record.outbox_id,
-        idempotency_key=record.idempotency_key,
-        asset_id=record.asset_id,
-        agent_id=record.agent_id,
-        config_revision=record.config_revision,
-        config_scope=record.config_scope,
-        source_id=record.source_id,
-        source_config_revision=record.source_config_revision,
-        message_type=record.message_type,
-        kafka_topic=record.kafka_topic,
-        kafka_key=record.kafka_key,
-        payload_json=dict(record.payload_json),
-        status=record.status.value,
-        available_at=record.available_at,
-        lease_expires_at=record.lease_expires_at,
-        published_at=record.published_at,
-        attempt_count=record.attempt_count,
-        next_attempt_at=record.next_attempt_at,
-        last_error=record.last_error,
-        created_at=record.created_at,
-        updated_at=record.updated_at,
-    )
-
-
-def _config_outbox_from_model(model: ConfigOutboxModel) -> ConfigOutboxRecord:
+def _config_outbox_from_row(
+    model: ConfigOutboxModel,
+    tenant: TenantModel,
+    asset: AssetModel,
+    agent: AgentModel,
+    source: SourceModel | None,
+) -> ConfigOutboxRecord:
     return ConfigOutboxRecord(
-        tenant_id=model.tenant_id,
-        outbox_id=model.outbox_id,
+        tenant_id=tenant.code,
+        outbox_id=model.id,
         idempotency_key=model.idempotency_key,
-        asset_id=model.asset_id,
-        agent_id=model.agent_id,
+        asset_id=asset.code,
+        agent_id=agent.code,
         config_revision=model.config_revision,
         config_scope=model.config_scope,
-        source_id=model.source_id,
+        source_id=source.code if source is not None else None,
         source_config_revision=model.source_config_revision,
         message_type=model.message_type,
         kafka_topic=model.kafka_topic,
@@ -312,6 +204,183 @@ def _config_outbox_from_model(model: ConfigOutboxModel) -> ConfigOutboxRecord:
     )
 
 
+async def _tenant_model_by_code(
+    session: AsyncSession,
+    tenant_id: str,
+) -> TenantModel | None:
+    result = await session.scalars(
+        select(TenantModel).where(TenantModel.code == tenant_id)
+    )
+    return result.first()
+
+
+async def _asset_row_by_codes(
+    session: AsyncSession,
+    tenant_id: str,
+    asset_id: str,
+) -> tuple[AssetModel, TenantModel] | None:
+    result = await session.execute(
+        select(AssetModel, TenantModel)
+        .join(TenantModel, AssetModel.tenant_id == TenantModel.id)
+        .where(TenantModel.code == tenant_id, AssetModel.code == asset_id)
+    )
+    row = result.first()
+    return (row[0], row[1]) if row is not None else None
+
+
+async def _agent_row_by_codes(
+    session: AsyncSession,
+    tenant_id: str,
+    asset_id: str,
+    agent_id: str,
+) -> tuple[AgentModel, AssetModel, TenantModel] | None:
+    result = await session.execute(
+        select(AgentModel, AssetModel, TenantModel)
+        .join(AssetModel, AgentModel.asset_id == AssetModel.id)
+        .join(TenantModel, AgentModel.tenant_id == TenantModel.id)
+        .where(
+            TenantModel.code == tenant_id,
+            AssetModel.code == asset_id,
+            AgentModel.code == agent_id,
+        )
+    )
+    row = result.first()
+    return (row[0], row[1], row[2]) if row is not None else None
+
+
+async def _source_row_by_codes(
+    session: AsyncSession,
+    tenant_id: str,
+    asset_id: str,
+    agent_id: str,
+    source_id: str,
+) -> tuple[SourceModel, AgentModel, AssetModel, TenantModel] | None:
+    result = await session.execute(
+        select(SourceModel, AgentModel, AssetModel, TenantModel)
+        .join(AgentModel, SourceModel.agent_id == AgentModel.id)
+        .join(AssetModel, AgentModel.asset_id == AssetModel.id)
+        .join(TenantModel, SourceModel.tenant_id == TenantModel.id)
+        .where(
+            TenantModel.code == tenant_id,
+            AssetModel.code == asset_id,
+            AgentModel.code == agent_id,
+            SourceModel.code == source_id,
+        )
+    )
+    row = result.first()
+    return (row[0], row[1], row[2], row[3]) if row is not None else None
+
+
+async def _point_row_by_id(
+    session: AsyncSession,
+    tenant_id: str,
+    point_id: str,
+) -> tuple[PointModel, SourceModel, AgentModel, AssetModel, TenantModel] | None:
+    result = await session.execute(
+        select(PointModel, SourceModel, AgentModel, AssetModel, TenantModel)
+        .join(SourceModel, PointModel.source_id == SourceModel.id)
+        .join(AgentModel, SourceModel.agent_id == AgentModel.id)
+        .join(AssetModel, AgentModel.asset_id == AssetModel.id)
+        .join(TenantModel, PointModel.tenant_id == TenantModel.id)
+        .where(TenantModel.code == tenant_id, PointModel.code == point_id)
+    )
+    row = result.first()
+    return (row[0], row[1], row[2], row[3], row[4]) if row is not None else None
+
+
+async def _point_row_by_source_and_field(
+    session: AsyncSession,
+    tenant_id: str,
+    asset_id: str,
+    agent_id: str,
+    source_id: str,
+    field_name: str,
+    field_value: str,
+) -> tuple[PointModel, SourceModel, AgentModel, AssetModel, TenantModel] | None:
+    field = PointModel.point_key if field_name == "point_key" else PointModel.point_ref
+    result = await session.execute(
+        select(PointModel, SourceModel, AgentModel, AssetModel, TenantModel)
+        .join(SourceModel, PointModel.source_id == SourceModel.id)
+        .join(AgentModel, SourceModel.agent_id == AgentModel.id)
+        .join(AssetModel, AgentModel.asset_id == AssetModel.id)
+        .join(TenantModel, PointModel.tenant_id == TenantModel.id)
+        .where(
+            TenantModel.code == tenant_id,
+            AssetModel.code == asset_id,
+            AgentModel.code == agent_id,
+            SourceModel.code == source_id,
+            field == field_value,
+        )
+    )
+    row = result.first()
+    return (row[0], row[1], row[2], row[3], row[4]) if row is not None else None
+
+
+async def _agent_runtime_revision_row_by_codes(
+    session: AsyncSession,
+    tenant_id: str,
+    asset_id: str,
+    agent_id: str,
+    config_revision: str,
+) -> tuple[AgentRuntimeConfigRevisionModel, AgentModel, AssetModel, TenantModel] | None:
+    result = await session.execute(
+        select(AgentRuntimeConfigRevisionModel, AgentModel, AssetModel, TenantModel)
+        .join(AgentModel, AgentRuntimeConfigRevisionModel.agent_id == AgentModel.id)
+        .join(AssetModel, AgentModel.asset_id == AssetModel.id)
+        .join(TenantModel, AgentRuntimeConfigRevisionModel.tenant_id == TenantModel.id)
+        .where(
+            TenantModel.code == tenant_id,
+            AssetModel.code == asset_id,
+            AgentModel.code == agent_id,
+            AgentRuntimeConfigRevisionModel.code == config_revision,
+        )
+    )
+    row = result.first()
+    return (row[0], row[1], row[2], row[3]) if row is not None else None
+
+
+async def _source_config_revision_row_by_codes(
+    session: AsyncSession,
+    tenant_id: str,
+    asset_id: str,
+    agent_id: str,
+    source_id: str,
+    source_config_revision: str,
+) -> tuple[SourceConfigRevisionModel, SourceModel, AgentModel, AssetModel, TenantModel] | None:
+    result = await session.execute(
+        select(SourceConfigRevisionModel, SourceModel, AgentModel, AssetModel, TenantModel)
+        .join(SourceModel, SourceConfigRevisionModel.source_id == SourceModel.id)
+        .join(AgentModel, SourceModel.agent_id == AgentModel.id)
+        .join(AssetModel, AgentModel.asset_id == AssetModel.id)
+        .join(TenantModel, SourceConfigRevisionModel.tenant_id == TenantModel.id)
+        .where(
+            TenantModel.code == tenant_id,
+            AssetModel.code == asset_id,
+            AgentModel.code == agent_id,
+            SourceModel.code == source_id,
+            SourceConfigRevisionModel.code == source_config_revision,
+        )
+    )
+    row = result.first()
+    return (row[0], row[1], row[2], row[3], row[4]) if row is not None else None
+
+
+async def _config_outbox_row_by_model(
+    session: AsyncSession,
+    model: ConfigOutboxModel,
+) -> tuple[ConfigOutboxModel, TenantModel, AssetModel, AgentModel, SourceModel | None]:
+    result = await session.execute(
+        select(ConfigOutboxModel, TenantModel, AssetModel, AgentModel, SourceModel)
+        .join(AgentModel, ConfigOutboxModel.agent_id == AgentModel.id)
+        .join(AssetModel, AgentModel.asset_id == AssetModel.id)
+        .join(TenantModel, ConfigOutboxModel.tenant_id == TenantModel.id)
+        .outerjoin(SourceModel, ConfigOutboxModel.source_id == SourceModel.id)
+        .where(ConfigOutboxModel.id == model.id)
+    )
+    row = result.one()
+    return row[0], row[1], row[2], row[3], row[4]
+
+
 def _rowcount(value: int | None) -> int:
     return int(value or 0)
 
@@ -321,25 +390,39 @@ class PostgresTenantRepository:
     session: AsyncSession
 
     async def add(self, tenant: Tenant) -> None:
-        self.session.add(_tenant_to_model(tenant))
+        self.session.add(
+            TenantModel(
+                id=uuid4(),
+                code=tenant.tenant_id,
+                name=tenant.name,
+                status=tenant.status.value,
+                created_at=tenant.created_at,
+                updated_at=tenant.updated_at,
+            )
+        )
 
     async def get(self, tenant_id: str) -> Tenant | None:
-        model = await self.session.get(TenantModel, tenant_id)
+        model = await _tenant_model_by_code(self.session, tenant_id)
         return _tenant_from_model(model) if model is not None else None
 
     async def update(self, tenant: Tenant) -> None:
-        await self.session.merge(_tenant_to_model(tenant))
+        model = await _tenant_model_by_code(self.session, tenant.tenant_id)
+        if model is None:
+            return
+        model.name = tenant.name
+        model.status = tenant.status.value
+        model.updated_at = tenant.updated_at
         await self.session.flush()
 
     async def delete(self, tenant_id: str) -> None:
-        model = await self.session.get(TenantModel, tenant_id)
+        model = await _tenant_model_by_code(self.session, tenant_id)
         if model is not None:
             await self.session.delete(model)
             await self.session.flush()
 
     async def list(self) -> list[Tenant]:
         result = await self.session.scalars(
-            select(TenantModel).order_by(TenantModel.tenant_id)
+            select(TenantModel).order_by(TenantModel.code)
         )
         return [_tenant_from_model(model) for model in result]
 
@@ -349,29 +432,51 @@ class PostgresAssetRepository:
     session: AsyncSession
 
     async def add(self, asset: Asset) -> None:
-        self.session.add(_asset_to_model(asset))
+        tenant = await _tenant_model_by_code(self.session, asset.tenant_id)
+        if tenant is None:
+            raise ValueError(f"Tenant {asset.tenant_id!r} does not exist")
+        self.session.add(
+            AssetModel(
+                id=uuid4(),
+                tenant_id=tenant.id,
+                code=asset.asset_id,
+                name=asset.name,
+                description=asset.description,
+                status=asset.status.value,
+                created_at=asset.created_at,
+                updated_at=asset.updated_at,
+            )
+        )
 
     async def get(self, tenant_id: str, asset_id: str) -> Asset | None:
-        model = await self.session.get(AssetModel, (tenant_id, asset_id))
-        return _asset_from_model(model) if model is not None else None
+        row = await _asset_row_by_codes(self.session, tenant_id, asset_id)
+        return _asset_from_row(*row) if row is not None else None
 
     async def update(self, asset: Asset) -> None:
-        await self.session.merge(_asset_to_model(asset))
+        row = await _asset_row_by_codes(self.session, asset.tenant_id, asset.asset_id)
+        if row is None:
+            return
+        model, _tenant = row
+        model.name = asset.name
+        model.description = asset.description
+        model.status = asset.status.value
+        model.updated_at = asset.updated_at
         await self.session.flush()
 
     async def delete(self, tenant_id: str, asset_id: str) -> None:
-        model = await self.session.get(AssetModel, (tenant_id, asset_id))
-        if model is not None:
-            await self.session.delete(model)
+        row = await _asset_row_by_codes(self.session, tenant_id, asset_id)
+        if row is not None:
+            await self.session.delete(row[0])
             await self.session.flush()
 
     async def list_for_tenant(self, tenant_id: str) -> list[Asset]:
-        result = await self.session.scalars(
-            select(AssetModel)
-            .where(AssetModel.tenant_id == tenant_id)
-            .order_by(AssetModel.asset_id)
+        result = await self.session.execute(
+            select(AssetModel, TenantModel)
+            .join(TenantModel, AssetModel.tenant_id == TenantModel.id)
+            .where(TenantModel.code == tenant_id)
+            .order_by(AssetModel.code)
         )
-        return [_asset_from_model(model) for model in result]
+        return [_asset_from_row(row[0], row[1]) for row in result]
 
 
 @dataclass
@@ -379,32 +484,65 @@ class PostgresAgentRepository:
     session: AsyncSession
 
     async def add(self, agent: Agent) -> None:
-        self.session.add(_agent_to_model(agent))
+        asset_row = await _asset_row_by_codes(
+            self.session,
+            agent.tenant_id,
+            agent.asset_id,
+        )
+        if asset_row is None:
+            raise ValueError(
+                f"Asset {agent.tenant_id!r}/{agent.asset_id!r} does not exist"
+            )
+        asset, tenant = asset_row
+        self.session.add(
+            AgentModel(
+                id=uuid4(),
+                tenant_id=tenant.id,
+                asset_id=asset.id,
+                code=agent.agent_id,
+                name=agent.name,
+                status=agent.status.value,
+                bootstrap_hint_json=dict(agent.bootstrap_hint_json),
+                created_at=agent.created_at,
+                updated_at=agent.updated_at,
+            )
+        )
 
     async def get(self, tenant_id: str, asset_id: str, agent_id: str) -> Agent | None:
-        model = await self.session.get(AgentModel, (tenant_id, asset_id, agent_id))
-        return _agent_from_model(model) if model is not None else None
+        row = await _agent_row_by_codes(self.session, tenant_id, asset_id, agent_id)
+        return _agent_from_row(*row) if row is not None else None
 
     async def update(self, agent: Agent) -> None:
-        await self.session.merge(_agent_to_model(agent))
+        row = await _agent_row_by_codes(
+            self.session,
+            agent.tenant_id,
+            agent.asset_id,
+            agent.agent_id,
+        )
+        if row is None:
+            return
+        model, _asset, _tenant = row
+        model.name = agent.name
+        model.status = agent.status.value
+        model.bootstrap_hint_json = dict(agent.bootstrap_hint_json)
+        model.updated_at = agent.updated_at
         await self.session.flush()
 
     async def delete(self, tenant_id: str, asset_id: str, agent_id: str) -> None:
-        model = await self.session.get(AgentModel, (tenant_id, asset_id, agent_id))
-        if model is not None:
-            await self.session.delete(model)
+        row = await _agent_row_by_codes(self.session, tenant_id, asset_id, agent_id)
+        if row is not None:
+            await self.session.delete(row[0])
             await self.session.flush()
 
     async def list_for_asset(self, tenant_id: str, asset_id: str) -> list[Agent]:
-        result = await self.session.scalars(
-            select(AgentModel)
-            .where(
-                AgentModel.tenant_id == tenant_id,
-                AgentModel.asset_id == asset_id,
-            )
-            .order_by(AgentModel.agent_id)
+        result = await self.session.execute(
+            select(AgentModel, AssetModel, TenantModel)
+            .join(AssetModel, AgentModel.asset_id == AssetModel.id)
+            .join(TenantModel, AgentModel.tenant_id == TenantModel.id)
+            .where(TenantModel.code == tenant_id, AssetModel.code == asset_id)
+            .order_by(AgentModel.code)
         )
-        return [_agent_from_model(model) for model in result]
+        return [_agent_from_row(row[0], row[1], row[2]) for row in result]
 
 
 @dataclass
@@ -412,7 +550,36 @@ class PostgresSourceRepository:
     session: AsyncSession
 
     async def add(self, source: Source) -> None:
-        self.session.add(_source_to_model(source))
+        agent_row = await _agent_row_by_codes(
+            self.session,
+            source.tenant_id,
+            source.asset_id,
+            source.agent_id,
+        )
+        if agent_row is None:
+            raise ValueError(
+                "Agent "
+                f"{source.tenant_id!r}/{source.asset_id!r}/{source.agent_id!r} "
+                "does not exist"
+            )
+        agent, _asset, tenant = agent_row
+        self.session.add(
+            SourceModel(
+                id=uuid4(),
+                tenant_id=tenant.id,
+                agent_id=agent.id,
+                code=source.source_id,
+                source_type=source.source_type,
+                enabled=source.enabled,
+                name=source.name,
+                description=source.description,
+                connection_json=dict(source.connection_json),
+                acquisition_defaults_json=dict(source.acquisition_defaults_json),
+                publish_defaults_json=dict(source.publish_defaults_json),
+                created_at=source.created_at,
+                updated_at=source.updated_at,
+            )
+        )
 
     async def get(
         self,
@@ -421,14 +588,34 @@ class PostgresSourceRepository:
         agent_id: str,
         source_id: str,
     ) -> Source | None:
-        model = await self.session.get(
-            SourceModel,
-            (tenant_id, asset_id, agent_id, source_id),
+        row = await _source_row_by_codes(
+            self.session,
+            tenant_id,
+            asset_id,
+            agent_id,
+            source_id,
         )
-        return _source_from_model(model) if model is not None else None
+        return _source_from_row(*row) if row is not None else None
 
     async def update(self, source: Source) -> None:
-        await self.session.merge(_source_to_model(source))
+        row = await _source_row_by_codes(
+            self.session,
+            source.tenant_id,
+            source.asset_id,
+            source.agent_id,
+            source.source_id,
+        )
+        if row is None:
+            return
+        model, _agent, _asset, _tenant = row
+        model.source_type = source.source_type
+        model.enabled = source.enabled
+        model.name = source.name
+        model.description = source.description
+        model.connection_json = dict(source.connection_json)
+        model.acquisition_defaults_json = dict(source.acquisition_defaults_json)
+        model.publish_defaults_json = dict(source.publish_defaults_json)
+        model.updated_at = source.updated_at
         await self.session.flush()
 
     async def delete(
@@ -438,12 +625,15 @@ class PostgresSourceRepository:
         agent_id: str,
         source_id: str,
     ) -> None:
-        model = await self.session.get(
-            SourceModel,
-            (tenant_id, asset_id, agent_id, source_id),
+        row = await _source_row_by_codes(
+            self.session,
+            tenant_id,
+            asset_id,
+            agent_id,
+            source_id,
         )
-        if model is not None:
-            await self.session.delete(model)
+        if row is not None:
+            await self.session.delete(row[0])
             await self.session.flush()
 
     async def delete_for_agent(
@@ -452,12 +642,12 @@ class PostgresSourceRepository:
         asset_id: str,
         agent_id: str,
     ) -> int:
+        agent_row = await _agent_row_by_codes(self.session, tenant_id, asset_id, agent_id)
+        if agent_row is None:
+            return 0
+        agent, _asset, _tenant = agent_row
         result = await self.session.execute(
-            delete(SourceModel).where(
-                SourceModel.tenant_id == tenant_id,
-                SourceModel.asset_id == asset_id,
-                SourceModel.agent_id == agent_id,
-            )
+            delete(SourceModel).where(SourceModel.agent_id == agent.id)
         )
         await self.session.flush()
         return _rowcount(result.rowcount)
@@ -468,16 +658,19 @@ class PostgresSourceRepository:
         asset_id: str,
         agent_id: str,
     ) -> list[Source]:
-        result = await self.session.scalars(
-            select(SourceModel)
+        result = await self.session.execute(
+            select(SourceModel, AgentModel, AssetModel, TenantModel)
+            .join(AgentModel, SourceModel.agent_id == AgentModel.id)
+            .join(AssetModel, AgentModel.asset_id == AssetModel.id)
+            .join(TenantModel, SourceModel.tenant_id == TenantModel.id)
             .where(
-                SourceModel.tenant_id == tenant_id,
-                SourceModel.asset_id == asset_id,
-                SourceModel.agent_id == agent_id,
+                TenantModel.code == tenant_id,
+                AssetModel.code == asset_id,
+                AgentModel.code == agent_id,
             )
-            .order_by(SourceModel.source_id)
+            .order_by(SourceModel.code)
         )
-        return [_source_from_model(model) for model in result]
+        return [_source_from_row(row[0], row[1], row[2], row[3]) for row in result]
 
 
 @dataclass
@@ -485,20 +678,71 @@ class PostgresPointRepository:
     session: AsyncSession
 
     async def add(self, point: Point) -> None:
-        self.session.add(_point_to_model(point))
+        source_row = await _source_row_by_codes(
+            self.session,
+            point.tenant_id,
+            point.asset_id,
+            point.agent_id,
+            point.source_id,
+        )
+        if source_row is None:
+            raise ValueError(
+                "Source "
+                f"{point.tenant_id!r}/{point.asset_id!r}/"
+                f"{point.agent_id!r}/{point.source_id!r} does not exist"
+            )
+        source, _agent, _asset, tenant = source_row
+        self.session.add(
+            PointModel(
+                id=uuid4(),
+                tenant_id=tenant.id,
+                source_id=source.id,
+                code=point.point_id,
+                point_key=point.point_key,
+                point_ref=point.point_ref,
+                name=point.name,
+                description=point.description,
+                value_type=point.value_type.value,
+                value_model=point.value_model,
+                signal_type=point.signal_type.value,
+                unit=point.unit,
+                enabled=point.enabled,
+                acquisition_json=dict(point.acquisition_json),
+                publish_json=dict(point.publish_json),
+                tags_json=dict(point.tags_json),
+                created_at=point.created_at,
+                updated_at=point.updated_at,
+            )
+        )
 
     async def get_by_id(self, tenant_id: str, point_id: str) -> Point | None:
-        model = await self.session.get(PointModel, (tenant_id, point_id))
-        return _point_from_model(model) if model is not None else None
+        row = await _point_row_by_id(self.session, tenant_id, point_id)
+        return _point_from_row(*row) if row is not None else None
 
     async def update(self, point: Point) -> None:
-        await self.session.merge(_point_to_model(point))
+        row = await _point_row_by_id(self.session, point.tenant_id, point.point_id)
+        if row is None:
+            return
+        model, _source, _agent, _asset, _tenant = row
+        model.point_key = point.point_key
+        model.point_ref = point.point_ref
+        model.name = point.name
+        model.description = point.description
+        model.value_type = point.value_type.value
+        model.value_model = point.value_model
+        model.signal_type = point.signal_type.value
+        model.unit = point.unit
+        model.enabled = point.enabled
+        model.acquisition_json = dict(point.acquisition_json)
+        model.publish_json = dict(point.publish_json)
+        model.tags_json = dict(point.tags_json)
+        model.updated_at = point.updated_at
         await self.session.flush()
 
     async def delete(self, tenant_id: str, point_id: str) -> None:
-        model = await self.session.get(PointModel, (tenant_id, point_id))
-        if model is not None:
-            await self.session.delete(model)
+        row = await _point_row_by_id(self.session, tenant_id, point_id)
+        if row is not None:
+            await self.session.delete(row[0])
             await self.session.flush()
 
     async def delete_for_agent(
@@ -507,12 +751,13 @@ class PostgresPointRepository:
         asset_id: str,
         agent_id: str,
     ) -> int:
+        agent_row = await _agent_row_by_codes(self.session, tenant_id, asset_id, agent_id)
+        if agent_row is None:
+            return 0
+        agent, _asset, _tenant = agent_row
+        source_ids = select(SourceModel.id).where(SourceModel.agent_id == agent.id)
         result = await self.session.execute(
-            delete(PointModel).where(
-                PointModel.tenant_id == tenant_id,
-                PointModel.asset_id == asset_id,
-                PointModel.agent_id == agent_id,
-            )
+            delete(PointModel).where(PointModel.source_id.in_(source_ids))
         )
         await self.session.flush()
         return _rowcount(result.rowcount)
@@ -525,17 +770,16 @@ class PostgresPointRepository:
         source_id: str,
         point_key: str,
     ) -> Point | None:
-        result = await self.session.scalars(
-            select(PointModel).where(
-                PointModel.tenant_id == tenant_id,
-                PointModel.asset_id == asset_id,
-                PointModel.agent_id == agent_id,
-                PointModel.source_id == source_id,
-                PointModel.point_key == point_key,
-            )
+        row = await _point_row_by_source_and_field(
+            self.session,
+            tenant_id,
+            asset_id,
+            agent_id,
+            source_id,
+            "point_key",
+            point_key,
         )
-        model = result.first()
-        return _point_from_model(model) if model is not None else None
+        return _point_from_row(*row) if row is not None else None
 
     async def get_by_ref(
         self,
@@ -545,17 +789,16 @@ class PostgresPointRepository:
         source_id: str,
         point_ref: str,
     ) -> Point | None:
-        result = await self.session.scalars(
-            select(PointModel).where(
-                PointModel.tenant_id == tenant_id,
-                PointModel.asset_id == asset_id,
-                PointModel.agent_id == agent_id,
-                PointModel.source_id == source_id,
-                PointModel.point_ref == point_ref,
-            )
+        row = await _point_row_by_source_and_field(
+            self.session,
+            tenant_id,
+            asset_id,
+            agent_id,
+            source_id,
+            "point_ref",
+            point_ref,
         )
-        model = result.first()
-        return _point_from_model(model) if model is not None else None
+        return _point_from_row(*row) if row is not None else None
 
     async def list_for_source(
         self,
@@ -564,17 +807,21 @@ class PostgresPointRepository:
         agent_id: str,
         source_id: str,
     ) -> list[Point]:
-        result = await self.session.scalars(
-            select(PointModel)
+        result = await self.session.execute(
+            select(PointModel, SourceModel, AgentModel, AssetModel, TenantModel)
+            .join(SourceModel, PointModel.source_id == SourceModel.id)
+            .join(AgentModel, SourceModel.agent_id == AgentModel.id)
+            .join(AssetModel, AgentModel.asset_id == AssetModel.id)
+            .join(TenantModel, PointModel.tenant_id == TenantModel.id)
             .where(
-                PointModel.tenant_id == tenant_id,
-                PointModel.asset_id == asset_id,
-                PointModel.agent_id == agent_id,
-                PointModel.source_id == source_id,
+                TenantModel.code == tenant_id,
+                AssetModel.code == asset_id,
+                AgentModel.code == agent_id,
+                SourceModel.code == source_id,
             )
             .order_by(PointModel.point_key)
         )
-        return [_point_from_model(model) for model in result]
+        return [_point_from_row(row[0], row[1], row[2], row[3], row[4]) for row in result]
 
 
 @dataclass
@@ -582,7 +829,31 @@ class PostgresAgentRuntimeConfigRevisionRepository:
     session: AsyncSession
 
     async def add(self, revision: AgentRuntimeConfigRevision) -> None:
-        self.session.add(_agent_runtime_config_revision_to_model(revision))
+        agent_row = await _agent_row_by_codes(
+            self.session,
+            revision.tenant_id,
+            revision.asset_id,
+            revision.agent_id,
+        )
+        if agent_row is None:
+            raise ValueError(
+                "Agent "
+                f"{revision.tenant_id!r}/{revision.asset_id!r}/"
+                f"{revision.agent_id!r} does not exist"
+            )
+        agent, _asset, tenant = agent_row
+        self.session.add(
+            AgentRuntimeConfigRevisionModel(
+                id=uuid4(),
+                tenant_id=tenant.id,
+                agent_id=agent.id,
+                code=revision.config_revision,
+                status=revision.status.value,
+                issued_at=revision.issued_at,
+                agent_runtime_payload_json=dict(revision.agent_runtime_payload_json),
+                created_at=revision.created_at,
+            )
+        )
 
     async def get(
         self,
@@ -591,15 +862,14 @@ class PostgresAgentRuntimeConfigRevisionRepository:
         agent_id: str,
         config_revision: str,
     ) -> AgentRuntimeConfigRevision | None:
-        model = await self.session.get(
-            AgentRuntimeConfigRevisionModel,
-            (tenant_id, asset_id, agent_id, config_revision),
+        row = await _agent_runtime_revision_row_by_codes(
+            self.session,
+            tenant_id,
+            asset_id,
+            agent_id,
+            config_revision,
         )
-        return (
-            _agent_runtime_config_revision_from_model(model)
-            if model is not None
-            else None
-        )
+        return _agent_runtime_config_revision_from_row(*row) if row is not None else None
 
     async def has_any_for_agent(
         self,
@@ -607,13 +877,13 @@ class PostgresAgentRuntimeConfigRevisionRepository:
         asset_id: str,
         agent_id: str,
     ) -> bool:
+        agent_row = await _agent_row_by_codes(self.session, tenant_id, asset_id, agent_id)
+        if agent_row is None:
+            return False
+        agent, _asset, _tenant = agent_row
         result = await self.session.scalars(
             select(AgentRuntimeConfigRevisionModel)
-            .where(
-                AgentRuntimeConfigRevisionModel.tenant_id == tenant_id,
-                AgentRuntimeConfigRevisionModel.asset_id == asset_id,
-                AgentRuntimeConfigRevisionModel.agent_id == agent_id,
-            )
+            .where(AgentRuntimeConfigRevisionModel.agent_id == agent.id)
             .limit(1)
         )
         return result.first() is not None
@@ -624,11 +894,13 @@ class PostgresAgentRuntimeConfigRevisionRepository:
         asset_id: str,
         agent_id: str,
     ) -> int:
+        agent_row = await _agent_row_by_codes(self.session, tenant_id, asset_id, agent_id)
+        if agent_row is None:
+            return 0
+        agent, _asset, _tenant = agent_row
         result = await self.session.execute(
             delete(AgentRuntimeConfigRevisionModel).where(
-                AgentRuntimeConfigRevisionModel.tenant_id == tenant_id,
-                AgentRuntimeConfigRevisionModel.asset_id == asset_id,
-                AgentRuntimeConfigRevisionModel.agent_id == agent_id,
+                AgentRuntimeConfigRevisionModel.agent_id == agent.id
             )
         )
         await self.session.flush()
@@ -640,7 +912,47 @@ class PostgresSourceConfigRevisionRepository:
     session: AsyncSession
 
     async def add(self, revision: SourceConfigRevision) -> None:
-        self.session.add(_source_config_revision_to_model(revision))
+        source_row = await _source_row_by_codes(
+            self.session,
+            revision.tenant_id,
+            revision.asset_id,
+            revision.agent_id,
+            revision.source_id,
+        )
+        if source_row is None:
+            raise ValueError(
+                "Source "
+                f"{revision.tenant_id!r}/{revision.asset_id!r}/"
+                f"{revision.agent_id!r}/{revision.source_id!r} does not exist"
+            )
+        runtime_row = await _agent_runtime_revision_row_by_codes(
+            self.session,
+            revision.tenant_id,
+            revision.asset_id,
+            revision.agent_id,
+            revision.config_revision,
+        )
+        if runtime_row is None:
+            raise ValueError(
+                "Agent runtime config revision "
+                f"{revision.config_revision!r} must exist before source revisions"
+            )
+        source, _agent, _asset, tenant = source_row
+        runtime, _runtime_agent, _runtime_asset, _runtime_tenant = runtime_row
+        self.session.add(
+            SourceConfigRevisionModel(
+                id=uuid4(),
+                tenant_id=tenant.id,
+                source_id=source.id,
+                agent_runtime_config_revision_id=runtime.id,
+                code=revision.source_config_revision,
+                config_revision=revision.config_revision,
+                status=revision.status.value,
+                issued_at=revision.issued_at,
+                source_payload_json=dict(revision.source_payload_json),
+                created_at=revision.created_at,
+            )
+        )
 
     async def get(
         self,
@@ -650,15 +962,15 @@ class PostgresSourceConfigRevisionRepository:
         source_id: str,
         source_config_revision: str,
     ) -> SourceConfigRevision | None:
-        model = await self.session.get(
-            SourceConfigRevisionModel,
-            (tenant_id, asset_id, agent_id, source_id, source_config_revision),
+        row = await _source_config_revision_row_by_codes(
+            self.session,
+            tenant_id,
+            asset_id,
+            agent_id,
+            source_id,
+            source_config_revision,
         )
-        return (
-            _source_config_revision_from_model(model)
-            if model is not None
-            else None
-        )
+        return _source_config_revision_from_row(*row) if row is not None else None
 
     async def list_for_runtime_revision(
         self,
@@ -667,17 +979,24 @@ class PostgresSourceConfigRevisionRepository:
         agent_id: str,
         config_revision: str,
     ) -> list[SourceConfigRevision]:
-        result = await self.session.scalars(
-            select(SourceConfigRevisionModel)
+        result = await self.session.execute(
+            select(SourceConfigRevisionModel, SourceModel, AgentModel, AssetModel, TenantModel)
+            .join(SourceModel, SourceConfigRevisionModel.source_id == SourceModel.id)
+            .join(AgentModel, SourceModel.agent_id == AgentModel.id)
+            .join(AssetModel, AgentModel.asset_id == AssetModel.id)
+            .join(TenantModel, SourceConfigRevisionModel.tenant_id == TenantModel.id)
             .where(
-                SourceConfigRevisionModel.tenant_id == tenant_id,
-                SourceConfigRevisionModel.asset_id == asset_id,
-                SourceConfigRevisionModel.agent_id == agent_id,
+                TenantModel.code == tenant_id,
+                AssetModel.code == asset_id,
+                AgentModel.code == agent_id,
                 SourceConfigRevisionModel.config_revision == config_revision,
             )
-            .order_by(SourceConfigRevisionModel.source_id)
+            .order_by(SourceModel.code)
         )
-        return [_source_config_revision_from_model(model) for model in result]
+        return [
+            _source_config_revision_from_row(row[0], row[1], row[2], row[3], row[4])
+            for row in result
+        ]
 
     async def has_any_for_source(
         self,
@@ -686,14 +1005,19 @@ class PostgresSourceConfigRevisionRepository:
         agent_id: str,
         source_id: str,
     ) -> bool:
+        source_row = await _source_row_by_codes(
+            self.session,
+            tenant_id,
+            asset_id,
+            agent_id,
+            source_id,
+        )
+        if source_row is None:
+            return False
+        source, _agent, _asset, _tenant = source_row
         result = await self.session.scalars(
             select(SourceConfigRevisionModel)
-            .where(
-                SourceConfigRevisionModel.tenant_id == tenant_id,
-                SourceConfigRevisionModel.asset_id == asset_id,
-                SourceConfigRevisionModel.agent_id == agent_id,
-                SourceConfigRevisionModel.source_id == source_id,
-            )
+            .where(SourceConfigRevisionModel.source_id == source.id)
             .limit(1)
         )
         return result.first() is not None
@@ -704,11 +1028,14 @@ class PostgresSourceConfigRevisionRepository:
         asset_id: str,
         agent_id: str,
     ) -> int:
+        agent_row = await _agent_row_by_codes(self.session, tenant_id, asset_id, agent_id)
+        if agent_row is None:
+            return 0
+        agent, _asset, _tenant = agent_row
+        source_ids = select(SourceModel.id).where(SourceModel.agent_id == agent.id)
         result = await self.session.execute(
             delete(SourceConfigRevisionModel).where(
-                SourceConfigRevisionModel.tenant_id == tenant_id,
-                SourceConfigRevisionModel.asset_id == asset_id,
-                SourceConfigRevisionModel.agent_id == agent_id,
+                SourceConfigRevisionModel.source_id.in_(source_ids)
             )
         )
         await self.session.flush()
@@ -720,7 +1047,60 @@ class PostgresConfigOutboxRepository:
     session: AsyncSession
 
     async def add(self, record: ConfigOutboxRecord) -> None:
-        self.session.add(_config_outbox_to_model(record))
+        agent_row = await _agent_row_by_codes(
+            self.session,
+            record.tenant_id,
+            record.asset_id,
+            record.agent_id,
+        )
+        if agent_row is None:
+            raise ValueError(
+                "Agent "
+                f"{record.tenant_id!r}/{record.asset_id!r}/{record.agent_id!r} "
+                "does not exist"
+            )
+        source_uuid: UUID | None = None
+        if record.source_id is not None:
+            source_row = await _source_row_by_codes(
+                self.session,
+                record.tenant_id,
+                record.asset_id,
+                record.agent_id,
+                record.source_id,
+            )
+            if source_row is None:
+                raise ValueError(
+                    "Source "
+                    f"{record.tenant_id!r}/{record.asset_id!r}/"
+                    f"{record.agent_id!r}/{record.source_id!r} does not exist"
+                )
+            source_uuid = source_row[0].id
+        agent, _asset, tenant = agent_row
+        self.session.add(
+            ConfigOutboxModel(
+                id=record.outbox_id,
+                tenant_id=tenant.id,
+                agent_id=agent.id,
+                source_id=source_uuid,
+                idempotency_key=record.idempotency_key,
+                config_revision=record.config_revision,
+                config_scope=record.config_scope,
+                source_config_revision=record.source_config_revision,
+                message_type=record.message_type,
+                kafka_topic=record.kafka_topic,
+                kafka_key=record.kafka_key,
+                payload_json=dict(record.payload_json),
+                status=record.status.value,
+                available_at=record.available_at,
+                lease_expires_at=record.lease_expires_at,
+                published_at=record.published_at,
+                attempt_count=record.attempt_count,
+                next_attempt_at=record.next_attempt_at,
+                last_error=record.last_error,
+                created_at=record.created_at,
+                updated_at=record.updated_at,
+            )
+        )
 
     async def get_by_idempotency_key(
         self,
@@ -732,7 +1112,11 @@ class PostgresConfigOutboxRepository:
             )
         )
         model = result.first()
-        return _config_outbox_from_model(model) if model is not None else None
+        if model is None:
+            return None
+        return _config_outbox_from_row(
+            *(await _config_outbox_row_by_model(self.session, model))
+        )
 
     async def list_for_config_revision(
         self,
@@ -741,17 +1125,24 @@ class PostgresConfigOutboxRepository:
         agent_id: str,
         config_revision: str,
     ) -> list[ConfigOutboxRecord]:
-        result = await self.session.scalars(
-            select(ConfigOutboxModel)
+        result = await self.session.execute(
+            select(ConfigOutboxModel, TenantModel, AssetModel, AgentModel, SourceModel)
+            .join(AgentModel, ConfigOutboxModel.agent_id == AgentModel.id)
+            .join(AssetModel, AgentModel.asset_id == AssetModel.id)
+            .join(TenantModel, ConfigOutboxModel.tenant_id == TenantModel.id)
+            .outerjoin(SourceModel, ConfigOutboxModel.source_id == SourceModel.id)
             .where(
-                ConfigOutboxModel.tenant_id == tenant_id,
-                ConfigOutboxModel.asset_id == asset_id,
-                ConfigOutboxModel.agent_id == agent_id,
+                TenantModel.code == tenant_id,
+                AssetModel.code == asset_id,
+                AgentModel.code == agent_id,
                 ConfigOutboxModel.config_revision == config_revision,
             )
             .order_by(ConfigOutboxModel.config_scope)
         )
-        return [_config_outbox_from_model(model) for model in result]
+        return [
+            _config_outbox_from_row(row[0], row[1], row[2], row[3], row[4])
+            for row in result
+        ]
 
     async def has_any_for_agent(
         self,
@@ -759,13 +1150,13 @@ class PostgresConfigOutboxRepository:
         asset_id: str,
         agent_id: str,
     ) -> bool:
+        agent_row = await _agent_row_by_codes(self.session, tenant_id, asset_id, agent_id)
+        if agent_row is None:
+            return False
+        agent, _asset, _tenant = agent_row
         result = await self.session.scalars(
             select(ConfigOutboxModel)
-            .where(
-                ConfigOutboxModel.tenant_id == tenant_id,
-                ConfigOutboxModel.asset_id == asset_id,
-                ConfigOutboxModel.agent_id == agent_id,
-            )
+            .where(ConfigOutboxModel.agent_id == agent.id)
             .limit(1)
         )
         return result.first() is not None
@@ -777,14 +1168,19 @@ class PostgresConfigOutboxRepository:
         agent_id: str,
         source_id: str,
     ) -> bool:
+        source_row = await _source_row_by_codes(
+            self.session,
+            tenant_id,
+            asset_id,
+            agent_id,
+            source_id,
+        )
+        if source_row is None:
+            return False
+        source, _agent, _asset, _tenant = source_row
         result = await self.session.scalars(
             select(ConfigOutboxModel)
-            .where(
-                ConfigOutboxModel.tenant_id == tenant_id,
-                ConfigOutboxModel.asset_id == asset_id,
-                ConfigOutboxModel.agent_id == agent_id,
-                ConfigOutboxModel.source_id == source_id,
-            )
+            .where(ConfigOutboxModel.source_id == source.id)
             .limit(1)
         )
         return result.first() is not None
@@ -795,12 +1191,12 @@ class PostgresConfigOutboxRepository:
         asset_id: str,
         agent_id: str,
     ) -> int:
+        agent_row = await _agent_row_by_codes(self.session, tenant_id, asset_id, agent_id)
+        if agent_row is None:
+            return 0
+        agent, _asset, _tenant = agent_row
         result = await self.session.execute(
-            delete(ConfigOutboxModel).where(
-                ConfigOutboxModel.tenant_id == tenant_id,
-                ConfigOutboxModel.asset_id == asset_id,
-                ConfigOutboxModel.agent_id == agent_id,
-            )
+            delete(ConfigOutboxModel).where(ConfigOutboxModel.agent_id == agent.id)
         )
         await self.session.flush()
         return _rowcount(result.rowcount)
@@ -837,7 +1233,11 @@ class PostgresConfigOutboxRepository:
             model.status = ConfigOutboxStatus.INFLIGHT.value
             model.lease_expires_at = now + lease_duration
             model.updated_at = now
-            reserved.append(_config_outbox_from_model(model))
+            reserved.append(
+                _config_outbox_from_row(
+                    *(await _config_outbox_row_by_model(self.session, model))
+                )
+            )
         await self.session.flush()
         return reserved
 
@@ -855,7 +1255,9 @@ class PostgresConfigOutboxRepository:
         model.published_at = now
         model.updated_at = now
         await self.session.flush()
-        return _config_outbox_from_model(model)
+        return _config_outbox_from_row(
+            *(await _config_outbox_row_by_model(self.session, model))
+        )
 
     async def mark_retry(
         self,
@@ -875,7 +1277,9 @@ class PostgresConfigOutboxRepository:
         model.last_error = error
         model.updated_at = now
         await self.session.flush()
-        return _config_outbox_from_model(model)
+        return _config_outbox_from_row(
+            *(await _config_outbox_row_by_model(self.session, model))
+        )
 
     async def mark_dead_letter(
         self,
@@ -893,7 +1297,9 @@ class PostgresConfigOutboxRepository:
         model.last_error = error
         model.updated_at = now
         await self.session.flush()
-        return _config_outbox_from_model(model)
+        return _config_outbox_from_row(
+            *(await _config_outbox_row_by_model(self.session, model))
+        )
 
     async def release_expired_leases(
         self,

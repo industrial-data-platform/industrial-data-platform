@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from idp_config_registry.application.use_cases.config_outbox import (
     MarkConfigOutboxPublished,
@@ -30,6 +32,127 @@ from idp_config_registry.settings import ConfigRegistrySettings
 pytestmark = pytest.mark.integration
 
 CONTRACT_DIR = Path("docs/contracts/edge-telemetry-agent/schemas")
+
+REGISTRY_TABLES = (
+    "tenants",
+    "assets",
+    "agents",
+    "sources",
+    "points",
+    "agent_runtime_config_revisions",
+    "source_config_revisions",
+    "config_outbox",
+)
+
+UUID_COLUMNS_BY_TABLE = {
+    "tenants": {"id"},
+    "assets": {"id", "tenant_id"},
+    "agents": {"id", "tenant_id", "asset_id"},
+    "sources": {"id", "tenant_id", "agent_id"},
+    "points": {"id", "tenant_id", "source_id"},
+    "agent_runtime_config_revisions": {"id", "tenant_id", "agent_id"},
+    "source_config_revisions": {
+        "id",
+        "tenant_id",
+        "source_id",
+        "agent_runtime_config_revision_id",
+    },
+    "config_outbox": {"id", "tenant_id", "agent_id", "source_id"},
+}
+
+CODE_TABLES = {
+    "tenants",
+    "assets",
+    "agents",
+    "sources",
+    "points",
+    "agent_runtime_config_revisions",
+    "source_config_revisions",
+}
+
+
+@pytest.mark.asyncio
+async def test_config_registry_postgres_schema_uses_uuid_surrogates_and_code_columns(
+    local_config_registry_postgres_stack,
+) -> None:
+    engine = create_async_engine(local_config_registry_postgres_stack.database_url)
+    try:
+        async with engine.connect() as connection:
+            primary_key_rows = (
+                await connection.execute(
+                    text(
+                        """
+                        select c.relname as table_name,
+                               array_agg(a.attname order by keys.ordinality) as columns
+                        from pg_index i
+                        join pg_class c on c.oid = i.indrelid
+                        join pg_namespace n on n.oid = c.relnamespace
+                        join unnest(i.indkey) with ordinality as keys(attnum, ordinality)
+                          on true
+                        join pg_attribute a
+                          on a.attrelid = c.oid
+                         and a.attnum = keys.attnum
+                        where i.indisprimary
+                          and n.nspname = 'public'
+                          and c.relname in (
+                            'tenants',
+                            'assets',
+                            'agents',
+                            'sources',
+                            'points',
+                            'agent_runtime_config_revisions',
+                            'source_config_revisions',
+                            'config_outbox'
+                          )
+                        group by c.relname
+                        """
+                    )
+                )
+            ).mappings().all()
+            column_rows = (
+                await connection.execute(
+                    text(
+                        """
+                        select table_name,
+                               column_name,
+                               data_type,
+                               column_default
+                        from information_schema.columns
+                        where table_schema = 'public'
+                          and table_name in (
+                            'tenants',
+                            'assets',
+                            'agents',
+                            'sources',
+                            'points',
+                            'agent_runtime_config_revisions',
+                            'source_config_revisions',
+                            'config_outbox'
+                          )
+                        """
+                    )
+                )
+            ).mappings().all()
+    finally:
+        await engine.dispose()
+
+    primary_keys = {
+        row["table_name"]: tuple(row["columns"]) for row in primary_key_rows
+    }
+    columns = {
+        (row["table_name"], row["column_name"]): row for row in column_rows
+    }
+
+    assert primary_keys == {table: ("id",) for table in REGISTRY_TABLES}
+
+    for table_name, uuid_columns in UUID_COLUMNS_BY_TABLE.items():
+        for column_name in uuid_columns:
+            column = columns[(table_name, column_name)]
+            assert column["data_type"] == "uuid"
+            assert column["column_default"] is None
+
+    for table_name in CODE_TABLES:
+        assert columns[(table_name, "code")]["data_type"] == "text"
 
 
 @pytest.mark.integration_smoke
