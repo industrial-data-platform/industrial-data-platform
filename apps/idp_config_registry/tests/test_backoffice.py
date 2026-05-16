@@ -37,6 +37,9 @@ from idp_config_registry.domain.value_objects import SignalType, ValueType
 from idp_config_registry.infrastructure import (
     backoffice_business_views as business_views,
 )
+from idp_config_registry.infrastructure import (
+    backoffice_config_views as config_views,
+)
 from idp_config_registry.infrastructure.backoffice import (
     BACKOFFICE_CUSTOM_VIEWS,
     BACKOFFICE_VIEWS,
@@ -966,6 +969,66 @@ async def test_backoffice_can_create_agent_runtime_config_revision_via_mounted_f
 
 
 @pytest.mark.asyncio
+async def test_agent_runtime_config_revision_create_returns_sqladmin_uuid_ids(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = create_app(settings=_settings(internal_mode=True))
+    app.state.unit_of_work_factory = InMemoryUnitOfWorkFactory()
+    await _seed_registry_tree(app)
+    revision_uuid = uuid4()
+    tenant_uuid = uuid4()
+    agent_uuid = uuid4()
+
+    async def resolve_revision_ids(
+        _request: object,
+        tenant_id: str,
+        asset_id: str,
+        agent_id: str,
+        config_revision: str,
+    ) -> tuple[object, object, object]:
+        assert (tenant_id, asset_id, agent_id, config_revision) == (
+            "tenant-backoffice",
+            "asset-backoffice",
+            "agent-backoffice",
+            "rev-sqladmin",
+        )
+        return revision_uuid, tenant_uuid, agent_uuid
+
+    monkeypatch.setattr(
+        config_views,
+        "_agent_runtime_config_revision_internal_ids_by_codes",
+        resolve_revision_ids,
+        raising=False,
+    )
+    revision_view = next(
+        view
+        for view in app.state.backoffice.views
+        if isinstance(view, AgentRuntimeConfigRevisionBackofficeView)
+    )
+
+    model = await revision_view.insert_model(
+        FakePageRequest(app),
+        {
+            AGENT_SELECTOR_FIELD: AgentSelection(
+                tenant_id="tenant-backoffice",
+                asset_id="asset-backoffice",
+                agent_id="agent-backoffice",
+            ),
+            "config_revision": "rev-sqladmin",
+            "issued_at": "2026-05-04T06:58:00Z",
+            "agent_runtime_payload_json": {"demo": True},
+        },
+    )
+
+    assert (model.id, model.tenant_id, model.agent_id) == (
+        revision_uuid,
+        tenant_uuid,
+        agent_uuid,
+    )
+    assert model.config_revision == "rev-sqladmin"
+
+
+@pytest.mark.asyncio
 async def test_backoffice_can_create_source_config_revision_via_mounted_form() -> None:
     app = create_app(settings=_settings(internal_mode=True))
     app.state.unit_of_work_factory = InMemoryUnitOfWorkFactory()
@@ -1014,6 +1077,96 @@ async def test_backoffice_can_create_source_config_revision_via_mounted_form() -
     assert response.status_code == 302
     assert revision is not None
     assert revision.source_payload_json == {"demo": True}
+
+
+@pytest.mark.asyncio
+async def test_source_config_revision_create_returns_sqladmin_uuid_ids(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = create_app(settings=_settings(internal_mode=True))
+    app.state.unit_of_work_factory = InMemoryUnitOfWorkFactory()
+    await _seed_registry_tree(app)
+    await CreateAgentRuntimeConfigRevision(app.state.unit_of_work_factory()).execute(
+        CreateAgentRuntimeConfigRevisionCommand(
+            tenant_id="tenant-backoffice",
+            asset_id="asset-backoffice",
+            agent_id="agent-backoffice",
+            config_revision="rev-sqladmin",
+            issued_at=datetime(2026, 5, 4, 6, 58, tzinfo=UTC),
+            agent_runtime_payload_json={"demo": True},
+        )
+    )
+    source_revision_uuid = uuid4()
+    tenant_uuid = uuid4()
+    source_uuid = uuid4()
+    runtime_revision_uuid = uuid4()
+
+    async def resolve_source_revision_ids(
+        _request: object,
+        tenant_id: str,
+        asset_id: str,
+        agent_id: str,
+        source_id: str,
+        source_config_revision: str,
+        config_revision: str,
+    ) -> tuple[object, object, object, object]:
+        assert (
+            tenant_id,
+            asset_id,
+            agent_id,
+            source_id,
+            source_config_revision,
+            config_revision,
+        ) == (
+            "tenant-backoffice",
+            "asset-backoffice",
+            "agent-backoffice",
+            "source-backoffice",
+            "src-rev-sqladmin",
+            "rev-sqladmin",
+        )
+        return source_revision_uuid, tenant_uuid, source_uuid, runtime_revision_uuid
+
+    monkeypatch.setattr(
+        config_views,
+        "_source_config_revision_internal_ids_by_codes",
+        resolve_source_revision_ids,
+        raising=False,
+    )
+    revision_view = next(
+        view
+        for view in app.state.backoffice.views
+        if isinstance(view, SourceConfigRevisionBackofficeView)
+    )
+
+    model = await revision_view.insert_model(
+        FakePageRequest(app),
+        {
+            SOURCE_SELECTOR_FIELD: SourceSelection(
+                tenant_id="tenant-backoffice",
+                asset_id="asset-backoffice",
+                agent_id="agent-backoffice",
+                source_id="source-backoffice",
+            ),
+            "source_config_revision": "src-rev-sqladmin",
+            "config_revision": "rev-sqladmin",
+            "issued_at": "2026-05-04T06:58:01Z",
+            "source_payload_json": {"demo": True},
+        },
+    )
+
+    assert (
+        model.id,
+        model.tenant_id,
+        model.source_id,
+        model.agent_runtime_config_revision_id,
+    ) == (
+        source_revision_uuid,
+        tenant_uuid,
+        source_uuid,
+        runtime_revision_uuid,
+    )
+    assert model.source_config_revision == "src-rev-sqladmin"
 
 
 @pytest.mark.asyncio

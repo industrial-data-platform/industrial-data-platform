@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from uuid import uuid4
+from uuid import UUID, uuid4
 
+from sqlalchemy import select
 from starlette.requests import Request
 from wtforms import StringField
 
@@ -36,9 +37,16 @@ from idp_config_registry.infrastructure.backoffice_support import (
     parse_issued_at,
 )
 from idp_config_registry.infrastructure.postgres.models import (
+    AgentModel,
     AgentRuntimeConfigRevisionModel,
+    AssetModel,
     ConfigOutboxModel,
     SourceConfigRevisionModel,
+    SourceModel,
+    TenantModel,
+)
+from idp_config_registry.infrastructure.postgres.unit_of_work import (
+    PostgresUnitOfWorkFactory,
 )
 
 
@@ -102,7 +110,10 @@ class AgentRuntimeConfigRevisionBackofficeView(
                 ),
             )
         )
-        return _agent_runtime_config_revision_model(revision)
+        return await _agent_runtime_config_revision_model_for_response(
+            request,
+            revision,
+        )
 
 
 class SourceConfigRevisionBackofficeView(
@@ -170,7 +181,7 @@ class SourceConfigRevisionBackofficeView(
                 ),
             )
         )
-        return _source_config_revision_model(revision)
+        return await _source_config_revision_model_for_response(request, revision)
 
 
 class ConfigOutboxBackofficeView(ReadOnlyBackofficeModelView, model=ConfigOutboxModel):
@@ -199,7 +210,7 @@ def _agent_runtime_config_revision_model(
         id=uuid4(),
         tenant_id=uuid4(),
         agent_id=uuid4(),
-        code=revision.config_revision,
+        config_revision=revision.config_revision,
         status=revision.status.value,
         issued_at=revision.issued_at,
         agent_runtime_payload_json=dict(revision.agent_runtime_payload_json),
@@ -215,13 +226,129 @@ def _source_config_revision_model(
         tenant_id=uuid4(),
         source_id=uuid4(),
         agent_runtime_config_revision_id=uuid4(),
-        code=revision.source_config_revision,
+        source_config_revision=revision.source_config_revision,
         config_revision=revision.config_revision,
         status=revision.status.value,
         issued_at=revision.issued_at,
         source_payload_json=dict(revision.source_payload_json),
         created_at=revision.created_at,
     )
+
+
+async def _agent_runtime_config_revision_model_for_response(
+    request: Request,
+    revision: AgentRuntimeConfigRevision,
+) -> AgentRuntimeConfigRevisionModel:
+    model = _agent_runtime_config_revision_model(revision)
+    row = await _agent_runtime_config_revision_internal_ids_by_codes(
+        request,
+        revision.tenant_id,
+        revision.asset_id,
+        revision.agent_id,
+        revision.config_revision,
+    )
+    if row is not None:
+        model.id, model.tenant_id, model.agent_id = row
+    return model
+
+
+async def _source_config_revision_model_for_response(
+    request: Request,
+    revision: SourceConfigRevision,
+) -> SourceConfigRevisionModel:
+    model = _source_config_revision_model(revision)
+    row = await _source_config_revision_internal_ids_by_codes(
+        request,
+        revision.tenant_id,
+        revision.asset_id,
+        revision.agent_id,
+        revision.source_id,
+        revision.source_config_revision,
+        revision.config_revision,
+    )
+    if row is not None:
+        (
+            model.id,
+            model.tenant_id,
+            model.source_id,
+            model.agent_runtime_config_revision_id,
+        ) = row
+    return model
+
+
+async def _agent_runtime_config_revision_internal_ids_by_codes(
+    request: Request,
+    tenant_id: str,
+    asset_id: str,
+    agent_id: str,
+    config_revision: str,
+) -> tuple[UUID, UUID, UUID] | None:
+    factory = _postgres_uow_factory_for_request(request)
+    if factory is None:
+        return None
+    async with factory.session_manager.session_factory() as session:
+        result = await session.execute(
+            select(
+                AgentRuntimeConfigRevisionModel.id,
+                AgentRuntimeConfigRevisionModel.tenant_id,
+                AgentRuntimeConfigRevisionModel.agent_id,
+            )
+            .join(AgentModel, AgentRuntimeConfigRevisionModel.agent_id == AgentModel.id)
+            .join(AssetModel, AgentModel.asset_id == AssetModel.id)
+            .join(TenantModel, AgentRuntimeConfigRevisionModel.tenant_id == TenantModel.id)
+            .where(
+                TenantModel.code == tenant_id,
+                AssetModel.code == asset_id,
+                AgentModel.code == agent_id,
+                AgentRuntimeConfigRevisionModel.code == config_revision,
+            )
+        )
+        row = result.first()
+    return (row[0], row[1], row[2]) if row is not None else None
+
+
+async def _source_config_revision_internal_ids_by_codes(
+    request: Request,
+    tenant_id: str,
+    asset_id: str,
+    agent_id: str,
+    source_id: str,
+    source_config_revision: str,
+    config_revision: str,
+) -> tuple[UUID, UUID, UUID, UUID] | None:
+    factory = _postgres_uow_factory_for_request(request)
+    if factory is None:
+        return None
+    async with factory.session_manager.session_factory() as session:
+        result = await session.execute(
+            select(
+                SourceConfigRevisionModel.id,
+                SourceConfigRevisionModel.tenant_id,
+                SourceConfigRevisionModel.source_id,
+                SourceConfigRevisionModel.agent_runtime_config_revision_id,
+            )
+            .join(SourceModel, SourceConfigRevisionModel.source_id == SourceModel.id)
+            .join(AgentModel, SourceModel.agent_id == AgentModel.id)
+            .join(AssetModel, AgentModel.asset_id == AssetModel.id)
+            .join(TenantModel, SourceConfigRevisionModel.tenant_id == TenantModel.id)
+            .where(
+                TenantModel.code == tenant_id,
+                AssetModel.code == asset_id,
+                AgentModel.code == agent_id,
+                SourceModel.code == source_id,
+                SourceConfigRevisionModel.code == source_config_revision,
+                SourceConfigRevisionModel.config_revision == config_revision,
+            )
+        )
+        row = result.first()
+    return (row[0], row[1], row[2], row[3]) if row is not None else None
+
+
+def _postgres_uow_factory_for_request(
+    request: Request,
+) -> PostgresUnitOfWorkFactory | None:
+    factory = get_request_state(request).unit_of_work_factory
+    return factory if isinstance(factory, PostgresUnitOfWorkFactory) else None
 
 
 def _require_agent_selection(value: object | None) -> AgentSelection:
