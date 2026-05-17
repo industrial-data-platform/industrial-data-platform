@@ -94,9 +94,10 @@ CONFIG_REGISTRY_DATABASE_URL=postgresql+asyncpg://idp:change-me-local-postgres@l
 Если `CONFIG_REGISTRY_INTERNAL_MODE=true` и API запущен с PostgreSQL-backed
 `CONFIG_REGISTRY_DATABASE_URL`, дополнительно монтируется internal
 `/backoffice`. В админке `details` страницы остаются полным raw ORM-view, а
-`list` страницы показывают только компактный operational набор колонок без
-лишнего горизонтального скролла. Для create-flow используется операторский UX
-поверх application use cases:
+`list` страницы показывают компактный operational набор колонок: parent context
+выводится как `tenant_code`, `asset_code`, `agent_code` или `source_code`, без
+внутренних UUID FK `tenant_id`, `asset_id`, `agent_id` и `source_id`. Для
+create-flow используется операторский UX поверх application use cases:
 
 - `tenants`: только `code` (`tenant_code` в API) и `name`
 - `assets`: `Tenant` selector + `code` (`asset_code` в API), `name`,

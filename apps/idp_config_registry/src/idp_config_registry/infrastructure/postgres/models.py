@@ -17,7 +17,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 PATH_CODE_PATTERN = r"^[a-z0-9][a-z0-9_-]{0,127}$"
 
@@ -54,6 +54,9 @@ class TenantModel(Base):
         nullable=False,
     )
 
+    def __str__(self) -> str:
+        return self.code
+
 
 class AssetModel(Base):
     __tablename__ = "assets"
@@ -77,6 +80,7 @@ class AssetModel(Base):
         ForeignKey("tenants.id", name="fk_assets_tenant"),
         nullable=False,
     )
+    tenant: Mapped[TenantModel] = relationship(lazy="selectin")
     code: Mapped[str] = mapped_column(Text, nullable=False)
     name: Mapped[str] = mapped_column(Text, nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
@@ -89,6 +93,9 @@ class AssetModel(Base):
         DateTime(timezone=True),
         nullable=False,
     )
+
+    def __str__(self) -> str:
+        return self.code
 
 
 class AgentModel(Base):
@@ -116,11 +123,13 @@ class AgentModel(Base):
         ForeignKey("tenants.id", name="fk_agents_tenant"),
         nullable=False,
     )
+    tenant: Mapped[TenantModel] = relationship(lazy="selectin")
     asset_id: Mapped[UUID] = mapped_column(
         PostgresUUID(as_uuid=True),
         ForeignKey("assets.id", name="fk_agents_asset"),
         nullable=False,
     )
+    asset: Mapped[AssetModel] = relationship(lazy="selectin")
     code: Mapped[str] = mapped_column(Text, nullable=False)
     name: Mapped[str | None] = mapped_column(Text)
     status: Mapped[str] = mapped_column(Text, nullable=False)
@@ -137,6 +146,9 @@ class AgentModel(Base):
         DateTime(timezone=True),
         nullable=False,
     )
+
+    def __str__(self) -> str:
+        return self.code
 
 
 class SourceModel(Base):
@@ -160,11 +172,13 @@ class SourceModel(Base):
         ForeignKey("tenants.id", name="fk_sources_tenant"),
         nullable=False,
     )
+    tenant: Mapped[TenantModel] = relationship(lazy="selectin")
     agent_id: Mapped[UUID] = mapped_column(
         PostgresUUID(as_uuid=True),
         ForeignKey("agents.id", name="fk_sources_agent"),
         nullable=False,
     )
+    agent: Mapped[AgentModel] = relationship(lazy="selectin")
     code: Mapped[str] = mapped_column(Text, nullable=False)
     source_type: Mapped[str] = mapped_column(Text, nullable=False)
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
@@ -193,6 +207,9 @@ class SourceModel(Base):
         DateTime(timezone=True),
         nullable=False,
     )
+
+    def __str__(self) -> str:
+        return self.code
 
 
 class PointModel(Base):
@@ -226,11 +243,13 @@ class PointModel(Base):
         ForeignKey("tenants.id", name="fk_points_tenant"),
         nullable=False,
     )
+    tenant: Mapped[TenantModel] = relationship(lazy="selectin")
     source_id: Mapped[UUID] = mapped_column(
         PostgresUUID(as_uuid=True),
         ForeignKey("sources.id", name="fk_points_source"),
         nullable=False,
     )
+    source: Mapped[SourceModel] = relationship(lazy="selectin")
     code: Mapped[str] = mapped_column(Text, nullable=False)
     point_key: Mapped[str] = mapped_column(String(512), nullable=False)
     point_ref: Mapped[str] = mapped_column(Text, nullable=False)
@@ -264,6 +283,9 @@ class PointModel(Base):
         DateTime(timezone=True),
         nullable=False,
     )
+
+    def __str__(self) -> str:
+        return self.code
 
 
 class AgentRuntimeConfigRevisionModel(Base):
