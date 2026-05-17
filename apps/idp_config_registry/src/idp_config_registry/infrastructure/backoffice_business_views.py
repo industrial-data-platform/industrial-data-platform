@@ -195,14 +195,13 @@ class AssetBackofficeView(ApplicationLookupBackofficeView, model=AssetModel):
     name = "Asset"
     name_plural = "Assets"
     category = "Registry"
-    column_list = model_columns(
-        AssetModel,
-        "tenant_id",
-        "code",
-        "name",
-        "status",
-        "updated_at",
-    )
+    column_list = [
+        AssetModel.tenant,
+        *model_columns(AssetModel, "code", "name", "status", "updated_at"),
+    ]
+    column_labels = {
+        AssetModel.tenant: "tenant_code",
+    }
     column_details_list = all_model_columns(AssetModel)
     form_columns = [
         "code",
@@ -304,15 +303,15 @@ class AgentBackofficeView(ApplicationLookupBackofficeView, model=AgentModel):
     name = "Agent"
     name_plural = "Agents"
     category = "Registry"
-    column_list = model_columns(
-        AgentModel,
-        "tenant_id",
-        "asset_id",
-        "code",
-        "name",
-        "status",
-        "updated_at",
-    )
+    column_list = [
+        AgentModel.tenant,
+        AgentModel.asset,
+        *model_columns(AgentModel, "code", "name", "status", "updated_at"),
+    ]
+    column_labels = {
+        AgentModel.tenant: "tenant_code",
+        AgentModel.asset: "asset_code",
+    }
     column_details_list = all_model_columns(AgentModel)
     form_columns = [
         "code",
@@ -460,16 +459,22 @@ class SourceBackofficeView(ApplicationLookupBackofficeView, model=SourceModel):
     name = "Source"
     name_plural = "Sources"
     category = "Registry"
-    column_list = model_columns(
-        SourceModel,
-        "tenant_id",
-        "agent_id",
-        "code",
-        "source_type",
-        "enabled",
-        "name",
-        "updated_at",
-    )
+    column_list = [
+        SourceModel.tenant,
+        SourceModel.agent,
+        *model_columns(
+            SourceModel,
+            "code",
+            "source_type",
+            "enabled",
+            "name",
+            "updated_at",
+        ),
+    ]
+    column_labels = {
+        SourceModel.tenant: "tenant_code",
+        SourceModel.agent: "agent_code",
+    }
     column_details_list = all_model_columns(SourceModel)
     form_columns = [
         "code",
@@ -623,18 +628,24 @@ class PointBackofficeView(ApplicationLookupBackofficeView, model=PointModel):
     name = "Point"
     name_plural = "Points"
     category = "Registry"
-    column_list = model_columns(
-        PointModel,
-        "tenant_id",
-        "source_id",
-        "code",
-        "point_key",
-        "name",
-        "value_type",
-        "signal_type",
-        "enabled",
-        "updated_at",
-    )
+    column_list = [
+        PointModel.tenant,
+        PointModel.source,
+        *model_columns(
+            PointModel,
+            "code",
+            "point_key",
+            "name",
+            "value_type",
+            "signal_type",
+            "enabled",
+            "updated_at",
+        ),
+    ]
+    column_labels = {
+        PointModel.tenant: "tenant_code",
+        PointModel.source: "source_code",
+    }
     column_details_list = all_model_columns(PointModel)
     form_columns = [
         "code",

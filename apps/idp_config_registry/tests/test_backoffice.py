@@ -87,19 +87,19 @@ LIST_VIEW_COLUMNS: tuple[tuple[type[object], type[object], tuple[str, ...]], ...
     (
         AssetBackofficeView,
         AssetModel,
-        ("tenant_id", "code", "name", "status", "updated_at"),
+        ("tenant", "code", "name", "status", "updated_at"),
     ),
     (
         AgentBackofficeView,
         AgentModel,
-        ("tenant_id", "asset_id", "code", "name", "status", "updated_at"),
+        ("tenant", "asset", "code", "name", "status", "updated_at"),
     ),
     (
         SourceBackofficeView,
         SourceModel,
         (
-            "tenant_id",
-            "agent_id",
+            "tenant",
+            "agent",
             "code",
             "source_type",
             "enabled",
@@ -111,8 +111,8 @@ LIST_VIEW_COLUMNS: tuple[tuple[type[object], type[object], tuple[str, ...]], ...
         PointBackofficeView,
         PointModel,
         (
-            "tenant_id",
-            "source_id",
+            "tenant",
+            "source",
             "code",
             "point_key",
             "name",
@@ -1056,10 +1056,33 @@ def test_backoffice_list_views_show_compact_column_sets(
     model: type[object],
     expected_columns: tuple[str, ...],
 ) -> None:
-    assert [column.name for column in view.column_list] == list(expected_columns)
+    assert [_column_name(column) for column in view.column_list] == list(
+        expected_columns
+    )
+    if view in BUSINESS_VIEWS:
+        assert {
+            "tenant_id",
+            "asset_id",
+            "agent_id",
+            "source_id",
+            "point_id",
+        }.isdisjoint(expected_columns)
     assert [column.name for column in view.column_details_list] == [
         column.name for column in model.__table__.columns
     ]
+
+
+def test_backoffice_business_list_parent_columns_are_labeled_as_codes() -> None:
+    app = create_app(settings=_settings(internal_mode=True))
+    views_by_type = {type(view): view for view in app.state.backoffice.views}
+
+    assert views_by_type[AssetBackofficeView]._column_labels["tenant"] == "tenant_code"
+    assert views_by_type[AgentBackofficeView]._column_labels["tenant"] == "tenant_code"
+    assert views_by_type[AgentBackofficeView]._column_labels["asset"] == "asset_code"
+    assert views_by_type[SourceBackofficeView]._column_labels["tenant"] == "tenant_code"
+    assert views_by_type[SourceBackofficeView]._column_labels["agent"] == "agent_code"
+    assert views_by_type[PointBackofficeView]._column_labels["tenant"] == "tenant_code"
+    assert views_by_type[PointBackofficeView]._column_labels["source"] == "source_code"
 
 
 @pytest.mark.asyncio
@@ -1206,6 +1229,10 @@ def _settings(*, internal_mode: bool) -> ConfigRegistrySettings:
 def _has_route_prefix(app: object, prefix: str) -> bool:
     routes = getattr(app, "routes")
     return any(str(getattr(route, "path", "")).startswith(prefix) for route in routes)
+
+
+def _column_name(column: object) -> str:
+    return str(getattr(column, "name", getattr(column, "key", column)))
 
 
 class FakeJsonRequest:
