@@ -104,8 +104,8 @@ def asset_select_label(
 def encode_asset_selection(selection: AssetSelection) -> str:
     return json.dumps(
         {
-            "tenant_id": selection.tenant_code,
-            "asset_id": selection.asset_code,
+            "tenant_code": selection.tenant_code,
+            "asset_code": selection.asset_code,
         },
         separators=(",", ":"),
         sort_keys=True,
@@ -117,8 +117,8 @@ def decode_asset_selection(value: str) -> AssetSelection:
     if not isinstance(payload, dict):
         raise ValueError("Asset selection must be a JSON object")
     return AssetSelection(
-        tenant_code=str(payload["tenant_id"]),
-        asset_code=str(payload["asset_id"]),
+        tenant_code=str(payload["tenant_code"]),
+        asset_code=str(payload["asset_code"]),
     )
 
 
@@ -165,9 +165,9 @@ def agent_select_label(
 def encode_agent_selection(selection: AgentSelection) -> str:
     return json.dumps(
         {
-            "tenant_id": selection.tenant_code,
-            "asset_id": selection.asset_code,
-            "agent_id": selection.agent_code,
+            "tenant_code": selection.tenant_code,
+            "asset_code": selection.asset_code,
+            "agent_code": selection.agent_code,
         },
         separators=(",", ":"),
         sort_keys=True,
@@ -179,9 +179,9 @@ def decode_agent_selection(value: str) -> AgentSelection:
     if not isinstance(payload, dict):
         raise ValueError("Agent selection must be a JSON object")
     return AgentSelection(
-        tenant_code=str(payload["tenant_id"]),
-        asset_code=str(payload["asset_id"]),
-        agent_code=str(payload["agent_id"]),
+        tenant_code=str(payload["tenant_code"]),
+        asset_code=str(payload["asset_code"]),
+        agent_code=str(payload["agent_code"]),
     )
 
 
@@ -248,10 +248,10 @@ def source_select_label(
 def encode_source_selection(selection: SourceSelection) -> str:
     return json.dumps(
         {
-            "tenant_id": selection.tenant_code,
-            "asset_id": selection.asset_code,
-            "agent_id": selection.agent_code,
-            "source_id": selection.source_code,
+            "tenant_code": selection.tenant_code,
+            "asset_code": selection.asset_code,
+            "agent_code": selection.agent_code,
+            "source_code": selection.source_code,
         },
         separators=(",", ":"),
         sort_keys=True,
@@ -263,10 +263,10 @@ def decode_source_selection(value: str) -> SourceSelection:
     if not isinstance(payload, dict):
         raise ValueError("Source selection must be a JSON object")
     return SourceSelection(
-        tenant_code=str(payload["tenant_id"]),
-        asset_code=str(payload["asset_id"]),
-        agent_code=str(payload["agent_id"]),
-        source_code=str(payload["source_id"]),
+        tenant_code=str(payload["tenant_code"]),
+        asset_code=str(payload["asset_code"]),
+        agent_code=str(payload["agent_code"]),
+        source_code=str(payload["source_code"]),
     )
 
 

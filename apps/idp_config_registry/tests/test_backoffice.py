@@ -57,6 +57,9 @@ from idp_config_registry.infrastructure.backoffice_selectors import (
     AgentSelection,
     AssetSelection,
     SourceSelection,
+    decode_agent_selection,
+    decode_asset_selection,
+    decode_source_selection,
     encode_agent_selection,
     encode_asset_selection,
     encode_source_selection,
@@ -220,6 +223,58 @@ def test_backoffice_view_registry_contains_business_and_technical_views() -> Non
     assert TenantBackofficeView in BACKOFFICE_VIEWS
     assert AgentRuntimeConfigRevisionBackofficeView in BACKOFFICE_VIEWS
     assert ConfigOutboxBackofficeView in BACKOFFICE_VIEWS
+
+
+def test_backoffice_selector_values_use_code_field_names() -> None:
+    asset_value = encode_asset_selection(
+        AssetSelection(tenant_code="tenant-a", asset_code="asset-a")
+    )
+    agent_value = encode_agent_selection(
+        AgentSelection(
+            tenant_code="tenant-a",
+            asset_code="asset-a",
+            agent_code="agent-a",
+        )
+    )
+    source_value = encode_source_selection(
+        SourceSelection(
+            tenant_code="tenant-a",
+            asset_code="asset-a",
+            agent_code="agent-a",
+            source_code="knx-main",
+        )
+    )
+
+    assert json.loads(asset_value) == {
+        "tenant_code": "tenant-a",
+        "asset_code": "asset-a",
+    }
+    assert json.loads(agent_value) == {
+        "tenant_code": "tenant-a",
+        "asset_code": "asset-a",
+        "agent_code": "agent-a",
+    }
+    assert json.loads(source_value) == {
+        "tenant_code": "tenant-a",
+        "asset_code": "asset-a",
+        "agent_code": "agent-a",
+        "source_code": "knx-main",
+    }
+    assert decode_asset_selection(asset_value) == AssetSelection(
+        tenant_code="tenant-a",
+        asset_code="asset-a",
+    )
+    assert decode_agent_selection(agent_value) == AgentSelection(
+        tenant_code="tenant-a",
+        asset_code="asset-a",
+        agent_code="agent-a",
+    )
+    assert decode_source_selection(source_value) == SourceSelection(
+        tenant_code="tenant-a",
+        asset_code="asset-a",
+        agent_code="agent-a",
+        source_code="knx-main",
+    )
 
 
 def test_backoffice_bulk_action_affordances_follow_view_capabilities() -> None:
