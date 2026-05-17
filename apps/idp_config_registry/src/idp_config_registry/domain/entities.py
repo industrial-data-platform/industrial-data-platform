@@ -35,7 +35,7 @@ class Tenant:
         object.__setattr__(
             self,
             "tenant_code",
-            require_non_empty(self.tenant_code, field_name="tenant_id"),
+            require_non_empty(self.tenant_code, field_name="tenant_code"),
         )
         object.__setattr__(
             self,
@@ -58,12 +58,12 @@ class Asset:
         object.__setattr__(
             self,
             "tenant_code",
-            require_non_empty(self.tenant_code, field_name="tenant_id"),
+            require_non_empty(self.tenant_code, field_name="tenant_code"),
         )
         object.__setattr__(
             self,
             "asset_code",
-            require_path_id(self.asset_code, field_name="asset_id"),
+            require_path_id(self.asset_code, field_name="asset_code"),
         )
         object.__setattr__(
             self,
@@ -87,17 +87,17 @@ class Agent:
         object.__setattr__(
             self,
             "tenant_code",
-            require_non_empty(self.tenant_code, field_name="tenant_id"),
+            require_non_empty(self.tenant_code, field_name="tenant_code"),
         )
         object.__setattr__(
             self,
             "asset_code",
-            require_path_id(self.asset_code, field_name="asset_id"),
+            require_path_id(self.asset_code, field_name="asset_code"),
         )
         object.__setattr__(
             self,
             "agent_code",
-            require_path_id(self.agent_code, field_name="agent_id"),
+            require_path_id(self.agent_code, field_name="agent_code"),
         )
 
 
@@ -121,22 +121,22 @@ class Source:
         object.__setattr__(
             self,
             "tenant_code",
-            require_non_empty(self.tenant_code, field_name="tenant_id"),
+            require_non_empty(self.tenant_code, field_name="tenant_code"),
         )
         object.__setattr__(
             self,
             "asset_code",
-            require_path_id(self.asset_code, field_name="asset_id"),
+            require_path_id(self.asset_code, field_name="asset_code"),
         )
         object.__setattr__(
             self,
             "agent_code",
-            require_path_id(self.agent_code, field_name="agent_id"),
+            require_path_id(self.agent_code, field_name="agent_code"),
         )
         object.__setattr__(
             self,
             "source_code",
-            require_path_id(self.source_code, field_name="source_id"),
+            require_path_id(self.source_code, field_name="source_code"),
         )
         object.__setattr__(
             self,
@@ -171,27 +171,27 @@ class Point:
         object.__setattr__(
             self,
             "tenant_code",
-            require_non_empty(self.tenant_code, field_name="tenant_id"),
+            require_non_empty(self.tenant_code, field_name="tenant_code"),
         )
         object.__setattr__(
             self,
             "asset_code",
-            require_path_id(self.asset_code, field_name="asset_id"),
+            require_path_id(self.asset_code, field_name="asset_code"),
         )
         object.__setattr__(
             self,
             "agent_code",
-            require_path_id(self.agent_code, field_name="agent_id"),
+            require_path_id(self.agent_code, field_name="agent_code"),
         )
         object.__setattr__(
             self,
             "source_code",
-            require_path_id(self.source_code, field_name="source_id"),
+            require_path_id(self.source_code, field_name="source_code"),
         )
         object.__setattr__(
             self,
             "point_code",
-            require_non_empty(self.point_code, field_name="point_id"),
+            require_non_empty(self.point_code, field_name="point_code"),
         )
         object.__setattr__(self, "point_key", require_point_key(self.point_key))
         object.__setattr__(
@@ -226,17 +226,17 @@ class AgentRuntimeConfigRevision:
         object.__setattr__(
             self,
             "tenant_code",
-            require_non_empty(self.tenant_code, field_name="tenant_id"),
+            require_non_empty(self.tenant_code, field_name="tenant_code"),
         )
         object.__setattr__(
             self,
             "asset_code",
-            require_path_id(self.asset_code, field_name="asset_id"),
+            require_path_id(self.asset_code, field_name="asset_code"),
         )
         object.__setattr__(
             self,
             "agent_code",
-            require_path_id(self.agent_code, field_name="agent_id"),
+            require_path_id(self.agent_code, field_name="agent_code"),
         )
         object.__setattr__(
             self,
@@ -262,22 +262,22 @@ class SourceConfigRevision:
         object.__setattr__(
             self,
             "tenant_code",
-            require_non_empty(self.tenant_code, field_name="tenant_id"),
+            require_non_empty(self.tenant_code, field_name="tenant_code"),
         )
         object.__setattr__(
             self,
             "asset_code",
-            require_path_id(self.asset_code, field_name="asset_id"),
+            require_path_id(self.asset_code, field_name="asset_code"),
         )
         object.__setattr__(
             self,
             "agent_code",
-            require_path_id(self.agent_code, field_name="agent_id"),
+            require_path_id(self.agent_code, field_name="agent_code"),
         )
         object.__setattr__(
             self,
             "source_code",
-            require_path_id(self.source_code, field_name="source_id"),
+            require_path_id(self.source_code, field_name="source_code"),
         )
         object.__setattr__(
             self,
@@ -354,7 +354,7 @@ class ConfigOutboxRecord:
         object.__setattr__(
             self,
             "tenant_code",
-            require_non_empty(self.tenant_code, field_name="tenant_id"),
+            require_non_empty(self.tenant_code, field_name="tenant_code"),
         )
         object.__setattr__(
             self,
@@ -364,12 +364,12 @@ class ConfigOutboxRecord:
         object.__setattr__(
             self,
             "asset_code",
-            require_path_id(self.asset_code, field_name="asset_id"),
+            require_path_id(self.asset_code, field_name="asset_code"),
         )
         object.__setattr__(
             self,
             "agent_code",
-            require_path_id(self.agent_code, field_name="agent_id"),
+            require_path_id(self.agent_code, field_name="agent_code"),
         )
         object.__setattr__(
             self,

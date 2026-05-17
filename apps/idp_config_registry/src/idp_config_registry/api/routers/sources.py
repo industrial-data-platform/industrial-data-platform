@@ -6,11 +6,6 @@ from idp_config_registry.api.dependencies import (
     UnitOfWorkFactory,
     get_unit_of_work_factory,
 )
-from idp_config_registry.api.path_params import (
-    AgentCodePath,
-    AssetCodePath,
-    TenantCodePath,
-)
 from idp_config_registry.api.schemas.sources import SourceCreateRequest, SourceResponse
 from idp_config_registry.application.errors import (
     AgentNotFoundError,
@@ -24,7 +19,7 @@ from idp_config_registry.application.use_cases.sources import (
 from idp_config_registry.domain.value_objects import DomainValidationError
 
 router = APIRouter(
-    prefix="/tenants/{tenant_id}/assets/{asset_id}/agents/{agent_id}/sources",
+    prefix="/tenants/{tenant_code}/assets/{asset_code}/agents/{agent_code}/sources",
     tags=["sources"],
 )
 
@@ -35,9 +30,9 @@ router = APIRouter(
     status_code=status.HTTP_201_CREATED,
 )
 async def create_source(
-    tenant_code: TenantCodePath,
-    asset_code: AssetCodePath,
-    agent_code: AgentCodePath,
+    tenant_code: str,
+    asset_code: str,
+    agent_code: str,
     request: SourceCreateRequest,
     unit_of_work_factory: UnitOfWorkFactory = Depends(get_unit_of_work_factory),
 ) -> SourceResponse:
@@ -78,9 +73,9 @@ async def create_source(
 
 @router.get("", response_model=list[SourceResponse])
 async def list_sources(
-    tenant_code: TenantCodePath,
-    asset_code: AssetCodePath,
-    agent_code: AgentCodePath,
+    tenant_code: str,
+    asset_code: str,
+    agent_code: str,
     unit_of_work_factory: UnitOfWorkFactory = Depends(get_unit_of_work_factory),
 ) -> list[SourceResponse]:
     try:

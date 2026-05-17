@@ -10,7 +10,7 @@ from idp_config_registry.domain.value_objects import SignalType, ValueType
 
 
 class PointCreateRequest(BaseModel):
-    point_id: str = Field(min_length=1)
+    point_code: str = Field(min_length=1)
     point_key: str = Field(min_length=1)
     point_ref: str = Field(min_length=1)
     name: str = Field(min_length=1)
@@ -24,19 +24,15 @@ class PointCreateRequest(BaseModel):
     publish_json: dict[str, Any] = Field(default_factory=dict)
     tags_json: dict[str, Any] = Field(default_factory=dict)
 
-    @property
-    def point_code(self) -> str:
-        return self.point_id
-
 
 class PointResponse(BaseModel):
     model_config = ConfigDict(use_enum_values=True)
 
-    tenant_id: str
-    asset_id: str
-    agent_id: str
-    source_id: str
-    point_id: str
+    tenant_code: str
+    asset_code: str
+    agent_code: str
+    source_code: str
+    point_code: str
     point_key: str
     point_ref: str
     name: str
@@ -55,11 +51,11 @@ class PointResponse(BaseModel):
     @classmethod
     def from_domain(cls, point: Point) -> PointResponse:
         return cls(
-            tenant_id=point.tenant_code,
-            asset_id=point.asset_code,
-            agent_id=point.agent_code,
-            source_id=point.source_code,
-            point_id=point.point_code,
+            tenant_code=point.tenant_code,
+            asset_code=point.asset_code,
+            agent_code=point.agent_code,
+            source_code=point.source_code,
+            point_code=point.point_code,
             point_key=point.point_key,
             point_ref=point.point_ref,
             name=point.name,

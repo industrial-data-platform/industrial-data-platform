@@ -204,11 +204,11 @@ def test_config_registry_persists_tenants_in_postgres(
     with TestClient(create_app(settings=settings)) as client:
         create_response = client.post(
             "/tenants",
-            json={"tenant_id": "tenant-a", "name": "Tenant A"},
+            json={"tenant_code": "tenant-a", "name": "Tenant A"},
         )
         duplicate_response = client.post(
             "/tenants",
-            json={"tenant_id": "tenant-a", "name": "Tenant A"},
+            json={"tenant_code": "tenant-a", "name": "Tenant A"},
         )
 
     with TestClient(create_app(settings=settings)) as client:
@@ -217,7 +217,7 @@ def test_config_registry_persists_tenants_in_postgres(
     assert create_response.status_code == 201
     assert duplicate_response.status_code == 409
     assert list_response.status_code == 200
-    assert [tenant["tenant_id"] for tenant in list_response.json()] == ["tenant-a"]
+    assert [tenant["tenant_code"] for tenant in list_response.json()] == ["tenant-a"]
 
 
 def test_config_registry_persists_assets_in_postgres(
@@ -230,30 +230,30 @@ def test_config_registry_persists_assets_in_postgres(
     with TestClient(create_app(settings=settings)) as client:
         client.post(
             "/tenants",
-            json={"tenant_id": "tenant-assets", "name": "Tenant Assets"},
+            json={"tenant_code": "tenant-assets", "name": "Tenant Assets"},
         )
         create_response = client.post(
             "/tenants/tenant-assets/assets",
             json={
-                "asset_id": "asset-a",
+                "asset_code": "asset-a",
                 "name": "Asset A",
                 "description": "Primary monitored asset",
             },
         )
         duplicate_response = client.post(
             "/tenants/tenant-assets/assets",
-            json={"asset_id": "asset-a", "name": "Asset A"},
+            json={"asset_code": "asset-a", "name": "Asset A"},
         )
 
     with TestClient(create_app(settings=settings)) as client:
         list_response = client.get("/tenants/tenant-assets/assets")
 
     assert create_response.status_code == 201
-    assert create_response.json()["asset_id"] == "asset-a"
+    assert create_response.json()["asset_code"] == "asset-a"
     assert create_response.json()["description"] == "Primary monitored asset"
     assert duplicate_response.status_code == 409
     assert list_response.status_code == 200
-    assert [asset["asset_id"] for asset in list_response.json()] == ["asset-a"]
+    assert [asset["asset_code"] for asset in list_response.json()] == ["asset-a"]
 
 
 def test_config_registry_persists_agents_in_postgres(
@@ -266,34 +266,34 @@ def test_config_registry_persists_agents_in_postgres(
     with TestClient(create_app(settings=settings)) as client:
         client.post(
             "/tenants",
-            json={"tenant_id": "tenant-agents", "name": "Tenant Agents"},
+            json={"tenant_code": "tenant-agents", "name": "Tenant Agents"},
         )
         client.post(
             "/tenants/tenant-agents/assets",
-            json={"asset_id": "asset-a", "name": "Asset A"},
+            json={"asset_code": "asset-a", "name": "Asset A"},
         )
         create_response = client.post(
             "/tenants/tenant-agents/assets/asset-a/agents",
             json={
-                "agent_id": "agent-a",
+                "agent_code": "agent-a",
                 "name": "Agent A",
                 "bootstrap_hint_json": {"mqtt_profile": "local"},
             },
         )
         duplicate_response = client.post(
             "/tenants/tenant-agents/assets/asset-a/agents",
-            json={"agent_id": "agent-a"},
+            json={"agent_code": "agent-a"},
         )
 
     with TestClient(create_app(settings=settings)) as client:
         list_response = client.get("/tenants/tenant-agents/assets/asset-a/agents")
 
     assert create_response.status_code == 201
-    assert create_response.json()["agent_id"] == "agent-a"
+    assert create_response.json()["agent_code"] == "agent-a"
     assert create_response.json()["bootstrap_hint_json"] == {"mqtt_profile": "local"}
     assert duplicate_response.status_code == 409
     assert list_response.status_code == 200
-    assert [agent["agent_id"] for agent in list_response.json()] == ["agent-a"]
+    assert [agent["agent_code"] for agent in list_response.json()] == ["agent-a"]
 
 
 def test_config_registry_persists_sources_in_postgres(
@@ -306,27 +306,27 @@ def test_config_registry_persists_sources_in_postgres(
     with TestClient(create_app(settings=settings)) as client:
         client.post(
             "/tenants",
-            json={"tenant_id": "tenant-sources", "name": "Tenant Sources"},
+            json={"tenant_code": "tenant-sources", "name": "Tenant Sources"},
         )
         client.post(
             "/tenants/tenant-sources/assets",
-            json={"asset_id": "asset-a", "name": "Asset A"},
+            json={"asset_code": "asset-a", "name": "Asset A"},
         )
         client.post(
             "/tenants/tenant-sources/assets/asset-a/agents",
-            json={"agent_id": "agent-a"},
+            json={"agent_code": "agent-a"},
         )
         create_response = client.post(
             "/tenants/tenant-sources/assets/asset-a/agents/agent-a/sources",
             json={
-                "source_id": "knx-main",
+                "source_code": "knx-main",
                 "source_type": "knx",
                 "connection_json": {"gateway": "127.0.0.1"},
             },
         )
         duplicate_response = client.post(
             "/tenants/tenant-sources/assets/asset-a/agents/agent-a/sources",
-            json={"source_id": "knx-main", "source_type": "knx"},
+            json={"source_code": "knx-main", "source_type": "knx"},
         )
 
     with TestClient(create_app(settings=settings)) as client:
@@ -335,11 +335,11 @@ def test_config_registry_persists_sources_in_postgres(
         )
 
     assert create_response.status_code == 201
-    assert create_response.json()["source_id"] == "knx-main"
+    assert create_response.json()["source_code"] == "knx-main"
     assert create_response.json()["connection_json"] == {"gateway": "127.0.0.1"}
     assert duplicate_response.status_code == 409
     assert list_response.status_code == 200
-    assert [source["source_id"] for source in list_response.json()] == ["knx-main"]
+    assert [source["source_code"] for source in list_response.json()] == ["knx-main"]
 
 
 def test_config_registry_persists_points_in_postgres(
@@ -352,25 +352,25 @@ def test_config_registry_persists_points_in_postgres(
     with TestClient(create_app(settings=settings)) as client:
         client.post(
             "/tenants",
-            json={"tenant_id": "tenant-points", "name": "Tenant Points"},
+            json={"tenant_code": "tenant-points", "name": "Tenant Points"},
         )
         client.post(
             "/tenants/tenant-points/assets",
-            json={"asset_id": "asset-a", "name": "Asset A"},
+            json={"asset_code": "asset-a", "name": "Asset A"},
         )
         client.post(
             "/tenants/tenant-points/assets/asset-a/agents",
-            json={"agent_id": "agent-a"},
+            json={"agent_code": "agent-a"},
         )
         client.post(
             "/tenants/tenant-points/assets/asset-a/agents/agent-a/sources",
-            json={"source_id": "knx-main", "source_type": "knx"},
+            json={"source_code": "knx-main", "source_type": "knx"},
         )
         create_response = client.post(
             "/tenants/tenant-points/assets/asset-a/agents/agent-a"
             "/sources/knx-main/points",
             json={
-                "point_id": "tenant-points|asset-a|knx-main|lights.main",
+                "point_code": "tenant-points|asset-a|knx-main|lights.main",
                 "point_key": "lights.main",
                 "point_ref": "1/1/1",
                 "name": "Main Light",
@@ -384,7 +384,7 @@ def test_config_registry_persists_points_in_postgres(
             "/tenants/tenant-points/assets/asset-a/agents/agent-a"
             "/sources/knx-main/points",
             json={
-                "point_id": "tenant-points|asset-a|knx-main|lights.main",
+                "point_code": "tenant-points|asset-a|knx-main|lights.main",
                 "point_key": "lights.secondary",
                 "point_ref": "1/1/2",
                 "name": "Secondary Light",
@@ -468,20 +468,20 @@ async def test_config_registry_persists_and_reserves_outbox_records_in_postgres(
 def _create_renderable_agent_graph(client: TestClient) -> None:
     client.post(
         "/tenants",
-        json={"tenant_id": "tenant-outbox", "name": "Tenant Outbox"},
+        json={"tenant_code": "tenant-outbox", "name": "Tenant Outbox"},
     )
     client.post(
         "/tenants/tenant-outbox/assets",
-        json={"asset_id": "asset-a", "name": "Asset A"},
+        json={"asset_code": "asset-a", "name": "Asset A"},
     )
     client.post(
         "/tenants/tenant-outbox/assets/asset-a/agents",
-        json={"agent_id": "agent-a"},
+        json={"agent_code": "agent-a"},
     )
     client.post(
         "/tenants/tenant-outbox/assets/asset-a/agents/agent-a/sources",
         json={
-            "source_id": "knx-main",
+            "source_code": "knx-main",
             "source_type": "knx",
             "connection_json": {"gateway_ip": "127.0.0.1"},
             "acquisition_defaults_json": {
@@ -499,7 +499,7 @@ def _create_renderable_agent_graph(client: TestClient) -> None:
         "/tenants/tenant-outbox/assets/asset-a/agents/agent-a"
         "/sources/knx-main/points",
         json={
-            "point_id": "tenant-outbox|asset-a|knx-main|temperature",
+            "point_code": "tenant-outbox|asset-a|knx-main|temperature",
             "point_key": "temperature",
             "point_ref": "2/0/0",
             "name": "Temperature",

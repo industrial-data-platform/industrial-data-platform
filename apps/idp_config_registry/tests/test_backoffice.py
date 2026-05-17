@@ -434,7 +434,7 @@ def test_backoffice_can_create_tenant_via_mounted_form() -> None:
         tenants = client.get("/tenants").json()
 
     assert response.status_code == 302
-    assert any(tenant["tenant_id"] == "tenant-ui" for tenant in tenants)
+    assert any(tenant["tenant_code"] == "tenant-ui" for tenant in tenants)
 
 
 @pytest.mark.asyncio
@@ -458,7 +458,7 @@ async def test_backoffice_can_create_asset_via_mounted_form() -> None:
         assets = client.get("/tenants/tenant-backoffice/assets").json()
 
     assert response.status_code == 302
-    assert any(asset["asset_id"] == "asset-ui" for asset in assets)
+    assert any(asset["asset_code"] == "asset-ui" for asset in assets)
 
 
 @pytest.mark.asyncio
@@ -488,7 +488,7 @@ async def test_backoffice_can_create_agent_via_mounted_form() -> None:
         ).json()
 
     assert response.status_code == 302
-    assert any(agent["agent_id"] == "agent-ui" for agent in agents)
+    assert any(agent["agent_code"] == "agent-ui" for agent in agents)
 
 
 @pytest.mark.asyncio
@@ -523,7 +523,7 @@ async def test_backoffice_can_create_source_via_mounted_form() -> None:
         ).json()
 
     assert response.status_code == 302
-    assert any(source["source_id"] == "source-ui" for source in sources)
+    assert any(source["source_code"] == "source-ui" for source in sources)
 
 
 @pytest.mark.asyncio
@@ -564,7 +564,7 @@ async def test_backoffice_can_create_point_via_mounted_form() -> None:
         ).json()
 
     assert response.status_code == 302
-    assert any(point["point_id"] == "point-ui" for point in points)
+    assert any(point["point_code"] == "point-ui" for point in points)
 
 
 @pytest.mark.asyncio
@@ -587,7 +587,7 @@ async def test_backoffice_can_update_tenant_via_mounted_form() -> None:
 
     assert response.status_code == 302
     assert any(
-        tenant["tenant_id"] == "tenant-backoffice"
+        tenant["tenant_code"] == "tenant-backoffice"
         and tenant["name"] == "Tenant Backoffice Updated"
         for tenant in tenants
     )
@@ -614,7 +614,7 @@ async def test_backoffice_can_update_asset_via_mounted_form() -> None:
 
     assert response.status_code == 302
     assert any(
-        asset["asset_id"] == "asset-backoffice"
+        asset["asset_code"] == "asset-backoffice"
         and asset["name"] == "Asset Backoffice Updated"
         for asset in assets
     )
@@ -644,7 +644,7 @@ async def test_backoffice_can_update_agent_via_mounted_form() -> None:
 
     assert response.status_code == 302
     assert any(
-        agent["agent_id"] == "agent-backoffice"
+        agent["agent_code"] == "agent-backoffice"
         and agent["name"] == "Agent Backoffice Updated"
         for agent in agents
     )
@@ -679,7 +679,7 @@ async def test_backoffice_can_update_source_via_mounted_form() -> None:
 
     assert response.status_code == 302
     assert any(
-        source["source_id"] == "source-backoffice"
+        source["source_code"] == "source-backoffice"
         and source["name"] == "Source Backoffice Updated"
         for source in sources
     )
@@ -718,7 +718,7 @@ async def test_backoffice_can_update_point_via_mounted_form() -> None:
 
     assert response.status_code == 302
     assert any(
-        point["point_id"] == "point-backoffice"
+        point["point_code"] == "point-backoffice"
         and point["name"] == "Point Backoffice Updated"
         and point["point_key"] == "1%2F2%2F4"
         for point in points
@@ -742,7 +742,7 @@ async def test_backoffice_can_delete_tenant_via_mounted_delete_route() -> None:
         tenants = client.get("/tenants").json()
 
     assert response.status_code == 200
-    assert not any(tenant["tenant_id"] == "tenant-delete" for tenant in tenants)
+    assert not any(tenant["tenant_code"] == "tenant-delete" for tenant in tenants)
 
 
 @pytest.mark.asyncio
@@ -767,7 +767,7 @@ async def test_backoffice_can_delete_asset_via_mounted_delete_route() -> None:
         assets = client.get("/tenants/tenant-backoffice/assets").json()
 
     assert response.status_code == 200
-    assert not any(asset["asset_id"] == "asset-delete" for asset in assets)
+    assert not any(asset["asset_code"] == "asset-delete" for asset in assets)
 
 
 @pytest.mark.asyncio
@@ -795,7 +795,7 @@ async def test_backoffice_can_delete_agent_via_mounted_delete_route() -> None:
         ).json()
 
     assert response.status_code == 200
-    assert not any(agent["agent_id"] == "agent-delete" for agent in agents)
+    assert not any(agent["agent_code"] == "agent-delete" for agent in agents)
 
 
 @pytest.mark.asyncio
@@ -835,7 +835,7 @@ async def test_backoffice_can_delete_source_via_mounted_delete_route() -> None:
         ).json()
 
     assert response.status_code == 200
-    assert not any(source["source_id"] == "source-delete" for source in sources)
+    assert not any(source["source_code"] == "source-delete" for source in sources)
 
 
 @pytest.mark.asyncio
@@ -872,7 +872,7 @@ async def test_backoffice_can_delete_point_via_mounted_delete_route() -> None:
         ).json()
 
     assert response.status_code == 200
-    assert not any(point["point_id"] == "point-delete" for point in points)
+    assert not any(point["point_code"] == "point-delete" for point in points)
 
 
 @pytest.mark.asyncio

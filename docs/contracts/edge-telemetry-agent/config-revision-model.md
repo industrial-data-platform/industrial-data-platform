@@ -45,10 +45,11 @@ Kafka delivery records и retained MQTT config.
 `code`, а UUID foreign keys используют internal `id` primary keys. Domain /
 application layer использует явные `tenant_code`, `asset_code`, `agent_code`,
 `source_code` и `point_code` там, где entity context не задан таблицей.
-Persisted snapshots используют internal UUID foreign keys для связи с registry
-tables и одновременно хранят denormalized public code snapshots: `tenant_code`,
-`asset_code`, `agent_code` и, для source-level revision, `source_code`. Wire
-payloads и Kafka/MQTT records по-прежнему получают
+Config Registry HTTP CRUD/API также использует `*_code` для этих публичных
+идентификаторов. Persisted snapshots используют internal UUID foreign keys для
+связи с registry tables и одновременно хранят denormalized public code
+snapshots: `tenant_code`, `asset_code`, `agent_code` и, для source-level
+revision, `source_code`. Edge config payloads и Kafka/MQTT records по-прежнему получают
 публичные `tenant_id`, `asset_id`, `agent_id`, `source_id` из snapshot
 payload/code fields, а не восстанавливают их из текущего состояния registry
 joins.

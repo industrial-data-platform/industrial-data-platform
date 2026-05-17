@@ -46,6 +46,9 @@ class RenderedSourceConfig:
 
 @dataclass(frozen=True)
 class RenderedAgentRuntimeConfig:
+    tenant_code: str
+    asset_code: str
+    agent_code: str
     agent_runtime_payload: dict[str, Any]
     source_payloads: tuple[RenderedSourceConfig, ...]
 
@@ -97,6 +100,9 @@ class RenderAgentRuntimeConfig:
         agent_runtime_payload = self._agent_runtime_payload(command, rendered_sources)
         self._validator.validate_agent_runtime_config(agent_runtime_payload)
         return RenderedAgentRuntimeConfig(
+            tenant_code=command.tenant_code,
+            asset_code=command.asset_code,
+            agent_code=command.agent_code,
             agent_runtime_payload=agent_runtime_payload,
             source_payloads=tuple(rendered_sources),
         )

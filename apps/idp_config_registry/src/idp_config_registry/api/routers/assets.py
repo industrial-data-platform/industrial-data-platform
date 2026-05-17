@@ -6,7 +6,6 @@ from idp_config_registry.api.dependencies import (
     UnitOfWorkFactory,
     get_unit_of_work_factory,
 )
-from idp_config_registry.api.path_params import TenantCodePath
 from idp_config_registry.api.schemas.assets import AssetCreateRequest, AssetResponse
 from idp_config_registry.application.errors import (
     DuplicateAssetError,
@@ -19,7 +18,7 @@ from idp_config_registry.application.use_cases.assets import (
 )
 from idp_config_registry.domain.value_objects import DomainValidationError
 
-router = APIRouter(prefix="/tenants/{tenant_id}/assets", tags=["assets"])
+router = APIRouter(prefix="/tenants/{tenant_code}/assets", tags=["assets"])
 
 
 @router.post(
@@ -28,7 +27,7 @@ router = APIRouter(prefix="/tenants/{tenant_id}/assets", tags=["assets"])
     status_code=status.HTTP_201_CREATED,
 )
 async def create_asset(
-    tenant_code: TenantCodePath,
+    tenant_code: str,
     request: AssetCreateRequest,
     unit_of_work_factory: UnitOfWorkFactory = Depends(get_unit_of_work_factory),
 ) -> AssetResponse:
@@ -62,7 +61,7 @@ async def create_asset(
 
 @router.get("", response_model=list[AssetResponse])
 async def list_assets(
-    tenant_code: TenantCodePath,
+    tenant_code: str,
     unit_of_work_factory: UnitOfWorkFactory = Depends(get_unit_of_work_factory),
 ) -> list[AssetResponse]:
     try:

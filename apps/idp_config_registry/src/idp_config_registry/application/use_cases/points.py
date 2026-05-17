@@ -103,7 +103,11 @@ class CreatePoint:
                     point.source_code,
                 )
             if await unit_of_work.points.get_by_id(point.tenant_code, point.point_code):
-                raise DuplicatePointError(point.tenant_code, "point_id", point.point_code)
+                raise DuplicatePointError(
+                    point.tenant_code,
+                    "point_code",
+                    point.point_code,
+                )
             if (
                 await unit_of_work.points.get_by_key(
                     point.tenant_code,
@@ -253,7 +257,9 @@ class ListPoints:
                 )
                 is None
             ):
-                raise SourceNotFoundError(tenant_code, asset_code, agent_code, source_code)
+                raise SourceNotFoundError(
+                    tenant_code, asset_code, agent_code, source_code
+                )
             return await unit_of_work.points.list_for_source(
                 tenant_code,
                 asset_code,

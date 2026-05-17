@@ -6,13 +6,6 @@ from idp_config_registry.api.dependencies import (
     UnitOfWorkFactory,
     get_unit_of_work_factory,
 )
-from idp_config_registry.api.path_params import (
-    AgentCodePath,
-    AssetCodePath,
-    PointCodePath,
-    SourceCodePath,
-    TenantCodePath,
-)
 from idp_config_registry.api.schemas.points import PointCreateRequest, PointResponse
 from idp_config_registry.application.errors import (
     DuplicatePointError,
@@ -30,8 +23,8 @@ from idp_config_registry.domain.value_objects import DomainValidationError
 
 router = APIRouter(
     prefix=(
-        "/tenants/{tenant_id}/assets/{asset_id}/agents/{agent_id}"
-        "/sources/{source_id}/points"
+        "/tenants/{tenant_code}/assets/{asset_code}/agents/{agent_code}"
+        "/sources/{source_code}/points"
     ),
     tags=["points"],
 )
@@ -43,10 +36,10 @@ router = APIRouter(
     status_code=status.HTTP_201_CREATED,
 )
 async def create_point(
-    tenant_code: TenantCodePath,
-    asset_code: AssetCodePath,
-    agent_code: AgentCodePath,
-    source_code: SourceCodePath,
+    tenant_code: str,
+    asset_code: str,
+    agent_code: str,
+    source_code: str,
     request: PointCreateRequest,
     unit_of_work_factory: UnitOfWorkFactory = Depends(get_unit_of_work_factory),
 ) -> PointResponse:
@@ -93,10 +86,10 @@ async def create_point(
 
 @router.get("", response_model=list[PointResponse])
 async def list_points(
-    tenant_code: TenantCodePath,
-    asset_code: AssetCodePath,
-    agent_code: AgentCodePath,
-    source_code: SourceCodePath,
+    tenant_code: str,
+    asset_code: str,
+    agent_code: str,
+    source_code: str,
     unit_of_work_factory: UnitOfWorkFactory = Depends(get_unit_of_work_factory),
 ) -> list[PointResponse]:
     try:
@@ -115,15 +108,15 @@ async def list_points(
 
 
 @router.delete(
-    "/{point_id}",
+    "/{point_code}",
     status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_point(
-    tenant_code: TenantCodePath,
-    asset_code: AssetCodePath,
-    agent_code: AgentCodePath,
-    source_code: SourceCodePath,
-    point_code: PointCodePath,
+    tenant_code: str,
+    asset_code: str,
+    agent_code: str,
+    source_code: str,
+    point_code: str,
     unit_of_work_factory: UnitOfWorkFactory = Depends(get_unit_of_work_factory),
 ) -> None:
     try:

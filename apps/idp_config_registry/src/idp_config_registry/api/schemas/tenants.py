@@ -9,18 +9,14 @@ from idp_config_registry.domain.value_objects import TenantStatus
 
 
 class TenantCreateRequest(BaseModel):
-    tenant_id: str = Field(min_length=1)
+    tenant_code: str = Field(min_length=1)
     name: str = Field(min_length=1)
-
-    @property
-    def tenant_code(self) -> str:
-        return self.tenant_id
 
 
 class TenantResponse(BaseModel):
     model_config = ConfigDict(use_enum_values=True)
 
-    tenant_id: str
+    tenant_code: str
     name: str
     status: TenantStatus
     created_at: datetime
@@ -29,7 +25,7 @@ class TenantResponse(BaseModel):
     @classmethod
     def from_domain(cls, tenant: Tenant) -> TenantResponse:
         return cls(
-            tenant_id=tenant.tenant_code,
+            tenant_code=tenant.tenant_code,
             name=tenant.name,
             status=tenant.status,
             created_at=tenant.created_at,

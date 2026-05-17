@@ -9,7 +9,7 @@ from idp_config_registry.domain.entities import Source
 
 
 class SourceCreateRequest(BaseModel):
-    source_id: str = Field(min_length=1)
+    source_code: str = Field(min_length=1)
     source_type: str = Field(min_length=1)
     enabled: bool = True
     name: str | None = None
@@ -18,16 +18,12 @@ class SourceCreateRequest(BaseModel):
     acquisition_defaults_json: dict[str, Any] = Field(default_factory=dict)
     publish_defaults_json: dict[str, Any] = Field(default_factory=dict)
 
-    @property
-    def source_code(self) -> str:
-        return self.source_id
-
 
 class SourceResponse(BaseModel):
-    tenant_id: str
-    asset_id: str
-    agent_id: str
-    source_id: str
+    tenant_code: str
+    asset_code: str
+    agent_code: str
+    source_code: str
     source_type: str
     enabled: bool
     name: str | None
@@ -41,10 +37,10 @@ class SourceResponse(BaseModel):
     @classmethod
     def from_domain(cls, source: Source) -> SourceResponse:
         return cls(
-            tenant_id=source.tenant_code,
-            asset_id=source.asset_code,
-            agent_id=source.agent_code,
-            source_id=source.source_code,
+            tenant_code=source.tenant_code,
+            asset_code=source.asset_code,
+            agent_code=source.agent_code,
+            source_code=source.source_code,
             source_type=source.source_type,
             enabled=source.enabled,
             name=source.name,

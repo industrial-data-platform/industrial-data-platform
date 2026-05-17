@@ -252,17 +252,17 @@ def test_config_registry_api_container_uses_local_postgres(
     created = local_config_delivery_stack.config_registry_json(
         "POST",
         "/tenants",
-        {"tenant_id": "tenant-api-container", "name": "Tenant API Container"},
+        {"tenant_code": "tenant-api-container", "name": "Tenant API Container"},
     )
     local_config_delivery_stack.config_registry_json(
         "POST",
         "/tenants/tenant-api-container/assets",
-        {"asset_id": "asset-api-container", "name": "Asset API Container"},
+        {"asset_code": "asset-api-container", "name": "Asset API Container"},
     )
     local_config_delivery_stack.config_registry_json(
         "POST",
         "/tenants/tenant-api-container/assets/asset-api-container/agents",
-        {"agent_id": "agent-api-container", "name": "Agent API Container"},
+        {"agent_code": "agent-api-container", "name": "Agent API Container"},
     )
     tenants = local_config_delivery_stack.config_registry_json("GET", "/tenants")
     with urllib.request.urlopen(backoffice_url, timeout=10) as response:
@@ -281,9 +281,9 @@ def test_config_registry_api_container_uses_local_postgres(
     assert "Собрать config" in agent_list_html
     assert "render-agent-config" in agent_list_html
     assert legacy_render_config_error.value.code == 404
-    assert created["tenant_id"] == "tenant-api-container"
+    assert created["tenant_code"] == "tenant-api-container"
     assert any(
-        tenant["tenant_id"] == "tenant-api-container"
+        tenant["tenant_code"] == "tenant-api-container"
         for tenant in tenants
         if isinstance(tenant, dict)
     )
@@ -508,20 +508,20 @@ def _create_renderable_agent_graph(
 ) -> None:
     client.post(
         "/tenants",
-        json={"tenant_id": tenant_code, "name": "Tenant CLI"},
+        json={"tenant_code": tenant_code, "name": "Tenant CLI"},
     )
     client.post(
         f"/tenants/{tenant_code}/assets",
-        json={"asset_id": "asset-a", "name": "Asset A"},
+        json={"asset_code": "asset-a", "name": "Asset A"},
     )
     client.post(
         f"/tenants/{tenant_code}/assets/asset-a/agents",
-        json={"agent_id": "agent-a"},
+        json={"agent_code": "agent-a"},
     )
     client.post(
         f"/tenants/{tenant_code}/assets/asset-a/agents/agent-a/sources",
         json={
-            "source_id": "knx-main",
+            "source_code": "knx-main",
             "source_type": "knx",
             "connection_json": {"gateway_ip": "127.0.0.1"},
             "acquisition_defaults_json": {
@@ -539,7 +539,7 @@ def _create_renderable_agent_graph(
         f"/tenants/{tenant_code}/assets/asset-a/agents/agent-a"
         "/sources/knx-main/points",
         json={
-            "point_id": f"{tenant_code}|asset-a|knx-main|temperature",
+            "point_code": f"{tenant_code}|asset-a|knx-main|temperature",
             "point_key": "temperature",
             "point_ref": "2/0/0",
             "name": "Temperature",
@@ -561,23 +561,23 @@ def _create_renderable_agent_graph_via_api(
     stack.config_registry_json(
         "POST",
         "/tenants",
-        {"tenant_id": tenant_code, "name": "Tenant Worker"},
+        {"tenant_code": tenant_code, "name": "Tenant Worker"},
     )
     stack.config_registry_json(
         "POST",
         f"/tenants/{tenant_code}/assets",
-        {"asset_id": "asset-a", "name": "Asset A"},
+        {"asset_code": "asset-a", "name": "Asset A"},
     )
     stack.config_registry_json(
         "POST",
         f"/tenants/{tenant_code}/assets/asset-a/agents",
-        {"agent_id": "agent-a"},
+        {"agent_code": "agent-a"},
     )
     stack.config_registry_json(
         "POST",
         f"/tenants/{tenant_code}/assets/asset-a/agents/agent-a/sources",
         {
-            "source_id": "knx-main",
+            "source_code": "knx-main",
             "source_type": "knx",
             "connection_json": {"gateway_ip": "127.0.0.1"},
             "acquisition_defaults_json": {
@@ -596,7 +596,7 @@ def _create_renderable_agent_graph_via_api(
         f"/tenants/{tenant_code}/assets/asset-a/agents/agent-a"
         "/sources/knx-main/points",
         {
-            "point_id": f"{tenant_code}|asset-a|knx-main|temperature",
+            "point_code": f"{tenant_code}|asset-a|knx-main|temperature",
             "point_key": "temperature",
             "point_ref": "2/0/0",
             "name": "Temperature",

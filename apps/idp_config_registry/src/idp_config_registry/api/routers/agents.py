@@ -7,11 +7,6 @@ from idp_config_registry.api.dependencies import (
     get_config_payload_validator,
     get_unit_of_work_factory,
 )
-from idp_config_registry.api.path_params import (
-    AgentCodePath,
-    AssetCodePath,
-    TenantCodePath,
-)
 from idp_config_registry.api.schemas.agents import (
     AgentCreateRequest,
     AgentRegistryGraphDeleteResponse,
@@ -49,7 +44,7 @@ from idp_config_registry.application.use_cases.render_config import (
 from idp_config_registry.domain.value_objects import DomainValidationError
 
 router = APIRouter(
-    prefix="/tenants/{tenant_id}/assets/{asset_id}/agents",
+    prefix="/tenants/{tenant_code}/assets/{asset_code}/agents",
     tags=["agents"],
 )
 
@@ -60,8 +55,8 @@ router = APIRouter(
     status_code=status.HTTP_201_CREATED,
 )
 async def create_agent(
-    tenant_code: TenantCodePath,
-    asset_code: AssetCodePath,
+    tenant_code: str,
+    asset_code: str,
     request: AgentCreateRequest,
     unit_of_work_factory: UnitOfWorkFactory = Depends(get_unit_of_work_factory),
 ) -> AgentResponse:
@@ -96,8 +91,8 @@ async def create_agent(
 
 @router.get("", response_model=list[AgentResponse])
 async def list_agents(
-    tenant_code: TenantCodePath,
-    asset_code: AssetCodePath,
+    tenant_code: str,
+    asset_code: str,
     unit_of_work_factory: UnitOfWorkFactory = Depends(get_unit_of_work_factory),
 ) -> list[AgentResponse]:
     try:
@@ -114,13 +109,13 @@ async def list_agents(
 
 
 @router.delete(
-    "/{agent_id}/registry-graph",
+    "/{agent_code}/registry-graph",
     response_model=AgentRegistryGraphDeleteResponse,
 )
 async def delete_agent_registry_graph(
-    tenant_code: TenantCodePath,
-    asset_code: AssetCodePath,
-    agent_code: AgentCodePath,
+    tenant_code: str,
+    asset_code: str,
+    agent_code: str,
     delete_empty_asset: bool = False,
     delete_empty_tenant: bool = False,
     unit_of_work_factory: UnitOfWorkFactory = Depends(get_unit_of_work_factory),
@@ -138,14 +133,14 @@ async def delete_agent_registry_graph(
 
 
 @router.post(
-    "/{agent_id}/render-config",
+    "/{agent_code}/render-config",
     response_model=RenderAgentRuntimeConfigResponse,
     status_code=status.HTTP_201_CREATED,
 )
 async def render_agent_config(
-    tenant_code: TenantCodePath,
-    asset_code: AssetCodePath,
-    agent_code: AgentCodePath,
+    tenant_code: str,
+    asset_code: str,
+    agent_code: str,
     request: RenderAgentRuntimeConfigRequest,
     unit_of_work_factory: UnitOfWorkFactory = Depends(get_unit_of_work_factory),
     validator: ConfigPayloadValidator = Depends(get_config_payload_validator),
