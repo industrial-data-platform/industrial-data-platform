@@ -227,8 +227,11 @@ class ConfigRegistrySeeder:
                 record_id=model.tenant.tenant_id,
                 create_path="/tenants",
                 list_path="/tenants",
-                id_field="tenant_id",
-                payload=model.tenant.to_create_payload(),
+                code_field="tenant_code",
+                payload={
+                    "tenant_code": model.tenant.tenant_id,
+                    "name": model.tenant.name,
+                },
             )
         )
         entries.append(
@@ -237,8 +240,12 @@ class ConfigRegistrySeeder:
                 record_id=model.asset.asset_id,
                 create_path=_path("tenants", model.tenant.tenant_id, "assets"),
                 list_path=_path("tenants", model.tenant.tenant_id, "assets"),
-                id_field="asset_id",
-                payload=model.asset.to_create_payload(),
+                code_field="asset_code",
+                payload={
+                    "asset_code": model.asset.asset_id,
+                    "name": model.asset.name,
+                    "description": model.asset.description,
+                },
             )
         )
         entries.append(
@@ -259,8 +266,12 @@ class ConfigRegistrySeeder:
                     model.asset.asset_id,
                     "agents",
                 ),
-                id_field="agent_id",
-                payload=model.agent.to_create_payload(),
+                code_field="agent_code",
+                payload={
+                    "agent_code": model.agent.agent_id,
+                    "name": model.agent.name,
+                    "bootstrap_hint_json": dict(model.agent.bootstrap_hint_json),
+                },
             )
         )
         for source in model.sources:
@@ -279,8 +290,19 @@ class ConfigRegistrySeeder:
                     record_id=source.source_id,
                     create_path=source_path,
                     list_path=source_path,
-                    id_field="source_id",
-                    payload=source.to_create_payload(),
+                    code_field="source_code",
+                    payload={
+                        "source_code": source.source_id,
+                        "source_type": source.source_type,
+                        "enabled": source.enabled,
+                        "name": source.name,
+                        "description": source.description,
+                        "connection_json": dict(source.connection_json),
+                        "acquisition_defaults_json": dict(
+                            source.acquisition_defaults_json
+                        ),
+                        "publish_defaults_json": dict(source.publish_defaults_json),
+                    },
                 )
             )
             point_path = _path(
@@ -301,8 +323,21 @@ class ConfigRegistrySeeder:
                         record_id=point.point_id,
                         create_path=point_path,
                         list_path=point_path,
-                        id_field="point_id",
-                        payload=point.to_create_payload(),
+                        code_field="point_code",
+                        payload={
+                            "point_code": point.point_id,
+                            "point_key": point.point_key,
+                            "point_ref": point.point_ref,
+                            "name": point.name,
+                            "description": point.description,
+                            "value_type": point.value_type,
+                            "value_model": point.value_model,
+                            "signal_type": point.signal_type,
+                            "unit": point.unit,
+                            "acquisition_json": dict(point.acquisition),
+                            "publish_json": dict(point.publish),
+                            "tags_json": dict(point.tags),
+                        },
                     )
                 )
 
@@ -417,13 +452,13 @@ class ConfigRegistrySeeder:
         record_id: str,
         create_path: str,
         list_path: str,
-        id_field: str,
+        code_field: str,
         payload: JsonObject,
     ) -> SeedEntry:
         try:
             self._client.post_json(create_path, payload)
         except ConfigRegistryConflict:
-            existing = self._find_existing(list_path, id_field, record_id)
+            existing = self._find_existing(list_path, code_field, record_id)
             if existing is None:
                 return SeedEntry(
                     action="error",
@@ -466,7 +501,7 @@ class ConfigRegistrySeeder:
     def _find_existing(
         self,
         list_path: str,
-        id_field: str,
+        code_field: str,
         record_id: str,
     ) -> JsonObject | None:
         try:
@@ -476,7 +511,7 @@ class ConfigRegistrySeeder:
         if not isinstance(response, list):
             return None
         for item in response:
-            if isinstance(item, dict) and item.get(id_field) == record_id:
+            if isinstance(item, dict) and item.get(code_field) == record_id:
                 return item
         return None
 
@@ -529,9 +564,7 @@ class ConfigRegistrySeeder:
     ) -> tuple[SeedEntry, ...]:
         entries: list[SeedEntry] = []
         desired_point_ids = {
-            point.point_id
-            for source in model.sources
-            for point in source.points
+            point.point_id for source in model.sources for point in source.points
         }
         for source in model.sources:
             point_path = _path(
@@ -559,7 +592,7 @@ class ConfigRegistrySeeder:
                     SeedEntry(
                         action="drift",
                         record_type="point",
-                        record_id=stale_point.point_id,
+                        record_id=stale_point.point_code,
                         path=point_path,
                         detail=(
                             "stale generated point exists outside desired model; "
@@ -572,7 +605,7 @@ class ConfigRegistrySeeder:
 
 @dataclass(frozen=True)
 class _StalePoint:
-    point_id: str
+    point_code: str
 
 
 def _stale_generated_point(
@@ -581,12 +614,12 @@ def _stale_generated_point(
 ) -> _StalePoint | None:
     if not isinstance(item, dict):
         return None
-    point_id = item.get("point_id")
+    point_code = item.get("point_code")
     tags = item.get("tags_json")
-    if not isinstance(point_id, str) or point_id in desired_point_ids:
+    if not isinstance(point_code, str) or point_code in desired_point_ids:
         return None
     if isinstance(tags, dict) and tags.get("generated_by") == "idp_synthetic_config":
-        return _StalePoint(point_id=point_id)
+        return _StalePoint(point_code=point_code)
     return None
 
 

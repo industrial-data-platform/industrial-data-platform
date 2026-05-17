@@ -9,6 +9,20 @@
 и не означают, что config backend должен расширяться до Web Monitoring или Alarm
 Management API без отдельного решения.
 
+Примечание 2026-05-17: физическая PostgreSQL-схема из разделов ниже
+сохранена как исторический baseline и переопределена реализацией issue 18.
+Актуальная схема `Config Registry` использует internal `id uuid primary key`,
+UUID foreign keys и per-table public `code` columns в registry tables. В
+domain/application layer используются явные `tenant_code`, `asset_code`,
+`agent_code`, `source_code`, `point_code`; denormalized revision/outbox
+snapshots хранят `tenant_code`, `asset_code`, `agent_code`, `source_code`.
+Config Registry HTTP CRUD/API использует `*_code`; edge/Kafka/MQTT wire
+contracts продолжают использовать `tenant_id`, `asset_id`, `agent_id`,
+`source_id`, `point_id`.
+Текущий source of truth:
+[Config Registry README](../../../../apps/idp_config_registry/README.md) и
+[Runtime и Source Config Revisions](../../../contracts/edge-telemetry-agent/config-revision-model.md).
+
 ## Контекст
 
 Следующий backend-инкремент нужен не для всей `Monitoring & Alarm Platform`
@@ -688,16 +702,16 @@ Kafka idp.edge.configs.v1
 - `GET /ready`
 - `POST /tenants`
 - `GET /tenants`
-- `POST /tenants/{tenant_id}/assets`
-- `GET /tenants/{tenant_id}/assets`
-- `POST /tenants/{tenant_id}/assets/{asset_id}/agents`
-- `GET /tenants/{tenant_id}/assets/{asset_id}/agents`
-- `POST /tenants/{tenant_id}/assets/{asset_id}/agents/{agent_id}/sources`
-- `GET /tenants/{tenant_id}/assets/{asset_id}/agents/{agent_id}/sources`
-- `POST /tenants/{tenant_id}/assets/{asset_id}/agents/{agent_id}/sources/{source_id}/points`
-- `GET /tenants/{tenant_id}/assets/{asset_id}/agents/{agent_id}/sources/{source_id}/points`
-- `POST /tenants/{tenant_id}/assets/{asset_id}/agents/{agent_id}/render-config`
-- `GET /tenants/{tenant_id}/assets/{asset_id}/agents/{agent_id}/config-revisions`
+- `POST /tenants/{tenant_code}/assets`
+- `GET /tenants/{tenant_code}/assets`
+- `POST /tenants/{tenant_code}/assets/{asset_code}/agents`
+- `GET /tenants/{tenant_code}/assets/{asset_code}/agents`
+- `POST /tenants/{tenant_code}/assets/{asset_code}/agents/{agent_code}/sources`
+- `GET /tenants/{tenant_code}/assets/{asset_code}/agents/{agent_code}/sources`
+- `POST /tenants/{tenant_code}/assets/{asset_code}/agents/{agent_code}/sources/{source_code}/points`
+- `GET /tenants/{tenant_code}/assets/{asset_code}/agents/{agent_code}/sources/{source_code}/points`
+- `POST /tenants/{tenant_code}/assets/{asset_code}/agents/{agent_code}/render-config`
+- `GET /tenants/{tenant_code}/assets/{asset_code}/agents/{agent_code}/config-revisions`
 
 Материализация Kafka config delivery records в MQTT retained topics выполняется
   локальным Redpanda Connect pipeline `redpanda-connect-config-projection`.

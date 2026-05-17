@@ -17,15 +17,15 @@ class RenderAgentRuntimeConfigRequest(BaseModel):
 
 
 class RenderedSourceConfigResponse(BaseModel):
-    source_id: str
+    source_code: str
     source_config_revision: str
     payload: dict[str, Any]
 
 
 class RenderAgentRuntimeConfigResponse(BaseModel):
-    tenant_id: str
-    asset_id: str
-    agent_id: str
+    tenant_code: str
+    asset_code: str
+    agent_code: str
     config_revision: str
     agent_runtime_payload: dict[str, Any]
     source_payloads: list[RenderedSourceConfigResponse]
@@ -35,14 +35,14 @@ class RenderAgentRuntimeConfigResponse(BaseModel):
     def from_rendered(cls, rendered: RenderedAgentRuntimeConfig) -> RenderAgentRuntimeConfigResponse:
         agent_runtime_payload = rendered.agent_runtime_payload
         return cls(
-            tenant_id=str(agent_runtime_payload["tenant_id"]),
-            asset_id=str(agent_runtime_payload["asset_id"]),
-            agent_id=str(agent_runtime_payload["agent_id"]),
+            tenant_code=rendered.tenant_code,
+            asset_code=rendered.asset_code,
+            agent_code=rendered.agent_code,
             config_revision=str(agent_runtime_payload["config_revision"]),
             agent_runtime_payload=dict(agent_runtime_payload),
             source_payloads=[
                 RenderedSourceConfigResponse(
-                    source_id=source.source_id,
+                    source_code=source.source_code,
                     source_config_revision=source.source_config_revision,
                     payload=dict(source.payload),
                 )

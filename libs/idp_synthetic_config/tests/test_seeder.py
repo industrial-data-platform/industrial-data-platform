@@ -37,15 +37,15 @@ class FakeConfigRegistryApi:
             prefix = graph_path[: -len("/registry-graph")]
             deleted_points = 0
             for record_path in tuple(self.records):
-                if record_path.startswith(f"{prefix}/sources/") and record_path.endswith(
-                    "/points"
-                ):
+                if record_path.startswith(
+                    f"{prefix}/sources/"
+                ) and record_path.endswith("/points"):
                     deleted_points += len(self.records[record_path])
                     self.records[record_path] = []
             return {
-                "tenant_id": "synthetic-tenant",
-                "asset_id": "mall-synthetic-01",
-                "agent_id": "edge-synthetic-01",
+                "tenant_code": "synthetic-tenant",
+                "asset_code": "mall-synthetic-01",
+                "agent_code": "edge-synthetic-01",
                 "config_outbox_records_deleted": 2,
                 "source_config_revisions_deleted": 1,
                 "agent_runtime_config_revisions_deleted": 1,
@@ -55,12 +55,12 @@ class FakeConfigRegistryApi:
                 "assets_deleted": 1,
                 "tenants_deleted": 1,
             }
-        list_path, _, raw_point_id = path.rpartition("/")
-        point_id = unquote(raw_point_id)
+        list_path, _, raw_point_code = path.rpartition("/")
+        point_code = unquote(raw_point_code)
         self.records[list_path] = [
             item
             for item in self.records.get(list_path, [])
-            if item.get("point_id") != point_id
+            if item.get("point_code") != point_code
         ]
         return {"status": "deleted", "path": path}
 
@@ -81,6 +81,16 @@ def test_seeder_posts_registry_records_and_render_request() -> None:
 
     assert summary.ok is True
     assert summary.counts["created"] == 9
+    assert client.posted[0][1]["tenant_code"] == "synthetic-tenant"
+    assert "tenant_id" not in client.posted[0][1]
+    assert client.posted[1][1]["asset_code"] == "mall-synthetic-01"
+    assert "asset_id" not in client.posted[1][1]
+    assert client.posted[2][1]["agent_code"] == "edge-synthetic-01"
+    assert "agent_id" not in client.posted[2][1]
+    assert any(
+        payload.get("source_code") == "knx_synthetic" for _, payload in client.posted
+    )
+    assert any("point_code" in payload for _, payload in client.posted)
     render_path, render_payload = client.posted[-1]
     assert render_path.endswith("/render-config")
     assert render_payload["config_revision"] == "synthetic-test"
@@ -96,7 +106,12 @@ def test_seeder_treats_matching_conflicts_as_exists() -> None:
     )
     client = FakeConfigRegistryApi()
     client.conflict_paths = {"/tenants"}
-    client.records["/tenants"] = [model.tenant.to_create_payload()]
+    client.records["/tenants"] = [
+        {
+            "tenant_code": model.tenant.tenant_id,
+            "name": model.tenant.name,
+        }
+    ]
 
     summary = ConfigRegistrySeeder(
         client,
@@ -119,7 +134,10 @@ def test_seeder_reports_drift_for_conflicting_existing_payload() -> None:
     client = FakeConfigRegistryApi()
     client.conflict_paths = {"/tenants"}
     client.records["/tenants"] = [
-        {**model.tenant.to_create_payload(), "name": "Другой tenant"}
+        {
+            "tenant_code": model.tenant.tenant_id,
+            "name": "Другой tenant",
+        }
     ]
 
     summary = ConfigRegistrySeeder(
@@ -179,7 +197,7 @@ def test_default_reset_deletes_existing_generated_graph_before_seed() -> None:
         model.sources[0].points[0].to_create_payload(),
         {
             **model.sources[0].points[0].to_create_payload(),
-            "point_id": "synthetic-tenant|mall-synthetic-01|knx_synthetic|stale",
+            "point_code": ("synthetic-tenant|mall-synthetic-01|knx_synthetic|stale"),
         },
     ]
 

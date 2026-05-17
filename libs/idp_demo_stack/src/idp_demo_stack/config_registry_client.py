@@ -22,17 +22,17 @@ def publish_bundle_via_idp_config_registry(
     _post_create_or_ignore(
         client,
         "/tenants",
-        {"tenant_id": bundle.tenant_id, "name": bundle.tenant_id},
+        {"tenant_code": bundle.tenant_id, "name": bundle.tenant_id},
     )
     _post_create_or_ignore(
         client,
         _path("tenants", bundle.tenant_id, "assets"),
-        {"asset_id": bundle.asset_id, "name": bundle.asset_id},
+        {"asset_code": bundle.asset_id, "name": bundle.asset_id},
     )
     _post_create_or_ignore(
         client,
         _path("tenants", bundle.tenant_id, "assets", bundle.asset_id, "agents"),
-        {"agent_id": bundle.agent_id},
+        {"agent_code": bundle.agent_id},
     )
 
     source_count = 0
@@ -51,7 +51,7 @@ def publish_bundle_via_idp_config_registry(
                 "sources",
             ),
             {
-                "source_id": source.source_id,
+                "source_code": source.source_id,
                 "source_type": source.source_type,
                 "enabled": source.enabled,
                 "connection_json": source.connection,
@@ -75,7 +75,7 @@ def publish_bundle_via_idp_config_registry(
                     "points",
                 ),
                 {
-                    "point_id": (
+                    "point_code": (
                         f"{bundle.tenant_id}|{bundle.asset_id}|"
                         f"{source.source_id}|{point.point_key}"
                     ),
@@ -117,7 +117,7 @@ def publish_bundle_via_idp_config_registry(
         output(
             "CONFIG_REGISTRY_RENDER_SKIPPED_DUPLICATE "
             f"base_url={config.base_url} "
-            f"agent_id={bundle.agent_id} "
+            f"agent_code={bundle.agent_id} "
             f"config_revision={bundle.config_revision}"
         )
         return rendered
@@ -125,16 +125,16 @@ def publish_bundle_via_idp_config_registry(
     output(
         "CONFIG_REGISTRY_UPSERTED "
         f"base_url={config.base_url} "
-        f"tenant_id={bundle.tenant_id} "
-        f"asset_id={bundle.asset_id} "
-        f"agent_id={bundle.agent_id} "
+        f"tenant_code={bundle.tenant_id} "
+        f"asset_code={bundle.asset_id} "
+        f"agent_code={bundle.agent_id} "
         f"sources={source_count} "
         f"points={point_count}"
     )
     output(
         "CONFIG_REGISTRY_RENDERED "
         f"base_url={config.base_url} "
-        f"agent_id={bundle.agent_id} "
+        f"agent_code={bundle.agent_id} "
         f"config_revision={bundle.config_revision} "
         f"outbox_records={rendered.get('outbox_record_count')}"
     )

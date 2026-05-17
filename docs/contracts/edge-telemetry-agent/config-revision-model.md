@@ -41,6 +41,19 @@ Kafka delivery records и retained MQTT config.
 | `SourceConfigRevision` | persisted snapshot source config для одного `source_id` | `Config Registry`, таблица `source_config_revisions` | [Config Registry README](../../../apps/idp_config_registry/README.md), [PostgreSQL models](../../../apps/idp_config_registry/src/idp_config_registry/infrastructure/postgres/models.py) |
 | `source_config_revision` | строковый revision-id source config | root agent runtime source ref, source config payload, telemetry event, ingestion/storage contracts | [idp.edge.agent-runtime-config.v1](./schemas/idp.edge.agent-runtime-config.v1.schema.json), [idp.edge.source-config.v1](./schemas/idp.edge.source-config.v1.schema.json), [idp.edge.telemetry.event.v1](./schemas/idp.edge.telemetry.event.v1.schema.json), [idp.telemetry.event.v1](../kafka/schemas/idp.telemetry.event.v1.schema.json) |
 
+В PostgreSQL registry tables хранят публичные identifiers в per-table колонке
+`code`, а UUID foreign keys используют internal `id` primary keys. Domain /
+application layer использует явные `tenant_code`, `asset_code`, `agent_code`,
+`source_code` и `point_code` там, где entity context не задан таблицей.
+Config Registry HTTP CRUD/API также использует `*_code` для этих публичных
+идентификаторов. Persisted snapshots используют internal UUID foreign keys для
+связи с registry tables и одновременно хранят denormalized public code
+snapshots: `tenant_code`, `asset_code`, `agent_code` и, для source-level
+revision, `source_code`. Edge config payloads и Kafka/MQTT records по-прежнему получают
+публичные `tenant_id`, `asset_id`, `agent_id`, `source_id` из snapshot
+payload/code fields, а не восстанавливают их из текущего состояния registry
+joins.
+
 ## Сравнение
 
 | Аспект | `AgentRuntimeConfigRevision` / `config_revision` | `SourceConfigRevision` / `source_config_revision` |

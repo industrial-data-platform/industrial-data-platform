@@ -44,7 +44,7 @@ from idp_config_registry.application.use_cases.render_config import (
 from idp_config_registry.domain.value_objects import DomainValidationError
 
 router = APIRouter(
-    prefix="/tenants/{tenant_id}/assets/{asset_id}/agents",
+    prefix="/tenants/{tenant_code}/assets/{asset_code}/agents",
     tags=["agents"],
 )
 
@@ -55,17 +55,17 @@ router = APIRouter(
     status_code=status.HTTP_201_CREATED,
 )
 async def create_agent(
-    tenant_id: str,
-    asset_id: str,
+    tenant_code: str,
+    asset_code: str,
     request: AgentCreateRequest,
     unit_of_work_factory: UnitOfWorkFactory = Depends(get_unit_of_work_factory),
 ) -> AgentResponse:
     try:
         agent = await CreateAgent(unit_of_work_factory()).execute(
             CreateAgentCommand(
-                tenant_id=tenant_id,
-                asset_id=asset_id,
-                agent_id=request.agent_id,
+                tenant_code=tenant_code,
+                asset_code=asset_code,
+                agent_code=request.agent_code,
                 name=request.name,
                 bootstrap_hint_json=request.bootstrap_hint_json,
             )
@@ -91,12 +91,15 @@ async def create_agent(
 
 @router.get("", response_model=list[AgentResponse])
 async def list_agents(
-    tenant_id: str,
-    asset_id: str,
+    tenant_code: str,
+    asset_code: str,
     unit_of_work_factory: UnitOfWorkFactory = Depends(get_unit_of_work_factory),
 ) -> list[AgentResponse]:
     try:
-        agents = await ListAgents(unit_of_work_factory()).execute(tenant_id, asset_id)
+        agents = await ListAgents(unit_of_work_factory()).execute(
+            tenant_code,
+            asset_code,
+        )
     except AssetNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -106,22 +109,22 @@ async def list_agents(
 
 
 @router.delete(
-    "/{agent_id}/registry-graph",
+    "/{agent_code}/registry-graph",
     response_model=AgentRegistryGraphDeleteResponse,
 )
 async def delete_agent_registry_graph(
-    tenant_id: str,
-    asset_id: str,
-    agent_id: str,
+    tenant_code: str,
+    asset_code: str,
+    agent_code: str,
     delete_empty_asset: bool = False,
     delete_empty_tenant: bool = False,
     unit_of_work_factory: UnitOfWorkFactory = Depends(get_unit_of_work_factory),
 ) -> AgentRegistryGraphDeleteResponse:
     result = await DeleteAgentRegistryGraph(unit_of_work_factory()).execute(
         DeleteAgentRegistryGraphCommand(
-            tenant_id=tenant_id,
-            asset_id=asset_id,
-            agent_id=agent_id,
+            tenant_code=tenant_code,
+            asset_code=asset_code,
+            agent_code=agent_code,
             delete_empty_asset=delete_empty_asset,
             delete_empty_tenant=delete_empty_tenant,
         )
@@ -130,14 +133,14 @@ async def delete_agent_registry_graph(
 
 
 @router.post(
-    "/{agent_id}/render-config",
+    "/{agent_code}/render-config",
     response_model=RenderAgentRuntimeConfigResponse,
     status_code=status.HTTP_201_CREATED,
 )
 async def render_agent_config(
-    tenant_id: str,
-    asset_id: str,
-    agent_id: str,
+    tenant_code: str,
+    asset_code: str,
+    agent_code: str,
     request: RenderAgentRuntimeConfigRequest,
     unit_of_work_factory: UnitOfWorkFactory = Depends(get_unit_of_work_factory),
     validator: ConfigPayloadValidator = Depends(get_config_payload_validator),
@@ -145,9 +148,9 @@ async def render_agent_config(
     try:
         rendered = await RenderAgentRuntimeConfig(unit_of_work_factory(), validator).execute(
             RenderAgentRuntimeConfigCommand(
-                tenant_id=tenant_id,
-                asset_id=asset_id,
-                agent_id=agent_id,
+                tenant_code=tenant_code,
+                asset_code=asset_code,
+                agent_code=agent_code,
                 config_revision=request.config_revision,
                 issued_at=request.issued_at,
                 source_config_revisions=request.source_config_revisions,

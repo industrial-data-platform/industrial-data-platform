@@ -29,6 +29,8 @@ stable identifiers: `idp_config_registry`, `idp-config-registry`,
   `idp.edge.configs.v1 -> MQTT retained agent runtime/source config topics`
 - временный in-memory adapter для unit/API smoke-тестов
 - PostgreSQL adapter для `tenants`, `assets`, `agents`, `sources` и `points`
+  с internal `uuid` primary keys / foreign keys и per-table public `code`
+  колонкой
 - local Docker image для `idp-config-registry` и
   `idp-config-registry-outbox-worker`
 - fresh Alembic baseline migration для registry tables:
@@ -36,18 +38,18 @@ stable identifiers: `idp_config_registry`, `idp-config-registry`,
 - `agent_runtime_config_revisions`, `source_config_revisions`
 - `config_outbox`
 - endpoints `GET /health`, `GET /ready`, `POST /tenants`, `GET /tenants`,
-  `POST /tenants/{tenant_id}/assets`, `GET /tenants/{tenant_id}/assets`,
-  `POST /tenants/{tenant_id}/assets/{asset_id}/agents`,
-  `GET /tenants/{tenant_id}/assets/{asset_id}/agents`,
-  `DELETE /tenants/{tenant_id}/assets/{asset_id}/agents/{agent_id}/registry-graph`,
-  `POST /tenants/{tenant_id}/assets/{asset_id}/agents/{agent_id}/render-config`,
-  `POST /tenants/{tenant_id}/assets/{asset_id}/agents/{agent_id}/sources`,
-  `GET /tenants/{tenant_id}/assets/{asset_id}/agents/{agent_id}/sources`,
-  `POST /tenants/{tenant_id}/assets/{asset_id}/agents/{agent_id}/sources/{source_id}/points`,
-  `GET /tenants/{tenant_id}/assets/{asset_id}/agents/{agent_id}/sources/{source_id}/points`,
-  `DELETE /tenants/{tenant_id}/assets/{asset_id}/agents/{agent_id}/sources/{source_id}/points/{point_id}`
+  `POST /tenants/{tenant_code}/assets`, `GET /tenants/{tenant_code}/assets`,
+  `POST /tenants/{tenant_code}/assets/{asset_code}/agents`,
+  `GET /tenants/{tenant_code}/assets/{asset_code}/agents`,
+  `DELETE /tenants/{tenant_code}/assets/{asset_code}/agents/{agent_code}/registry-graph`,
+  `POST /tenants/{tenant_code}/assets/{asset_code}/agents/{agent_code}/render-config`,
+  `POST /tenants/{tenant_code}/assets/{asset_code}/agents/{agent_code}/sources`,
+  `GET /tenants/{tenant_code}/assets/{asset_code}/agents/{agent_code}/sources`,
+  `POST /tenants/{tenant_code}/assets/{asset_code}/agents/{agent_code}/sources/{source_code}/points`,
+  `GET /tenants/{tenant_code}/assets/{asset_code}/agents/{agent_code}/sources/{source_code}/points`,
+  `DELETE /tenants/{tenant_code}/assets/{asset_code}/agents/{agent_code}/sources/{source_code}/points/{point_code}`
 
-`DELETE .../agents/{agent_id}/registry-graph` — scoped operational cleanup
+`DELETE .../agents/{agent_code}/registry-graph` — scoped operational cleanup
 для local synthetic seed/reset workflows. Он одной транзакцией удаляет
 `config_outbox`, rendered config revisions, points, sources и agent в указанном
 scope; с query flags `delete_empty_asset=true` и `delete_empty_tenant=true`
@@ -69,6 +71,19 @@ uv run --env-file .env --package idp-config-registry alembic \
   -c apps/idp_config_registry/alembic.ini upgrade head
 ```
 
+PostgreSQL schema deliberately separates storage identity from wire identity.
+Registry tables use internal `id uuid primary key` values and UUID foreign keys.
+The Config Registry HTTP CRUD/API surface, domain/application objects, and
+denormalized rendered config revisions / `config_outbox` snapshots use explicit
+`tenant_code`, `asset_code`, `agent_code`, `source_code` and `point_code` names.
+PostgreSQL registry tables store those public codes in a conventional per-table
+`code` column. UUID foreign keys keep the conventional `*_id` names and point at
+internal `id` primary keys. Edge/Kafka/MQTT payload contracts still use
+`tenant_id`, `asset_id`, `agent_id`, `source_id` and `point_id`; rendered
+payloads carry those wire names, while revisions/outbox keep the public
+`*_code` snapshots so replay/history does not reconstruct public codes from
+current registry joins.
+
 Для запуска API с PostgreSQL задайте `CONFIG_REGISTRY_DATABASE_URL`, например:
 
 ```bash
@@ -83,12 +98,15 @@ CONFIG_REGISTRY_DATABASE_URL=postgresql+asyncpg://idp:change-me-local-postgres@l
 лишнего горизонтального скролла. Для create-flow используется операторский UX
 поверх application use cases:
 
-- `tenants`: только `tenant_id` и `name`
-- `assets`: `Tenant` selector + `asset_id`, `name`, `description`
-- `agents`: `Asset` selector + `agent_id`, `name`
-- `sources`: `Agent` selector + `source_id`, `source_type`, `enabled`, `name`,
+- `tenants`: только `code` (`tenant_code` в API) и `name`
+- `assets`: `Tenant` selector + `code` (`asset_code` в API), `name`,
   `description`
-- `points`: `Source` selector + business-поля точки
+- `agents`: `Asset` selector + `code` (`agent_code` в API), `name`
+- `sources`: `Agent` selector + `code` (`source_code` в API),
+  `source_type`, `enabled`, `name`,
+  `description`
+- `points`: `Source` selector + `code` (`point_code` в API) +
+  business-поля точки
 - `agent_runtime_config_revisions`: `Agent` selector + revision payload
 - `source_config_revisions`: `Source` selector + revision payload
 

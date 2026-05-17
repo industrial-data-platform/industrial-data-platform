@@ -19,7 +19,7 @@ from idp_config_registry.application.use_cases.sources import (
 from idp_config_registry.domain.value_objects import DomainValidationError
 
 router = APIRouter(
-    prefix="/tenants/{tenant_id}/assets/{asset_id}/agents/{agent_id}/sources",
+    prefix="/tenants/{tenant_code}/assets/{asset_code}/agents/{agent_code}/sources",
     tags=["sources"],
 )
 
@@ -30,19 +30,19 @@ router = APIRouter(
     status_code=status.HTTP_201_CREATED,
 )
 async def create_source(
-    tenant_id: str,
-    asset_id: str,
-    agent_id: str,
+    tenant_code: str,
+    asset_code: str,
+    agent_code: str,
     request: SourceCreateRequest,
     unit_of_work_factory: UnitOfWorkFactory = Depends(get_unit_of_work_factory),
 ) -> SourceResponse:
     try:
         source = await CreateSource(unit_of_work_factory()).execute(
             CreateSourceCommand(
-                tenant_id=tenant_id,
-                asset_id=asset_id,
-                agent_id=agent_id,
-                source_id=request.source_id,
+                tenant_code=tenant_code,
+                asset_code=asset_code,
+                agent_code=agent_code,
+                source_code=request.source_code,
                 source_type=request.source_type,
                 enabled=request.enabled,
                 name=request.name,
@@ -73,16 +73,16 @@ async def create_source(
 
 @router.get("", response_model=list[SourceResponse])
 async def list_sources(
-    tenant_id: str,
-    asset_id: str,
-    agent_id: str,
+    tenant_code: str,
+    asset_code: str,
+    agent_code: str,
     unit_of_work_factory: UnitOfWorkFactory = Depends(get_unit_of_work_factory),
 ) -> list[SourceResponse]:
     try:
         sources = await ListSources(unit_of_work_factory()).execute(
-            tenant_id,
-            asset_id,
-            agent_id,
+            tenant_code,
+            asset_code,
+            agent_code,
         )
     except AgentNotFoundError as exc:
         raise HTTPException(

@@ -33,7 +33,7 @@ before recreating the desired model. ClickHouse and MQTT retained cleanup are
 reported in the machine-readable reset summary as `unsupported` when configured;
 they are not executed by this package yet.
 
-`delete` uses the same generated ids and calls the Config Registry
-`DELETE /tenants/{tenant_id}/assets/{asset_id}/agents/{agent_id}/registry-graph`
+`delete` uses the same generated codes and calls the Config Registry
+`DELETE /tenants/{tenant_code}/assets/{asset_code}/agents/{agent_code}/registry-graph`
 API with `delete_empty_asset=true&delete_empty_tenant=true`. This is the
 operator path for undoing a synthetic seed without direct database access.

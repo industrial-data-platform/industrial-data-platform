@@ -9,7 +9,7 @@ from idp_config_registry.domain.entities import Source
 
 
 class SourceCreateRequest(BaseModel):
-    source_id: str = Field(min_length=1)
+    source_code: str = Field(min_length=1)
     source_type: str = Field(min_length=1)
     enabled: bool = True
     name: str | None = None
@@ -20,10 +20,10 @@ class SourceCreateRequest(BaseModel):
 
 
 class SourceResponse(BaseModel):
-    tenant_id: str
-    asset_id: str
-    agent_id: str
-    source_id: str
+    tenant_code: str
+    asset_code: str
+    agent_code: str
+    source_code: str
     source_type: str
     enabled: bool
     name: str | None
@@ -37,10 +37,10 @@ class SourceResponse(BaseModel):
     @classmethod
     def from_domain(cls, source: Source) -> SourceResponse:
         return cls(
-            tenant_id=source.tenant_id,
-            asset_id=source.asset_id,
-            agent_id=source.agent_id,
-            source_id=source.source_id,
+            tenant_code=source.tenant_code,
+            asset_code=source.asset_code,
+            agent_code=source.agent_code,
+            source_code=source.source_code,
             source_type=source.source_type,
             enabled=source.enabled,
             name=source.name,
