@@ -31,13 +31,11 @@ async def create_asset(
     request: AssetCreateRequest,
     unit_of_work_factory: UnitOfWorkFactory = Depends(get_unit_of_work_factory),
 ) -> AssetResponse:
-    tenant_code = tenant_id
-    asset_code = request.asset_id
     try:
         asset = await CreateAsset(unit_of_work_factory()).execute(
             CreateAssetCommand(
-                tenant_code=tenant_code,
-                asset_code=asset_code,
+                tenant_code=tenant_id,
+                asset_code=request.asset_id,
                 name=request.name,
                 description=request.description,
             )
@@ -66,9 +64,8 @@ async def list_assets(
     tenant_id: str,
     unit_of_work_factory: UnitOfWorkFactory = Depends(get_unit_of_work_factory),
 ) -> list[AssetResponse]:
-    tenant_code = tenant_id
     try:
-        assets = await ListAssets(unit_of_work_factory()).execute(tenant_code)
+        assets = await ListAssets(unit_of_work_factory()).execute(tenant_id)
     except TenantNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

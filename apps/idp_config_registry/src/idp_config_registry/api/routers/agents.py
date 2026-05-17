@@ -60,15 +60,12 @@ async def create_agent(
     request: AgentCreateRequest,
     unit_of_work_factory: UnitOfWorkFactory = Depends(get_unit_of_work_factory),
 ) -> AgentResponse:
-    tenant_code = tenant_id
-    asset_code = asset_id
-    agent_code = request.agent_id
     try:
         agent = await CreateAgent(unit_of_work_factory()).execute(
             CreateAgentCommand(
-                tenant_code=tenant_code,
-                asset_code=asset_code,
-                agent_code=agent_code,
+                tenant_code=tenant_id,
+                asset_code=asset_id,
+                agent_code=request.agent_id,
                 name=request.name,
                 bootstrap_hint_json=request.bootstrap_hint_json,
             )
@@ -98,12 +95,10 @@ async def list_agents(
     asset_id: str,
     unit_of_work_factory: UnitOfWorkFactory = Depends(get_unit_of_work_factory),
 ) -> list[AgentResponse]:
-    tenant_code = tenant_id
-    asset_code = asset_id
     try:
         agents = await ListAgents(unit_of_work_factory()).execute(
-            tenant_code,
-            asset_code,
+            tenant_id,
+            asset_id,
         )
     except AssetNotFoundError as exc:
         raise HTTPException(
@@ -125,14 +120,11 @@ async def delete_agent_registry_graph(
     delete_empty_tenant: bool = False,
     unit_of_work_factory: UnitOfWorkFactory = Depends(get_unit_of_work_factory),
 ) -> AgentRegistryGraphDeleteResponse:
-    tenant_code = tenant_id
-    asset_code = asset_id
-    agent_code = agent_id
     result = await DeleteAgentRegistryGraph(unit_of_work_factory()).execute(
         DeleteAgentRegistryGraphCommand(
-            tenant_code=tenant_code,
-            asset_code=asset_code,
-            agent_code=agent_code,
+            tenant_code=tenant_id,
+            asset_code=asset_id,
+            agent_code=agent_id,
             delete_empty_asset=delete_empty_asset,
             delete_empty_tenant=delete_empty_tenant,
         )
@@ -153,15 +145,12 @@ async def render_agent_config(
     unit_of_work_factory: UnitOfWorkFactory = Depends(get_unit_of_work_factory),
     validator: ConfigPayloadValidator = Depends(get_config_payload_validator),
 ) -> RenderAgentRuntimeConfigResponse:
-    tenant_code = tenant_id
-    asset_code = asset_id
-    agent_code = agent_id
     try:
         rendered = await RenderAgentRuntimeConfig(unit_of_work_factory(), validator).execute(
             RenderAgentRuntimeConfigCommand(
-                tenant_code=tenant_code,
-                asset_code=asset_code,
-                agent_code=agent_code,
+                tenant_code=tenant_id,
+                asset_code=asset_id,
+                agent_code=agent_id,
                 config_revision=request.config_revision,
                 issued_at=request.issued_at,
                 source_config_revisions=request.source_config_revisions,
