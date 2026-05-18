@@ -144,7 +144,7 @@ deployment {
                 alarm-rule-engine -> telemetry-store 'Записывает immutable alarm history'
                 alarm-rule-engine -> platform-store 'Записывает current alarm state и operator workflow state'
                 alarm-rule-engine -> notification-service 'Запускает доставку alarm notifications'
-                idp-config-registry -> platform-store 'Читает и изменяет registry/config settings'
+                idp-config-registry -> platform-store 'Читает и изменяет registry/config/catalog settings'
                 keycloak -> platform-store 'Хранит IAM persistence'
                 grafana -> telemetry-store 'Читает подготовленные данные из ClickHouse для dashboards'
                 web-monitoring-frontend -> grafana 'Открывает и встраивает dashboards'

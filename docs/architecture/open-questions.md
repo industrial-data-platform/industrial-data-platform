@@ -46,8 +46,8 @@
   `Platform Store`, `Config Registry` и shared IAM остается следующей фазой
   развития поверх текущего `MVP`.
 - `Web Monitoring Module` и `Alarm Management Module` развиваются как отдельные
-  модули поверх data platform; старый `Monitoring & Alarm Platform` больше не
-  используется как имя центральной системы.
+  модули поверх data platform; прежнее имя центральной системы больше не
+  используется.
 
 ## Что принято в рабочих материалах по пилоту `KNX -> OPC`
 
@@ -81,15 +81,44 @@
 
 ## Следующий срез Industrial Data Platform и модулей
 
-Кандидат для ближайшего совместного обсуждения Platform / Observability:
+`Hierarchical Catalog V1` вынесен в отдельный working plan:
+`docs/architecture/hierarchical-catalog-v1.md`. Текущая рекомендуемая граница:
+реализация внутри `Config Registry` поверх PostgreSQL `Platform Store`, один
+default tree на tenant, adjacency-list hierarchy с recursive SQL/CTE, public
+codes в API/backoffice и обязательный internal `/backoffice` surface. Это еще
+не accepted decision и не запись в `decisions.md`.
+
+Кандидат для ближайшего совместного обсуждения Industrial Data Platform / Web Monitoring:
 решить, должен ли первый срез после `Config Registry` быть read-only
 `latest/history` telemetry API поверх уже существующих ClickHouse read models
-`telemetry_latest_v1` и `telemetry_events_dedup_v1`. Если команда выбирает
-этот путь, alarm workflow, auth/RBAC, config rollout, operator UI и
-write-back/control остаются отдельными открытыми вопросами и будущими решениями.
+`telemetry_latest_v1` и `telemetry_events_dedup_v1`. Материал к обсуждению для
+встречи: `docs/architecture/read-only-telemetry-api-discussion.md`.
+
+Если команда выбирает этот путь, следующее архитектурное решение должно
+зафиксировать отдельную tenant-facing read API boundary для `Web Monitoring
+Module`, а не расширять `Config Registry` до telemetry/alarm API. Возможный
+local/dev API surface для обсуждения:
+
+- `GET /health`
+- `GET /ready`
+- `GET /v1/tenants/{tenant_id}/telemetry/latest`
+- `GET /v1/tenants/{tenant_id}/telemetry/history`
+
+До отдельного auth/RBAC решения `tenant_id` в этом candidate surface является
+явным local/dev input, а не результатом аутентифицированного контекста.
+
+Alarm workflow обсуждается рядом, но остается отдельным slice и будущим
+решением `Alarm Management Module`: минимальный lifecycle (`active/raised`,
+`acknowledged`, `cleared/resolved`, `severity`) уже обозначен в рабочих
+материалах, но rule types, PostgreSQL current state, writer в
+`alarm_history_events_v1`, operator workflow и notification policy еще не
+зафиксированы. Operator UI, config rollout, auth/RBAC и write-back/control
+также остаются отдельными открытыми вопросами.
 
 | Вопрос | Почему это важно | Степень блокировки |
 | --- | --- | --- |
+| Принимаем ли `Hierarchical Catalog V1` как следующий `Config Registry` / `Platform Store` implementation slice, или он остается только working plan до выбора первого importer/UI workflow? | Catalog нужен и для Config Registry authoring, и для internal backoffice, и для будущего presentation layer; без выбора slice нельзя стабилизировать schema/API/backoffice tests | Высокая |
+| Какие источники первыми создают catalog nodes: ручной `/backoffice`, synthetic generator, ETS/KNX import или будущий OPC UA importer? | V1 может хранить дерево независимо от importer-а, но acceptance сценарий должен выбрать первый workflow наполнения | Средняя |
 | Какие конкретные API/use cases входят в первый tenant-facing API после `Config Registry`: telemetry read, config rollout, Web Monitoring read API или Alarm Management workflow API? | Data platform, Web Monitoring и Alarm Management разделены, поэтому следующий API contract должен явно назвать ownership | Высокая |
 | Где фиксируется `Redpanda Connect` pipeline config: в platform repository, IaC, Redpanda Cloud-managed pipeline или отдельном operations bundle? | MQTT input, mapping/transform и redpanda output становятся частью production data path, поэтому конфигурация pipeline должна быть версионирована и управляться так же строго, как edge source config | Высокая |
 | Нужно ли переходить с локального `Apache Kafka` broker runtime на `Redpanda broker`? | Apache Kafka остается локальным baseline; Redpanda broker требует отдельный compatibility PoC, чтобы не смешивать broker migration с connector/runtime cleanup | Средняя |

@@ -13,6 +13,9 @@
 | Термины и границы понятий | `glossary.md` |
 | Какие вопросы еще открыты | `open-questions.md` |
 | Какие архитектурные решения активны | `decisions.md` |
+| Как спланирован Hierarchical Catalog V1 | `hierarchical-catalog-v1.md` |
+| Что обсудить по read-only telemetry API | `read-only-telemetry-api-discussion.md` |
+| Как подготовить GitHub organization и перенести первый репозиторий | `github-organization-migration.md` |
 | Что принято после MVP по pilot/cloud/OPC UA/issue tracker governance | `current-state.md`, `solution-architecture.md`, `open-questions.md` |
 | Где граница между data platform, web monitoring и alarms | `current-state.md`, `decisions.md`, `../../arch/README.md` |
 | Целевую архитектуру и runtime-сценарии | `solution-architecture.md` |

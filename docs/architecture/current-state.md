@@ -97,6 +97,11 @@ surface как первый `Web Monitoring Module` surface.
   data-platform backend: authn/authz, richer revision workflow, rollout controls,
   approval/publish process и API boundaries beyond current internal/backoffice
   scope.
+- `Hierarchical Catalog V1` вынесен в working-plan как следующий слой навигации
+  и представления поверх registry entities: один default tree на tenant,
+  произвольно вложенные catalog nodes, references на assets/agents/sources/points
+  через public codes и обязательный internal `/backoffice` surface. Это часть
+  будущего `Config Registry`/`Platform Store` slice, не отдельный service в V1.
 - Tenant-facing UI для редактирования agent runtime/source config. На текущем этапе
   source of truth уже переехал в `Config Registry`/`PostgreSQL`, а versioned
   YAML bundle остается import/bootstrap path; полноценный внешний UI и workflow
@@ -176,8 +181,9 @@ surface как первый `Web Monitoring Module` surface.
    `docs/architecture/decisions.md` и LikeC4.
 7. Для storage/platform design: `docs/contracts/clickhouse/` и
    `docs/contracts/kafka/`.
-8. Для backend хранения настроек платформы: `apps/idp_config_registry/README.md`
-   и `docs/contracts/edge-telemetry-agent/config-revision-model.md`.
+8. Для backend хранения настроек платформы: `apps/idp_config_registry/README.md`,
+   `docs/contracts/edge-telemetry-agent/config-revision-model.md` и
+   `docs/architecture/hierarchical-catalog-v1.md`.
 9. Для deployment parity, cloud-first pilot, `OPC UA` read-only track и internal
    execution backlog: этот документ, `solution-architecture.md` и
    `open-questions.md`.
@@ -199,8 +205,14 @@ ADR объясняет решение, но не заменяет contract regis
   authoring workflow;
 - concrete `VK Cloud` vs `Yandex Cloud` choice, managed-service packaging and
   secrets backend for the cloud-first pilot;
-- production host/deployment model для edge runtime.
-- кандидат для следующего Platform / Observability обсуждения: нужен ли
+- production host/deployment model для edge runtime;
+- candidate `Hierarchical Catalog V1` implementation для `Config Registry` и
+  internal `/backoffice`: working plan уже описан в
+  `docs/architecture/hierarchical-catalog-v1.md`, но еще не принят как
+  `decisions.md` entry;
+- кандидат для следующего Industrial Data Platform / Web Monitoring обсуждения: нужен ли
   read-only `latest/history` API поверх существующих ClickHouse views
-  `telemetry_latest_v1` и `telemetry_events_dedup_v1`; это еще не реализованный
-  `Platform API` и не включает UI, alarm workflow, RBAC или write-back/control.
+  `telemetry_latest_v1` и `telemetry_events_dedup_v1`; это отдельная
+  tenant-facing read API boundary, не расширение `Config Registry`, и она не
+  включает UI, alarm workflow, RBAC или write-back/control. Материал к обсуждению:
+  `docs/architecture/read-only-telemetry-api-discussion.md`.

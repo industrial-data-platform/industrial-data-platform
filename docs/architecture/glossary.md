@@ -41,6 +41,20 @@ LikeC4-модель в `arch/likec4/` и markdown-документы в `docs/ar
 - `Grafana` — текущий read-only visualization surface внутри `Web Monitoring Module`; в production-контуре читает подготовленные данные из `Telemetry Store`.
 - `Platform API` — deprecated/ambiguous umbrella term для будущих tenant-facing API. Новые API должны проектироваться как data-platform API, web-monitoring API или alarm-management API в зависимости от ownership.
 - `Config Registry` — первый реализованный backend-срез `apps/idp_config_registry` / package `idp_config_registry`: хранит tenants, assets, agents, sources, points и config revisions в PostgreSQL.
+- `Catalog` — иерархический слой навигации и представления поверх registry
+  entities в `Config Registry`: помогает организовывать assets, agents,
+  sources и points в дерево для authoring workflows, internal backoffice и
+  будущего presentation layer.
+- `catalog tree` — именованное дерево catalog nodes внутри tenant; V1 использует
+  один tree `default`.
+- `catalog node` — элемент дерева с собственным public code, parent reference,
+  display name, sort order и типом (`folder`, `asset_ref`, `agent_ref`,
+  `source_ref`, `point_ref`). Node может ссылаться на registry entity, но его
+  identity не совпадает с identity этой entity.
+- `public code` — стабильный человеко-читаемый identifier в Config Registry
+  domain/API/backoffice (`tenant_code`, `asset_code`, `agent_code`,
+  `source_code`, `point_code`); отличается от internal UUID primary key в
+  PostgreSQL.
 - `Backoffice Admin UI` — внутренний operational UI на базе `SQLAdmin` для команды платформы; не доступен tenant/client users, допускает internal CRUD shortcut, а выпуск config state выполняется отдельным render action через application use cases и transactional outbox.
 - `Web Monitoring Frontend` — future browser-приложение модуля мониторинга, которое будет аутентифицироваться через Keycloak и работать с data-platform/read API; в текущем MVP отдельный frontend еще не реализован.
 - `Keycloak` — IAM-компонент платформы: пользователи, группы, роли, OIDC clients, sessions и JWT issuance.
