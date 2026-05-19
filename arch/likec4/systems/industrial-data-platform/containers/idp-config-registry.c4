@@ -29,6 +29,8 @@ model {
                 -> hierarchical-catalog 'Candidate Catalog Tree / Catalog Node views через public codes'
             }
 
+            service-engineer -> backoffice-admin-ui 'Использует internal backoffice для registry admin flows; Catalog views только если ADR-015 выбирает embedded placement'
+
             config-rendering = component 'Config Rendering / Outbox Boundary' {
                 description 'Собирает agent runtime/source config revisions и создает transactional config_outbox records для Kafka-first delivery.'
                 technology 'Application use cases / JSON Schema validation / transactional outbox'

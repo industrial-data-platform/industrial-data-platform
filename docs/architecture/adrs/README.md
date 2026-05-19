@@ -1,19 +1,22 @@
 # Architecture Decision Records
 
-Дата: 2026-05-10
+Дата: 2026-05-19
 Статус: working index
 
 ADRs are no longer default source-of-truth for current system behavior.
 `decisions.md` and living docs remain the active navigation layer.
 
-Proposed ADRs may live next to this README while the team is still discussing a
-significant trade-off. Accepted historical ADRs are kept in `archive/` as
-rationale: why a decision was made, which alternatives were rejected, and what
-trade-offs were accepted at the time.
+Draft/proposed ADRs may live next to this README while the team is still
+discussing a significant trade-off. They are not accepted decisions until
+`decisions.md` contains a matching accepted entry.
 
-## Proposed ADRs
+Accepted historical ADRs are kept in `archive/` as rationale: why a decision
+was made, which alternatives were rejected, and what trade-offs were accepted at
+the time.
 
-- [`ADR-015: Hierarchical Catalog runtime boundary`](ADR-015-hierarchical-catalog-runtime-boundary.md)
+## Draft / Proposed ADRs
+
+- [`Draft ADR-015 Proposal: Hierarchical Catalog and Digital Twin boundary`](ADR-015-hierarchical-catalog-runtime-boundary.md)
 
 For active architecture navigation, start with
 [`../decisions.md`](../decisions.md), then use:

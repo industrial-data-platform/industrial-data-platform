@@ -6,9 +6,10 @@
 Этот документ фиксирует candidate capability для `Hierarchical Catalog V1`:
 иерархию объектов, источников и точек поверх текущей registry model.
 
-Это не accepted architecture decision и не ADR. Runtime placement намеренно
-оставлен открытым и вынесен в proposed
-[`ADR-015: Hierarchical Catalog runtime boundary`](adrs/ADR-015-hierarchical-catalog-runtime-boundary.md).
+Это не accepted architecture decision и не ADR. Runtime placement и граница с
+будущим `Digital Twin Registry` / `Asset Graph Registry` намеренно оставлены
+открытыми и вынесены в proposed
+[`Draft ADR-015 Proposal: Hierarchical Catalog and Digital Twin boundary`](adrs/ADR-015-hierarchical-catalog-runtime-boundary.md).
 
 ## Цель
 
@@ -21,10 +22,35 @@
 
 Catalog может быть реализован как slice внутри `apps/idp_config_registry` или
 как отдельный service/package в monorepo. Оба варианта технически реалистичны;
-выбор должен зависеть от ownership, consumers, consistency model и runtime
-lifecycle, а не от сложности scaffold generation.
+выбор должен зависеть от ownership, consumers, consistency model, target domain
+model и runtime lifecycle, а не от сложности scaffold generation.
 
 Storage baseline для вариантов, которые используют PostgreSQL: `Platform Store`.
+
+## Use Case Split
+
+`Catalog V1` не должен подменять собой весь twin-layer.
+
+В этом working plan `Catalog V1` означает navigation/authoring tree:
+
+- дерево для удобной навигации по объектам, источникам и точкам;
+- folders и reference nodes на existing registry entities;
+- public-code API/backoffice surface;
+- lightweight metadata для presentation/navigation needs.
+
+Отдельный future use case — `Digital Twin Registry` / `Asset Graph Registry`:
+
+- объектная модель реального мира;
+- arbitrary typed attributes на объектах;
+- non-tree relations вроде `partOf`, `locatedIn`, `connectedTo`, `feeds`,
+  `poweredBy`, `measures`, `controls`;
+- telemetry bindings вида `source.point` / `point_code` / telemetry series ->
+  `twin.attribute`;
+- unit, quality/status semantics и computed/derived attributes.
+
+Если эти свойства нужны в первом implementation target, scope нужно переименовать
+и планировать как первый slice `Digital Twin Registry` / `Asset Graph Registry`,
+а не как простой `Hierarchical Catalog V1`.
 
 ## Runtime Placement
 
@@ -161,23 +187,32 @@ Minimal node payload:
 
 ## Backoffice Surface
 
-`Catalog V1` должен проектироваться сразу с internal `/backoffice` surface.
+`Catalog V1` должен проектироваться с internal authoring/admin surface, но
+текущий SQLAdmin не нужно считать целевым tree editor.
+
 Issue #21 закрепил `/backoffice` как browser-tested workflow и показал важную
 деталь: SQLAdmin работает с persisted UUID row ids, а application use cases
-работают с public codes.
+работают с public codes. Это полезно для narrow internal CRUD/admin flows, но
+плохо покрывает нормальное редактирование дерева.
 
 Для реализации Catalog нужно:
 
-- добавить `Catalog Tree` и `Catalog Node` views в `/backoffice`;
-- проводить create/update/delete через application use cases;
+- проводить create/update/delete/move через application use cases или Catalog
+  API;
 - добавить UUID-to-public-code bridge для SQLAdmin row actions;
 - показывать selectors по public codes и readable labels;
+- предусмотреть dedicated internal tree UI для navigation, move subtree,
+  sibling ordering и validation;
 - добавить Playwright coverage для folder/ref node creation, edit/delete,
   subtree/tree read и basic selector flows.
 
-Если Catalog будет отдельным service/package, `/backoffice` должен либо стать
-consumer его API/use cases, либо получить отдельную internal integration
-boundary. Это нужно выбрать в implementation issue вместе с runtime owner.
+Если Catalog остается embedded slice внутри Config Registry, SQLAdmin может
+быть временной internal surface для минимальных tree/node CRUD flows, но не
+должен считаться полноценным UI для настройки дерева.
+
+Если Catalog будет отдельным service/package, current Config Registry SQLAdmin
+не должен быть UI управления новой иерархией. Нужен отдельный internal UI,
+который работает через Catalog API/internal use cases.
 
 ## Boundaries
 
@@ -191,12 +226,22 @@ V1 не меняет:
 - alarm workflow;
 - Keycloak/RBAC model.
 
+V1 как navigation tree не решает:
+
+- `Digital Twin Registry` / `Asset Graph Registry` target model;
+- typed object attributes;
+- telemetry bindings;
+- non-tree semantic relations;
+- computed/derived attributes;
+- semantic enrichment для Web Monitoring/Alarms.
+
 V1 не решает автоматическое discovery всех tags/models. Importers могут
 создавать catalog nodes позже, но discovery policy остается отдельным решением.
 
 ## Implementation Notes For Future Issue
 
-Первую implementation issue стоит резать после выбора runtime owner:
+Первую implementation issue стоит резать после выбора runtime owner и scope:
+navigation tree или target twin/asset graph slice.
 
 - domain entities/value objects для tree/node;
 - repository/unit-of-work protocols;
@@ -214,7 +259,12 @@ living docs и LikeC4 в соответствии с выбранным runtime 
 
 - Выбираем embedded Config Registry slice или отдельный Catalog service/package
   для первого implementation target?
+- Первый target — navigation tree или Digital Twin / Asset Graph slice?
 - Нужны ли несколько именованных trees на tenant сразу после default tree?
+- Нужны ли arbitrary attributes и telemetry bindings в первом implementation
+  issue, или это отдельная future capability?
+- Какие relation types нужны target graph: `partOf`, `locatedIn`,
+  `connectedTo`, `feeds`, `poweredBy`, `measures`, `controls`?
 - Какие import sources первыми создают catalog nodes: synthetic generator,
   ETS/KNX project parser, OPC UA importer или ручной backoffice workflow?
 - Нужен ли tenant-facing Catalog API до Keycloak/RBAC, или V1 остается internal

@@ -65,6 +65,18 @@ wire/storage identity для Edge/Kafka/MQTT/ClickHouse contracts и не
   Web Monitoring API contract;
 - не проектировать metadata joins как обязательную часть V1.
 
+Target-state flow должен оставить место для semantic enrichment:
+
+1. raw edge telemetry приходит с technical wire/storage ids;
+2. future enrichment связывает `source.point` / `point_code` / telemetry series
+   с `twin.attribute`;
+3. Web Monitoring и Alarm Management смогут читать latest/history по
+   `twin_id`, `twin_type`, `attribute_key`, unit/path/relations и
+   quality/status semantics, а не только по raw point identity.
+
+Это не входит в V1 API, но важно не зацементировать будущие UI/alarm contracts
+вокруг технических point ids как единственного доменного интерфейса.
+
 Вне V1:
 
 - alarm lifecycle, acknowledgements, rules, notifications;
@@ -81,6 +93,8 @@ wire/storage identity для Edge/Kafka/MQTT/ClickHouse contracts и не
   `Industrial Data Platform`?
 - Достаточно ли для V1 только `latest/history`, а metadata joins, rollups и
   operator UI оставить следующими шагами?
+- Какой future semantic enrichment нужен после V1: `point_code` / telemetry
+  series -> `twin.attribute`, unit, quality/status и graph path?
 - Принимаем ли correctness-first query views как baseline для dev/local и первого
   API contract, а production optimization откладываем до load PoC?
 - Фиксируем ли результат только в `decisions.md` и living docs, или команде нужен
