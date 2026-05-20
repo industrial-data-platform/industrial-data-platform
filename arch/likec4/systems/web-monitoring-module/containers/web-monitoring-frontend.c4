@@ -10,6 +10,7 @@ model {
 
             -> industrial-data-platform.keycloak 'Аутентифицирует пользователя и получает OIDC tokens'
             -> industrial-data-platform.idp-config-registry 'Запрашивает registry/config metadata текущего backend-среза'
+            -> industrial-data-platform.idp-catalog-twin 'Future semantic navigation and object/attribute metadata for monitoring screens'
             -> grafana 'Открывает и встраивает dashboards и live-панели'
         }
     }

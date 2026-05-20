@@ -1,13 +1,17 @@
-# Draft ADR-015 Proposal: Hierarchical Catalog and Digital Twin boundary
+# ADR-015: Hierarchical Catalog and Digital Twin boundary comparison
 
 Дата: 2026-05-19
-Статус: draft/proposed, not accepted
+Статус: superseded by `ADR-016`
 
-Этот документ не является принятым ADR до появления записи в
-`docs/architecture/decisions.md`. Он фиксирует proposed architecture decision
-material: какие use cases смешиваются под словом `Catalog`, какие референсные
-модели стоит учитывать, и какие runtime boundary варианты нужно выбрать перед
-первой implementation issue.
+Этот документ был discussion material: какие use cases смешиваются под словом
+`Catalog`, какие референсные модели стоит учитывать, и какие runtime boundary
+варианты нужно выбрать перед первой implementation issue.
+
+Решение принято в
+[`ADR-016: Catalog/Twin service technical design`](ADR-016-catalog-twin-service-technical-design.md):
+делаем отдельный `Catalog/Twin` service/package, используем готовые
+building-domain ontologies как vocabulary source, а первый creator catalog/twin
+nodes — ручной internal `/backoffice` workflow.
 
 ## Контекст
 
@@ -64,10 +68,10 @@ attribute` и application views.
 
 ## Статус решения
 
-Решение о runtime placement и target domain model не принято.
+Runtime placement и target domain model теперь приняты в `ADR-016`.
 
-Этот draft ADR фиксирует варианты и критерии выбора, чтобы не закрепить
-placement случайно через working-plan документ или LikeC4-диаграмму.
+Этот ADR остается как rationale: какие варианты сравнивались и почему отдельный
+service/package стал выбранным вариантом.
 
 ## Предметная развилка
 
@@ -237,12 +241,11 @@ semantic monitoring и alarm rules, нужно обсуждать `Digital Twin 
 `Asset Graph Registry` как отдельную domain capability. В этом случае отдельный
 service/package должен быть полноценным first option, а не future optimization.
 
-## Consequences пока решение открыто
+## Consequences
 
-- `decisions.md` не обновляется.
-- `Hierarchical Catalog V1` остается working plan, а не accepted boundary.
-- LikeC4 показывает только candidate placement для embedded tree variant.
-- Current C2/deployment diagrams не должны добавлять Catalog/Twin как принятый
-  dependency или Platform Store state.
-- Future implementation issue должен выбрать один из двух стартовых scopes:
-  navigation tree или Digital Twin / Asset Graph slice.
+- `decisions.md` содержит accepted entry `ADR-016`.
+- `Hierarchical Catalog V1` становится первым slice отдельного
+  `Catalog/Twin` service/package.
+- LikeC4 показывает отдельный `idp_catalog_twin` container.
+- Embedded placement внутри `idp_config_registry` отклонен для первого
+  implementation target.

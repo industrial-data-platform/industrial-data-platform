@@ -14,9 +14,17 @@ Accepted historical ADRs are kept in `archive/` as rationale: why a decision
 was made, which alternatives were rejected, and what trade-offs were accepted at
 the time.
 
+## Accepted ADRs in current review
+
+- [`ADR-016: Catalog/Twin service technical design`](ADR-016-catalog-twin-service-technical-design.md)
+
+## Superseded discussion material
+
+- [`ADR-015: Hierarchical Catalog and Digital Twin boundary comparison`](ADR-015-hierarchical-catalog-runtime-boundary.md)
+
 ## Draft / Proposed ADRs
 
-- [`Draft ADR-015 Proposal: Hierarchical Catalog and Digital Twin boundary`](ADR-015-hierarchical-catalog-runtime-boundary.md)
+None at the moment.
 
 For active architecture navigation, start with
 [`../decisions.md`](../decisions.md), then use:

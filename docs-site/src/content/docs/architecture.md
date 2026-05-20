@@ -24,11 +24,13 @@ The current system boundary is:
 - `docs/architecture/glossary.md`: canonical terms and boundaries.
 - `docs/architecture/open-questions.md`: live unresolved product and operations
   decisions.
-- `docs/architecture/hierarchical-catalog-v1.md`: working plan for the
-  navigation/authoring catalog capability.
+- `docs/architecture/hierarchical-catalog-v1.md`: working plan for the first
+  Catalog/Twin service implementation slice.
+- `docs/architecture/adrs/ADR-016-catalog-twin-service-technical-design.md`:
+  accepted technical design for the separate Catalog/Twin service/package.
 - `docs/architecture/adrs/ADR-015-hierarchical-catalog-runtime-boundary.md`:
-  draft proposal comparing Catalog V1 with the future Digital Twin / Asset Graph
-  boundary. It is not accepted until listed in `decisions.md`.
+  superseded comparison material for the Catalog V1 versus Digital Twin / Asset
+  Graph boundary discussion.
 - `arch/README.md`: LikeC4 model entrypoint and commands.
 
 ## Rules

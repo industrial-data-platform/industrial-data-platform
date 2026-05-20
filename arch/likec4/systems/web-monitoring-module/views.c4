@@ -9,6 +9,7 @@ views 'Developed Systems / Web Monitoring Module' {
         include service-engineer
         include industrial-data-platform.telemetry-store
         include industrial-data-platform.idp-config-registry
+        include industrial-data-platform.idp-catalog-twin
         include industrial-data-platform.keycloak
 
         style web-monitoring-module {
