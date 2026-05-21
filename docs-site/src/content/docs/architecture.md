@@ -25,9 +25,10 @@ The current system boundary is:
 - `docs/architecture/open-questions.md`: live unresolved product and operations
   decisions.
 - `docs/architecture/hierarchical-catalog-v1.md`: working plan for the first
-  Catalog/Twin service implementation slice.
-- `docs/architecture/adrs/ADR-016-catalog-twin-service-technical-design.md`:
-  accepted technical design for the separate Catalog/Twin service/package.
+  tree projection inside the Digital Twin / Asset Graph Registry boundary.
+- `docs/architecture/adrs/ADR-016-digital-twin-asset-graph-boundary.md`:
+  accepted boundary decision for the separate Digital Twin / Asset Graph
+  Registry service/package.
 - `docs/architecture/adrs/ADR-015-hierarchical-catalog-runtime-boundary.md`:
   superseded comparison material for the Catalog V1 versus Digital Twin / Asset
   Graph boundary discussion.

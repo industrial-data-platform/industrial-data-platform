@@ -81,14 +81,14 @@
 
 ## Следующий срез Industrial Data Platform и модулей
 
-`Catalog/Twin Service` принят в
-`docs/architecture/adrs/ADR-016-catalog-twin-service-technical-design.md` как
-отдельный service/package внутри `Industrial Data Platform`, а не embedded
-slice внутри `Config Registry`. Первый creator catalog/twin nodes — ручной
-internal `/backoffice` workflow; ETS/KNX, OPC UA, synthetic generator и
-discovery/import остаются будущими источниками. Building-domain semantics
-берутся из curated profile на основе Brick, Haystack и RealEstateCore, без
-полного RDF/SPARQL engine в V1.
+`Digital Twin / Asset Graph Registry` принят в
+`docs/architecture/adrs/ADR-016-digital-twin-asset-graph-boundary.md` как
+отдельный service/package boundary внутри `Industrial Data Platform`, а не
+embedded slice внутри `Config Registry`. `Catalog V1` является первым tree
+projection внутри этой boundary, а не конечной самостоятельной моделью. Первый
+creator nodes — ручной internal `/backoffice` workflow; ETS/KNX, OPC UA,
+synthetic generator и discovery/import остаются будущими источниками.
+Technology stack selection вынесен в отдельную будущую ADR.
 
 Кандидат для ближайшего совместного обсуждения Industrial Data Platform / Web Monitoring:
 решить, должен ли первый срез после `Config Registry` быть read-only
@@ -121,8 +121,9 @@ Alarm workflow обсуждается рядом, но остается отде
 
 | Вопрос | Почему это важно | Степень блокировки |
 | --- | --- | --- |
-| Какой минимальный Brick/Haystack/RealEstateCore vocabulary profile входит в первый `idp_catalog_twin` implementation PR? | `ADR-016` выбирает готовые building ontologies как source, но первый PR должен ограничить конкретные term codes, relation types и seed data | Средняя |
-| Какой internal `/backoffice` UX нужен для первого ручного наполнения Catalog/Twin: формы CRUD, tree editor или минимальный use-case driven admin flow? | Первый creator уже выбран как ручной `/backoffice`, но UX depth влияет на размер PR и Playwright coverage | Средняя |
+| Какой минимальный Brick/Haystack/RealEstateCore vocabulary profile входит в первый Digital Twin / Asset Graph implementation PR? | `ADR-016` выбирает готовые building ontologies как source, но первый PR должен ограничить конкретные term codes, relation types и seed data | Средняя |
+| Какой internal `/backoffice` UX нужен для первого ручного наполнения Digital Twin / Asset Graph Registry: формы CRUD, tree editor или минимальный use-case driven admin flow? | Первый creator уже выбран как ручной `/backoffice`, но UX depth влияет на размер PR и Playwright coverage | Средняя |
+| Какой technology stack выбираем для Digital Twin / Asset Graph Registry? | `ADR-016` намеренно не выбирает PostgreSQL vs graph DB, search/indexing, API framework/package shape, UI stack и ontology tooling | Высокая |
 | Какие конкретные API/use cases входят в первый tenant-facing API после `Config Registry`: telemetry read, config rollout, Web Monitoring read API или Alarm Management workflow API? | Data platform, Web Monitoring и Alarm Management разделены, поэтому следующий API contract должен явно назвать ownership | Высокая |
 | Где фиксируется `Redpanda Connect` pipeline config: в platform repository, IaC, Redpanda Cloud-managed pipeline или отдельном operations bundle? | MQTT input, mapping/transform и redpanda output становятся частью production data path, поэтому конфигурация pipeline должна быть версионирована и управляться так же строго, как edge source config | Высокая |
 | Нужно ли переходить с локального `Apache Kafka` broker runtime на `Redpanda broker`? | Apache Kafka остается локальным baseline; Redpanda broker требует отдельный compatibility PoC, чтобы не смешивать broker migration с connector/runtime cleanup | Средняя |

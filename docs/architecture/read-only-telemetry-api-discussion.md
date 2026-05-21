@@ -57,10 +57,25 @@ API/backoffice/domain surfaces используют public codes (`tenant_code`,
 wire/storage identity для Edge/Kafka/MQTT/ClickHouse contracts и не
 переименовывается этим обсуждением.
 
+Так как ClickHouse read models фильтруются по storage/wire `tenant_id`, V1 API
+должен явно выбрать один из двух вариантов до реализации:
+
+- preferred: Web Monitoring API получает `{tenant_code}`, делает
+  `tenant_code -> tenant_id` lookup через Config Registry/data-platform registry
+  lookup boundary и всегда применяет resolved `tenant_id` в ClickHouse query;
+- fallback для самого раннего local/dev skeleton: endpoint использует storage
+  identity `{tenant_id}` и отдельно помечается как временный non-tenant-facing
+  API до появления lookup boundary.
+
+Нельзя скрыто принимать `{tenant_code}` в HTTP и напрямую использовать его как
+ClickHouse `tenant_id`.
+
 Минимальный V1 scope:
 
 - читать latest из `telemetry_latest_v1`;
 - читать history из `telemetry_events_dedup_v1`;
+- для `history` требовать bounded query contract: `from`, `to`, point/source
+  filters и `limit`/cursor semantics;
 - возвращать только read-only telemetry data, достаточные для первого
   Web Monitoring API contract;
 - не проектировать metadata joins как обязательную часть V1.

@@ -1,10 +1,10 @@
 model {
     service-engineer = actor 'Сервисный инженер' {
-        description 'Устанавливает edge_telemetry_agent на объекте, задает bootstrap-параметры подключения к платформе и настраивает источники, точки, Catalog/Twin, alarm и панели через отдельные платформенные модули.'
+        description 'Устанавливает edge_telemetry_agent на объекте, задает bootstrap-параметры подключения к платформе и настраивает источники, точки, Digital Twin / Asset Graph, alarm и панели через отдельные платформенные модули.'
 
         -[interact-with]-> edge-telemetry-agent 'Устанавливает агент и задает bootstrap config: agent_id, MQTT endpoint и credentials refs'
         -[interact-with]-> industrial-data-platform 'Настраивает tenants, assets, agents, sources, points и config delivery'
-        -[interact-with]-> industrial-data-platform.idp-catalog-twin 'Вручную создает catalog/twin nodes, relations и telemetry bindings через internal backoffice'
+        -[interact-with]-> industrial-data-platform.digital-twin-asset-graph-registry 'Вручную создает twins, tree projection nodes, relations и telemetry bindings через internal backoffice'
         -[interact-with]-> industrial-data-platform.yaml-config-bundle 'Редактирует versioned YAML config bundle с agent runtime/source configs'
         -[interact-with]-> industrial-data-platform.idp-config-registry-outbox-worker 'Запускает validation/publish retained agent runtime/source configs'
         -[interact-with]-> web-monitoring-module.grafana 'Настраивает dashboards и проверяет поток телеметрии'

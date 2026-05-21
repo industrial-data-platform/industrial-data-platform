@@ -1,0 +1,33 @@
+model {
+    extend industrial-data-platform {
+        digital-twin-asset-graph-registry = container 'Digital Twin / Asset Graph Registry' {
+            description 'Accepted ADR-016 boundary: separate Industrial Data Platform service/package for real-world twins/assets, tree projections, semantic relations and telemetry binding metadata. First creator is manual internal /backoffice.'
+            technology 'Technology stack deferred to a follow-up ADR'
+            icon bootstrap:diagram-3
+
+            twin-graph-api = component 'Twin Graph API / Use Cases' {
+                description 'Internal API and application use cases for minimal twins/assets, default tree projection, logical attributes, relations and telemetry binding metadata. Uses public codes in API/domain surface.'
+                technology 'API/application shape deferred'
+                icon bootstrap:braces
+
+                -> industrial-data-platform.idp-config-registry 'Validates tenant, asset, agent, source and point public-code references via internal lookup boundary'
+            }
+
+            ontology-profile = component 'Building Ontology Profile' {
+                description 'Curated Brick/Haystack/RealEstateCore vocabulary subset for relation types, attribute semantics and authoring validation; full ontology tooling is deferred.'
+                technology 'Curated vocabulary profile'
+                icon bootstrap:tags
+            }
+
+            twin-backoffice = component 'Twin Graph Backoffice' {
+                description 'Internal /backoffice authoring surface for manual creation, editing, moving and validation of twin/catalog nodes before automatic importers exist.'
+                technology 'Internal UI shape deferred'
+                icon bootstrap:window-sidebar
+
+                -> twin-graph-api 'Runs manual authoring commands through application use cases'
+            }
+
+            service-engineer -> twin-backoffice 'Manually creates and maintains twins, tree projection nodes, relations and telemetry bindings'
+        }
+    }
+}

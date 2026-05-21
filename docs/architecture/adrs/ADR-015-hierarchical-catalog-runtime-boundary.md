@@ -8,10 +8,11 @@
 варианты нужно выбрать перед первой implementation issue.
 
 Решение принято в
-[`ADR-016: Catalog/Twin service technical design`](ADR-016-catalog-twin-service-technical-design.md):
-делаем отдельный `Catalog/Twin` service/package, используем готовые
-building-domain ontologies как vocabulary source, а первый creator catalog/twin
-nodes — ручной internal `/backoffice` workflow.
+[`ADR-016: Digital Twin / Asset Graph Registry boundary`](ADR-016-digital-twin-asset-graph-boundary.md):
+целевой boundary — отдельный `Digital Twin / Asset Graph Registry`
+service/package; `Catalog V1` является первым tree projection, а не конечной
+самостоятельной моделью. Первый creator nodes — ручной internal `/backoffice`
+workflow.
 
 ## Контекст
 
@@ -244,8 +245,8 @@ service/package должен быть полноценным first option, а н
 ## Consequences
 
 - `decisions.md` содержит accepted entry `ADR-016`.
-- `Hierarchical Catalog V1` становится первым slice отдельного
-  `Catalog/Twin` service/package.
-- LikeC4 показывает отдельный `idp_catalog_twin` container.
+- `Hierarchical Catalog V1` становится первым tree projection внутри отдельного
+  `Digital Twin / Asset Graph Registry`.
+- LikeC4 показывает отдельный `Digital Twin / Asset Graph Registry` container.
 - Embedded placement внутри `idp_config_registry` отклонен для первого
   implementation target.

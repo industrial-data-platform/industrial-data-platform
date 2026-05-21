@@ -18,25 +18,20 @@ views 'Developed Systems / Industrial Data Platform' {
         }
     }
 
-    view c3-idp-catalog-twin-authoring of industrial-data-platform.idp-catalog-twin {
-        title 'C3 idp_catalog_twin Authoring'
-        description 'Accepted ADR-016 Catalog/Twin service/package: internal backoffice вручную создает catalog/twin nodes, uses curated building ontology vocabulary and validates registry public-code references through Config Registry.'
+    view c3-digital-twin-asset-graph-authoring of industrial-data-platform.digital-twin-asset-graph-registry {
+        title 'C3 Digital Twin / Asset Graph Authoring'
+        description 'Accepted ADR-016 boundary: internal backoffice вручную создает twins, tree projection nodes, uses curated building ontology vocabulary and validates registry public-code references through Config Registry.'
 
         include *
         include industrial-data-platform.idp-config-registry
-        include industrial-data-platform.platform-store
         include service-engineer
 
-        style industrial-data-platform.idp-catalog-twin {
+        style industrial-data-platform.digital-twin-asset-graph-registry {
             color primary
         }
 
         rank source {
             service-engineer
-        }
-
-        rank sink {
-            industrial-data-platform.platform-store
         }
     }
 }

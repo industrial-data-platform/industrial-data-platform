@@ -35,7 +35,7 @@
 | ADR-012 | accepted | `Kafka Event Log` is the logical stream. Local runtime uses Apache Kafka plus Redpanda Connect/Kafka Connect; Redpanda broker stays a PoC candidate. | `docs/contracts/kafka/topics.v1.md`, `infra/local/README.md` | `adrs/archive/ADR-012-kafka-redpanda-runtime-baseline.md` |
 | ADR-013 | accepted | Post-MVP direction: cloud-first Russian pilot, local Docker dev/test baseline, `OPC UA` read-only ingestion track, internal-only execution backlog. | `current-state.md`, `solution-architecture.md`, `open-questions.md` | `adrs/archive/ADR-013-post-mvp-product-and-execution-governance.md` |
 | ADR-014 | accepted | Central core is `Industrial Data Platform`; `Web Monitoring Module` and `Alarm Management Module` are separate modules above it. Runtime/contract identifiers stay `idp.*`/`idp/v1`. | `current-state.md`, `arch/likec4/`, `docs/contracts/README.md` | `adrs/archive/ADR-014-data-platform-core-and-modules.md` |
-| ADR-016 | accepted | Catalog/Twin is a separate Industrial Data Platform service/package, not an embedded Config Registry slice. It owns catalog/twin graph state, curated building ontology vocabulary, manual `/backoffice` authoring and telemetry bindings metadata. | `hierarchical-catalog-v1.md`, `glossary.md`, `arch/likec4/` | `adrs/ADR-016-catalog-twin-service-technical-design.md` |
+| ADR-016 | accepted | Target boundary is a separate `Digital Twin / Asset Graph Registry`; `Catalog V1` is only the first tree projection and does not extend Config Registry beyond configuration ownership. Technology stack selection is deferred. | `hierarchical-catalog-v1.md`, `glossary.md`, `arch/likec4/` | `adrs/ADR-016-digital-twin-asset-graph-boundary.md` |
 
 ## Maintenance
 

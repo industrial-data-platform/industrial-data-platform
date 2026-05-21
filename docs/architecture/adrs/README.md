@@ -16,7 +16,7 @@ the time.
 
 ## Accepted ADRs in current review
 
-- [`ADR-016: Catalog/Twin service technical design`](ADR-016-catalog-twin-service-technical-design.md)
+- [`ADR-016: Digital Twin / Asset Graph Registry boundary`](ADR-016-digital-twin-asset-graph-boundary.md)
 
 ## Superseded discussion material
 

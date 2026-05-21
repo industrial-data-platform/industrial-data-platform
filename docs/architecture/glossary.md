@@ -41,27 +41,25 @@ LikeC4-модель в `arch/likec4/` и markdown-документы в `docs/ar
 - `Grafana` — текущий read-only visualization surface внутри `Web Monitoring Module`; в production-контуре читает подготовленные данные из `Telemetry Store`.
 - `Platform API` — deprecated/ambiguous umbrella term для будущих tenant-facing API. Новые API должны проектироваться как data-platform API, web-monitoring API или alarm-management API в зависимости от ownership.
 - `Config Registry` — первый реализованный backend-срез `apps/idp_config_registry` / package `idp_config_registry`: хранит tenants, assets, agents, sources, points и config revisions в PostgreSQL.
-- `Catalog/Twin Service` — accepted отдельный сервис/package
-  `idp_catalog_twin` внутри `Industrial Data Platform`: владеет catalog tree,
-  twin/asset graph metadata, curated building ontology vocabulary, logical
-  attributes, semantic relations и telemetry bindings. Не является embedded
-  slice внутри `Config Registry`.
-- `Catalog` / `Hierarchical Catalog V1` — первый implementation slice
-  `Catalog/Twin Service`: navigation/authoring tree поверх registry entities и
-  twin refs для internal `/backoffice`, будущего presentation layer и ручного
-  наполнения.
+- `Digital Twin / Asset Graph Registry` — accepted отдельный service/package
+  boundary внутри `Industrial Data Platform`: владеет real-world twins/assets,
+  tree projections, logical attributes, semantic relations и telemetry bindings.
+  Не является embedded slice внутри `Config Registry`; конкретный technology
+  stack выносится в отдельное решение.
+- `Catalog` / `Hierarchical Catalog V1` — первый tree projection внутри
+  `Digital Twin / Asset Graph Registry`: navigation/authoring tree поверх
+  registry entities и twin refs для internal `/backoffice`, будущего
+  presentation layer и ручного наполнения. Это не самостоятельная конечная
+  domain model.
 - `catalog tree` — именованное дерево catalog nodes внутри tenant; V1 использует
   один tree `default`.
-- `catalog node` — элемент дерева с собственным public code, parent reference,
-  display name, sort order и типом (`folder`, `asset_ref`, `agent_ref`,
-  `source_ref`, `point_ref`). Node может ссылаться на registry entity, но его
-  identity не совпадает с identity этой entity.
-- `Digital Twin Registry` / `Asset Graph Registry` — target capability внутри
-  `Catalog/Twin Service` для объектной модели реального мира: twins/assets,
-  arbitrary attributes, non-tree relations, telemetry bindings, units,
-  quality/status semantics и computed/derived attributes. Отличается от
-  `Config Registry`, который отвечает за то, как edge agent читает и доставляет
-  данные.
+- `catalog node` — элемент tree projection с собственным public code, parent
+  reference, display name, sort order и типом (`folder`, `asset_ref`,
+  `agent_ref`, `source_ref`, `registry_point_ref`, `twin_ref`). Node может
+  ссылаться на registry entity или twin, но его identity не совпадает с
+  identity target entity.
+- `Digital Twin Registry` / `Asset Graph Registry` — synonym for the accepted
+  `Digital Twin / Asset Graph Registry` boundary.
 - `twin attribute` — логический атрибут объекта в будущей twin/asset graph
   модели, например `temperature`, `status`, `rpm` или derived KPI. Может быть
   связан с одной или несколькими technical telemetry series.
