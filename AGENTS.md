@@ -71,10 +71,35 @@ old product boundary name.
 
 ## Skill Routing
 
+- Use this routing data before selecting issue-related workflows:
+  - `issue-authoring`: create, draft, rewrite, split, template, or
+    readiness-review an issue for future agent work. Output is an issue body,
+    issue template, or agent-ready task specification.
+  - `issue-workflow`: implement, take, fix, continue, or prepare a branch for
+    an existing issue number or URL. Output is code/docs/tests/validation/PR
+    status for that issue.
+  - `github:github`: summarize or triage GitHub repositories, issues, PRs,
+    labels, comments, or metadata when no agent-ready issue draft or
+    implementation is requested.
+  - `github:gh-address-comments`: address actionable PR review feedback.
+  - `github:gh-fix-ci`: debug or fix failing GitHub Actions checks.
+  - `github:yeet`: commit, push, and open a PR after local work is ready.
+- For GitHub issue creation, templates, readiness reviews, or adapting issues
+  for agents, use the repo `issue-authoring` skill before generic `git` or
+  `github` workflows.
 - For issue-driven implementation or preparation from issue links or numbers,
   including Russian prompts like "реализуй issue", "сделай реализацию issue",
   "возьми задачу", or "возьми тикет", use the repo `issue-workflow` skill
   before generic `git` or `github` workflows.
+- Before implementing an issue, switch to the mainline branch, pull the latest
+  changes with `git pull --ff-only`, then create a fresh
+  `codex/issue/<issue-number>-<short-slug>` branch. Do not implement issue work
+  directly on the mainline branch.
+- If the current branch has uncommitted changes before issue work, stop and
+  offer options: commit them, stash them, create a separate branch for them,
+  keep working on the current branch if it is already the intended issue branch,
+  or cancel/postpone the issue work. Do not auto-stash, reset, or move changes
+  without explicit user confirmation.
 - For general GitHub repository, issue, or PR triage, use `github:github`.
 - For PR review comments or requested changes, use `github:gh-address-comments`.
 - For failing GitHub Actions or CI debugging, use `github:gh-fix-ci`.
@@ -116,3 +141,18 @@ old product boundary name.
 For larger work, use `docs/agents/workflows/task-flow.md` and the role
 prompts in `docs/agents/roles/`. Local scratch runs may live under `.local/`,
 which is intentionally ignored by git.
+
+For issue-driven work, create a visible task plan from the issue phases before
+implementation so the plan appears in the Codex side panel. Keep at most one
+step in progress and update the plan after each phase, validation failure, or
+scope change.
+
+After reading an issue or task, select the minimal applicable skills from
+repo-local `.agents/skills` and available system/session skills. Announce the
+selected skills and why before implementation; if no additional skill applies,
+say that explicitly.
+
+Ask the user only for blocking decisions that cannot be resolved from repository
+source-of-truth documents or existing issue context. Prefer one concise batch of
+1-3 questions, include a default assumption for each, and record accepted
+answers or assumptions back into the issue, PR, or final status.

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Issue Authoring"
+  short_description: "Draft agent-ready repository issues"
+  default_prompt: "Use $issue-authoring to draft an agent-ready issue in this repository."
+
+policy:
+  allow_implicit_invocation: true
