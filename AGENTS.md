@@ -72,7 +72,7 @@ old product boundary name.
 ## Skill Routing
 
 - Use this routing data before selecting issue-related workflows:
-  - `issue-authoring`: create, draft, rewrite, split, template, or
+  - `issue-planning`: create, draft, rewrite, split, template, or
     readiness-review an issue for future agent work. Output is an issue body,
     issue template, or agent-ready task specification.
   - `issue-workflow`: implement, take, fix, continue, or prepare a branch for
@@ -85,7 +85,7 @@ old product boundary name.
   - `github:gh-fix-ci`: debug or fix failing GitHub Actions checks.
   - `github:yeet`: commit, push, and open a PR after local work is ready.
 - For GitHub issue creation, templates, readiness reviews, or adapting issues
-  for agents, use the repo `issue-authoring` skill before generic `git` or
+  for agents, use the repo `issue-planning` skill before generic `git` or
   `github` workflows.
 - For issue-driven implementation or preparation from issue links or numbers,
   including Russian prompts like "реализуй issue", "сделай реализацию issue",

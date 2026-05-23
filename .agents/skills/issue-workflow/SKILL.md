@@ -12,7 +12,7 @@ description: >
   define ready/done gates, maintain a visible task plan, branch safely,
   implement with TDD, validate, reconcile docs/contracts/C4/ADR, and prepare
   issue or PR status. Do not use for creating, drafting, refining, or adapting
-  issues for agents; use issue-authoring for that. Do not use for general
+  issues for agents; use issue-planning for that. Do not use for general
   GitHub issue summaries; use github:github.
 ---
 
@@ -21,7 +21,7 @@ description: >
 Use this skill when a user asks to work from an existing issue link, GitHub
 issue URL, issue number, or issue-driven implementation task.
 
-Use `issue-authoring` instead when the user asks to create, draft, rewrite,
+Use `issue-planning` instead when the user asks to create, draft, rewrite,
 readiness-review, or adapt an issue for agents.
 
 ## Trigger Data
@@ -38,7 +38,7 @@ Use this skill when the user intent matches one of these patterns:
 Do not use this skill when:
 
 - The user wants to create, draft, rewrite, template, split, or adapt an issue
-  for a future agent. Use `issue-authoring`.
+  for a future agent. Use `issue-planning`.
 - The user only wants a repository/issue/PR summary or labels/comments triage.
   Use `github:github`.
 - The user wants to address PR review comments, debug CI, or publish already

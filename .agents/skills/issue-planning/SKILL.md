@@ -1,5 +1,5 @@
 ---
-name: issue-authoring
+name: issue-planning
 description: >
   MUST USE for creating, drafting, refining, readiness-reviewing, or adapting
   GitHub issues for agent-driven work in this repository before generic Git or
@@ -17,7 +17,7 @@ description: >
   that. Do not use for general GitHub issue summaries; use github:github.
 ---
 
-# Issue Authoring
+# Issue Planning
 
 Use this skill when a user asks to create, draft, rewrite, readiness-review, or
 adapt an issue for agents in this repository.
