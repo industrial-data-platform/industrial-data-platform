@@ -153,6 +153,60 @@ Production dashboard не должен регулярно парсить `points
 `docs/contracts/clickhouse/telemetry-store.v1.md` или новой версии контракта до
 реализации миграций. Текущие table/view names не переименовываются.
 
+## Best practices
+
+Grafana dashboard design:
+
+- начинать overview dashboard с business/system summary: tenants, agents,
+  sources, points, telemetry freshness и quality health;
+- держать overview и point investigation раздельными dashboards, связывая их
+  dashboard links и shared variable values;
+- использовать stat/gauge/table panels для service inventory и health, а
+  time-series panels оставлять для trends и point drilldown;
+- не показывать все series по умолчанию; для режима `All` использовать
+  aggregate, top-N и bounded таблицы;
+- задавать panel descriptions для служебных метрик, где важно объяснить
+  "observed" vs "configured" semantics;
+- держать default time range и refresh interval консервативными, а incident
+  mode оформлять отдельной копией или явным override.
+
+Variables and navigation:
+
+- строить chained variables от широкого scope к узкому:
+  `tenant_id -> asset_id -> source_type -> agent_id -> source_id -> point_key`;
+- разделять `source_type` и `source_id` в UI labels: protocol/adapter type
+  против concrete source instance;
+- ограничивать option queries через `LIMIT` и предыдущие variable filters;
+- не использовать free-text SQL input для internal users, если тот же сценарий
+  закрывается variables и dashboard links.
+
+ClickHouse query design:
+
+- для drilldown фильтровать по prefix columns основного sort key:
+  `tenant_id`, `asset_id`, `source_id`, `point_key`, затем time range;
+- overview counts читать из latest/rollup/service read models, а не из raw
+  landing tables;
+- для high-frequency global counters и top-N после load PoC использовать
+  materialized/incremental read models;
+- при joins сначала фильтровать или агрегировать обе стороны, а для current
+  metadata использовать `ANY JOIN`, если нужна одна matching row;
+- все table panels должны иметь `LIMIT`, а heavy panels должны иметь bounded
+  top-N semantics;
+- `telemetry_events_dedup_v1` использовать только для коротких drilldown
+  запросов до появления production performance read models.
+
+Security and operations:
+
+- dashboards должны быть provisioned from git, `editable=false`, чтобы PR
+  review был source of truth для изменений;
+- datasource должен работать от read-only ClickHouse пользователя с
+  production query limits;
+- all-tenant dashboards должны жить в internal folder и не использоваться как
+  tenant-facing authorization boundary;
+- изменения dashboard JSON должны проходить integration smoke через Grafana API:
+  datasource exists, dashboards provisioned, variables present, core queries
+  execute against seeded ClickHouse.
+
 ## Query rules
 
 Все time-series panels должны использовать dashboard time range:
@@ -305,7 +359,8 @@ Decision drivers:
 - Anonymous access выключен в target deployment.
 - Datasource user read-only и ограничен ClickHouse query limits.
 - Time-series panels используют Grafana time range macros.
-- Drilldown panels фильтруют `tenant_id -> asset_id -> source_id -> point_key`
+- Drilldown panels фильтруют
+  `tenant_id -> asset_id -> source_type -> agent_id -> source_id -> point_key`
   или читают prepared rollup/service read models.
 - Ни одна default-панель не рисует все points всех tenants как unbounded series.
 - Heavy global counters читают latest/rollup/service read models, а не raw
