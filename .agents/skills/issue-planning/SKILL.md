@@ -82,7 +82,9 @@ generic proposal. The useful context is:
 
 - Which system or module changes: `industrial_data_platform`,
   `edge_telemetry_agent`, `web_monitoring_module`, `alarm_management_module`,
-  `demo_and_knx_tooling`, docs-only, or cross-cutting C4.
+  or `demo_and_knx_tooling`.
+- Which change class applies: module implementation, docs-only, contract,
+  architecture/C4, infra, tests, CI, or another cross-cutting area.
 - Which technical surface changes: runtime behavior, public API, MQTT/Kafka
   contract, ClickHouse/PostgreSQL storage, edge SQLite state, config model,
   local infrastructure, Grafana/read model, LikeC4 architecture, README/docs,
@@ -107,15 +109,17 @@ Before drafting, classify the task with this checklist:
 
 1. Module and ownership: choose module ids and write paths from
    `docs/agents/module-map.yaml`.
-2. Current behavior and target behavior: name the existing code, contract,
+2. Change class: name whether this is module implementation, docs-only,
+   contract, architecture/C4, infra, tests, CI, or another cross-cutting area.
+3. Current behavior and target behavior: name the existing code, contract,
    data flow, or doc state and the desired durable outcome.
-3. Contract/storage impact: MQTT, Kafka, ClickHouse, PostgreSQL, edge SQLite,
+4. Contract/storage impact: MQTT, Kafka, ClickHouse, PostgreSQL, edge SQLite,
    JSON schemas, migrations, producers, consumers, or no contract impact.
-4. Architecture impact: LikeC4, module boundaries, deployment paths, runtime
+5. Architecture impact: LikeC4, module boundaries, deployment paths, runtime
    ownership, ADR/decision register, or "architecture unchanged".
-5. Validation impact: exact commands from `module-map.yaml`, plus integration,
+6. Validation impact: exact commands from `module-map.yaml`, plus integration,
    docs, C4, compose, or link/reference checks.
-6. Stop conditions: breaking compatibility, source-of-truth conflict, unclear
+7. Stop conditions: breaking compatibility, source-of-truth conflict, unclear
    owner, destructive migration, missing external docs decision, or user
    approval needed.
 
@@ -224,6 +228,8 @@ Before drafting, classify the task with this checklist:
 - Goal states why the work exists in one or two paragraphs.
 - Scope and out of scope are separate.
 - Affected modules and write paths match `docs/agents/module-map.yaml`.
+- Cross-cutting change class is named separately from module id when the work is
+  docs-only, C4-only, CI, infra, or validation-only.
 - Source-of-truth docs are named in precedence order when relevant.
 - Agent instructions include required skills, blockers, compatibility guardrails,
   and explicit non-goals.
@@ -241,7 +247,7 @@ Before drafting, classify the task with this checklist:
 - Issue title.
 - Issue body or changed sections.
 - Affected modules and source-of-truth docs used.
-- Technical impact classification and stop conditions.
+- Technical impact classification, change class, and stop conditions.
 - Recommended repo-local and system/session skills for the future executor.
 - Required validation commands.
 - Docs/contracts/LikeC4/ADR completion expectations.

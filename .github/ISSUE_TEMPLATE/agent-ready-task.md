@@ -31,6 +31,7 @@ Blocked by: none.
 ## Affected Modules And Source Of Truth
 
 - Module:
+- Change class:
 - Write paths:
   - TBD
 - Source of truth:
@@ -98,7 +99,8 @@ Validation:
 
 ## Open Questions
 
-- None.
+- TBD. Use `None after readiness review` only after all `TBD` fields are
+  resolved or intentionally left as placeholders with rationale.
 
 ## Validation
 

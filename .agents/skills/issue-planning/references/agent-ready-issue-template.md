@@ -53,6 +53,8 @@ Blocked by: <issue/PR/decision, or "none">.
 ## Affected Modules And Source Of Truth
 
 - Module: `<module id from docs/agents/module-map.yaml>`
+- Change class: `<module implementation / docs-only / contract / C4 /
+  architecture / infra / tests / CI / validation-only / other>`
 - Write paths:
   - `<path>`
 - Source of truth:

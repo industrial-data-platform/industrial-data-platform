@@ -172,15 +172,19 @@ Do not use this skill when:
      without explicit user confirmation.
    - Do not run destructive commands or auto-stash user changes unless the user
      explicitly approves that action.
-   - Determine the mainline branch from the repository context, usually `main`,
-     `master`, or `origin/HEAD`.
-   - Before implementation, switch to the mainline branch and pull the latest
+   - Before creating any new branch, check whether the current branch, a local
+     branch, a remote branch, or an open PR already references the issue number.
+   - If an existing branch/PR is clearly the intended issue work branch, reuse
+     it. Switch to it only after dirty-state handling, update it with
+     `git pull --ff-only` when it tracks a remote, and continue there.
+   - If the current clean branch is already the intended issue branch, keep
+     working there and do not switch to mainline just to recreate it.
+   - If no suitable issue branch exists, determine the mainline branch from the
+     repository context, usually `main`, `master`, or `origin/HEAD`.
+   - For a new issue branch, switch to the mainline branch and pull the latest
      changes with a fast-forward-only update: `git switch <mainline>` then
      `git pull --ff-only`.
-   - Before creating a new branch, check for existing local/remote branches or
-     open PRs that already reference the issue number; reuse the right branch
-     when it is clearly the current work branch.
-   - Create a fresh issue branch from the updated mainline branch using:
+   - Create the fresh issue branch from the updated mainline branch using:
      `codex/issue/<issue-number>-<short-slug>`.
    - If the user or repository policy requires another branch prefix, keep the
      `/issue/<issue-number>-<short-slug>` segment in the branch name.
@@ -194,8 +198,16 @@ Do not use this skill when:
      documentation instead of relying on memory.
    - Record the library id/query or docs source checked when it affects an
      implementation choice.
-   - Add or update the smallest useful failing test first.
-   - Run the targeted failing test and confirm it fails for the expected reason.
+   - For behavior or code changes, add or update the smallest useful failing
+     test first.
+   - For docs-only, C4-only, ADR-only, template-only, or validation-only work,
+     establish the relevant baseline validation first instead of inventing an
+     artificial failing unit test.
+   - For contract, schema, storage, or migration changes, add or update a
+     contract fixture, schema check, migration assertion, or integration test
+     before implementation when feasible.
+   - Run the targeted test or baseline validation and confirm it fails or
+     exposes the expected gap when a failing check is appropriate.
    - Implement the minimal scoped change.
    - Rerun the targeted test until it passes.
    - For Python implementation work, use the `python-clean-architecture` skill.
@@ -234,16 +246,20 @@ Do not use this skill when:
    - Record docs/contracts/LikeC4 intentionally unchanged in the PR and issue
      status comment when no durable update is required.
 
-13. Commit, push, and create a PR after implementation.
+13. Publish after implementation when requested.
    - After implementation, required docs/LikeC4 updates, self-review, and
-     successful validation, commit the completed work.
+     successful validation, commit the completed work when the user asked for a
+     commit/push/PR, the issue workflow explicitly requires publication, or the
+     user confirms publication after validation.
    - Stage only files that belong to the issue; never include unrelated dirty
      worktree changes.
    - Use a concise commit message that references the issue number.
-   - Push the issue branch and create a PR that links the issue.
-   - The PR body must include implementation summary, acceptance criteria/test
-     mapping, validation results, docs/contracts/LikeC4/ADR note, and residual
-     risks.
+   - Push the issue branch only when publication is requested or confirmed.
+   - Create or update a PR that links the issue when the user asks for a PR or
+     repository workflow requires one.
+   - When creating or updating a PR, the PR body must include implementation
+     summary, acceptance criteria/test mapping, validation results,
+     docs/contracts/LikeC4/ADR note, and residual risks.
    - If validation is blocked or failing, do not present the PR as ready; create
      a draft PR only when the user wants a visible work-in-progress.
    - Prepare a concise issue comment when useful: what changed, validation
