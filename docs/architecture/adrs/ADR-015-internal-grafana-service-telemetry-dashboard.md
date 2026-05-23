@@ -228,14 +228,26 @@ Grafana Enterprise/Cloud data source permissions вместе с backend-side
 
 ## Рассмотренные варианты
 
-| Вариант | Решение |
-| --- | --- |
-| Набор из общего service overview и отдельного point drilldown dashboard | Принят для ADR. Разводит business overview и графики, минимизирует dashboard sprawl и поддерживает all-tenant обзор без копий на tenant. |
-| Отдельный dashboard на каждого tenant | Отклонено как default. Быстро создает sprawl, усложняет поддержку JSON/provisioning и не решает service overview. |
-| Один график со всеми points всех tenants | Отклонено. Высокая кардинальность, тяжелые scans и низкая читаемость. Нужны filters, aggregate и top-N. |
-| Grafana напрямую читает Config Registry/PostgreSQL для inventory | Отклонено для production default. Config Registry остается transactional source of truth, но dashboard должен читать prepared read models. |
-| Сразу строить custom Web Monitoring Frontend | Отклонено для этого инкремента. Grafana уже является текущим Web Monitoring surface; frontend остается следующим слоем и может ссылаться на dashboards. |
-| Делать это частью Alarm Management Module | Отклонено. Dashboard наблюдает telemetry/status path, но не владеет alarm lifecycle и notification workflow. |
+Decision drivers:
+
+- быстро дать service-команде all-tenant обзор без разработки нового frontend;
+- сохранить `Web Monitoring Module` как read-only visualization boundary;
+- не смешивать telemetry observability и alarm workflow;
+- не создавать dashboard sprawl на каждого tenant/source;
+- не перегрузить ClickHouse/Grafana высококардинальными unbounded series;
+- оставить путь к future tenant-facing UI/API без привязки к internal
+  all-tenant datasource.
+
+| Вариант | Решение | Почему | Trade-off |
+| --- | --- | --- | --- |
+| `Service Telemetry Overview` + `Telemetry Point Drilldown` | Принят | Разделяет business/system overview и графики точек; поддерживает all-tenant статистику, фильтры и guided drilldown без копий dashboard на tenant. | Нужно поддерживать links/variables между двумя dashboards и отдельно тестировать оба JSON. |
+| Один большой service dashboard со статистикой и графиками | Отклонено | Прост в создании, но смешивает обзор и investigation workflow; при росте числа panels становится тяжелым и плохо читаемым. | Меньше файлов, но хуже UX и выше риск тяжелых запросов по умолчанию. |
+| Отдельный dashboard на каждого tenant | Отклонено | Может быть удобен tenant-by-tenant, но не решает all-tenant service overview и быстро создает dashboard sprawl. | Можно использовать позже для curated tenant views, но не как default internal service design. |
+| Один график со всеми points всех tenants | Отклонено | Высокая кардинальность, тяжелые scans и нечитаемая визуализация. Нарушает требование, что `All tenants` остается overview mode. | Самый быстрый прототип, но непригоден как устойчивый dashboard pattern. |
+| Grafana напрямую читает Config Registry/PostgreSQL для inventory | Отклонено для production default | Config Registry остается transactional source of truth; dashboard должен читать prepared ClickHouse/read models, чтобы не нагружать operational store и не смешивать ownership. | Может быть допустимо как temporary dev/debug query, но не как production dashboard dependency. |
+| Сразу строить custom Web Monitoring Frontend | Отклонено для этого инкремента | Полноценный frontend нужен позже для tenant-facing UX и authorization, но текущий запрос — internal service observability, где Grafana уже является принятым surface. | Frontend даст лучший product UX, но дороже и задержит operational visibility. |
+| Делать dashboard частью `Alarm Management Module` | Отклонено | Dashboard наблюдает telemetry/status path и не владеет alarm lifecycle, acknowledgement, escalation или notification routing. | Alarm dashboards могут появиться позже, но это отдельное решение поверх Alarm Management use cases. |
+| Оставить `source_type` свободной строкой без controlled vocabulary | Отклонено как целевое состояние | Для фильтров и cross-protocol статистики нужен стабильный набор protocol/source adapter types. | Внедрение enum в schemas/validation является отдельным contract change, чтобы не смешивать ADR dashboard scope с wire-compatibility изменением. |
 
 ## Последствия
 
