@@ -11,9 +11,14 @@ Output:
 
 - Goal and scope.
 - Out of scope.
+- Module id and change class.
 - Write scopes.
+- Source-of-truth files.
+- Compatibility guardrails.
+- Acceptance criteria.
 - Validation commands.
-- ADR and LikeC4 check.
+- ADR, LikeC4, contracts, docs, and README/runbook check.
+- Open questions and stop conditions.
 
 ## 2. Architecture
 
@@ -22,10 +27,14 @@ Role: `architect`
 Output:
 
 - Decision.
+- Impact classification.
 - Impacted artifacts.
+- Compatibility guardrails.
 - Constraints and risks.
 - `ADR needed` or `ADR not needed`.
 - `LikeC4 update needed` or `LikeC4 update not needed`.
+- Contracts/docs/runbooks action.
+- Validation commands.
 
 ## 3. Issue Readiness
 
@@ -57,7 +66,9 @@ Output:
 
 - Decision: `ready` or `needs changes`.
 - Findings ordered by severity.
+- Open questions or assumptions.
 - Test gaps.
+- Contract/C4/docs drift.
 - Follow-ups.
 
 ## 6. Verification
@@ -70,6 +81,7 @@ Output:
 - Passed checks.
 - Failed checks.
 - Not-run checks and why.
+- Residual risks and next validation.
 
 ## 7. Documentation
 
@@ -79,6 +91,9 @@ Output:
 
 - Docs updated.
 - Docs intentionally unchanged.
+- Source-of-truth files checked.
+- Contract/C4/ADR/README/runbook status.
+- Validation commands and results.
 - User-visible notes.
 
 ## 8. Release
