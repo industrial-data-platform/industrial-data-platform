@@ -24,7 +24,7 @@ the time.
 
 ## Draft / Proposed ADRs
 
-None at the moment.
+- [`ADR-015: Internal Grafana service telemetry dashboards`](ADR-015-internal-grafana-service-telemetry-dashboard.md)
 
 For active architecture navigation, start with
 [`../decisions.md`](../decisions.md), then use:
