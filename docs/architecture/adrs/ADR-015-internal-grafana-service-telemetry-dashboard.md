@@ -106,17 +106,19 @@ source instance внутри agent:
 tenant_id -> asset_id -> source_type -> agent_id -> source_id -> point_key
 ```
 
-Для нового contract increment `source_type` должен стать controlled enum:
+Для будущего contract increment `source_type` должен получить controlled
+vocabulary. Начальные кандидаты для этого vocabulary:
 
 ```text
 knx | modbus | opc-ua | can
 ```
 
-Добавление нового protocol/source adapter требует явного расширения этого enum
-в canonical schemas/contracts и проверки producers/consumers. В текущем ADR это
-фиксируется как архитектурное требование; фактическое изменение JSON Schema,
-Config Registry validation и ClickHouse ingestion guards выполняется отдельным
-contract change.
+Добавление нового protocol/source adapter должно проходить через явное
+расширение canonical schemas/contracts и проверку producers/consumers. В текущем
+ADR это фиксируется как архитектурное направление и candidate vocabulary, а не
+как contract change. Фактическое изменение JSON Schema, Config Registry
+validation, ClickHouse storage type/ingestion guards и compatibility policy
+выполняется отдельным contract change.
 
 `All` допустим для overview/stat panels и bounded top-N таблиц. Для time-series
 панелей `All points` не должен означать unbounded rendering всех series. Если
@@ -341,24 +343,29 @@ Decision drivers:
 
 ## План реализации
 
-1. Согласовать ADR и перевести статус в `accepted`.
-2. Добавить provisioned dashboard JSON для общего overview:
+1. Согласовать ADR.
+2. Перед переводом ADR в `accepted` свернуть активные факты в living docs
+   (`docs/architecture/current-state.md`, `docs/architecture/decisions.md` и
+   релевантные source-of-truth документы), затем переместить полный rationale в
+   `docs/architecture/adrs/archive/` и обновить `decisions.md` на archived
+   rationale path.
+3. Добавить provisioned dashboard JSON для общего overview:
    `infra/local/grafana/dashboards/service-telemetry-overview.json`.
-3. Добавить provisioned dashboard JSON для графиков:
+4. Добавить provisioned dashboard JSON для графиков:
    `infra/local/grafana/dashboards/telemetry-point-drilldown.json`.
-4. Добавить chained variables `tenant_id`, `asset_id`, `source_type`,
+5. Добавить chained variables `tenant_id`, `asset_id`, `source_type`,
    `agent_id`, `source_id`, `point_key`.
-5. Добавить panels первого инкремента поверх существующих ClickHouse views с
+6. Добавить panels первого инкремента поверх существующих ClickHouse views с
    bounded queries и `LIMIT`.
-6. Расширить `tests/integration/test_grafana_clickhouse.py`, чтобы проверять
+7. Расширить `tests/integration/test_grafana_clickhouse.py`, чтобы проверять
    provisioning новых dashboards, datasource UID, variables и отсутствие
    MQTT topic coupling.
-7. Для first increment показывать `observed_points`; `configured_points`
+8. Для first increment показывать `observed_points`; `configured_points`
    включать только после появления current inventory read model.
-8. Перед production hardening добавить contract-backed latest/status/inventory
+9. Перед production hardening добавить contract-backed latest/status/inventory
    read models, read-only ClickHouse datasource profile, query limits и
    миграции Telemetry Store.
-9. После добавления новых ClickHouse tables/views обновить
+10. После добавления новых ClickHouse tables/views обновить
    `docs/contracts/clickhouse/telemetry-store.v1.md`, LikeC4 при изменении
    зависимостей и relevant integration tests.
 
@@ -373,9 +380,9 @@ Decision drivers:
   метрику без current inventory read model.
 - Drilldown dashboard позволяет выбрать `tenant_id`, `asset_id`, `source_type`,
   `agent_id`, `source_id`, `point_key` и посмотреть графики выбранных points.
-- `source_type` зафиксирован как controlled enum candidate
-  `knx | modbus | opc-ua | can`; его внедрение в schemas/validation выполняется
-  отдельным contract change.
+- `source_type` рассматривается как protocol/adapter type; controlled
+  vocabulary candidates `knx | modbus | opc-ua | can` являются входом для
+  отдельного contract change, а не частью первого dashboard increment.
 - Dashboards поставляются из git через provisioning, `editable=false`.
 - Anonymous access выключен в target deployment.
 - Datasource user read-only и ограничен ClickHouse query limits.
@@ -428,3 +435,6 @@ Decision drivers:
   фильтровать/агрегировать данные до join.
 - `query-join-use-any`: `ANY JOIN` подходит для присоединения одной current
   metadata row к telemetry facts.
+- `schema-types-enum`: future finite `source_type` vocabulary должен получить
+  contract-level validation; конкретный ClickHouse storage type остается
+  решением отдельного contract change.
