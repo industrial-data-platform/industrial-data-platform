@@ -11,6 +11,15 @@ assignees: ""
 
 Blocked by: none.
 
+## Technical Context / Impact
+
+- Current behavior/state: TBD
+- Target behavior/state: TBD
+- Technical surface: TBD
+- Contract/storage impact: TBD
+- Architecture/docs impact: TBD
+- Stop conditions: none.
+
 ## Scope
 
 - TBD
@@ -54,7 +63,7 @@ Blocked by: none.
 
 ## Implementation Plan
 
-### Phase 0: Baseline and readiness
+### Phase 0: Source-of-truth and readiness
 
 - TBD
 
@@ -62,11 +71,19 @@ Validation:
 
 - TBD
 
-### Phase 1: Implementation
+### Phase 1: Test or contract baseline
 
 - TBD
 
-### Phase 2: Tests, docs, contracts, and validation
+Validation:
+
+- TBD
+
+### Phase 2: Implementation
+
+- TBD
+
+### Phase 3: Tests, docs, contracts, and validation
 
 - TBD
 - Update docs, contracts, LikeC4, ADR/decision records, package READMEs, or

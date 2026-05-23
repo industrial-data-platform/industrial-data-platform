@@ -2,19 +2,19 @@
 name: issue-planning
 description: >
   MUST USE for creating, drafting, refining, readiness-reviewing, or adapting
-  GitHub issues for agent-driven work in this repository before generic Git or
-  GitHub skills. Use when the desired output is an issue body, issue template,
-  issue readiness review, issue rewrite, or agent-ready task specification. Key
-  triggers: create/write/draft/refine an issue, prepare an issue template, adapt
-  an issue for agents, make an agent-ready issue, review issue readiness,
-  split/scope an issue, define acceptance criteria, "создай issue",
-  "адаптируй issue под агента", "сделай шаблон issue", "подготовь задачу для
-  агента", "составь issue", or similar. Inspect current open/closed issue style
-  when useful, resolve repo context, draft a self-contained issue with
-  ready/done gates, validation, skill selection, visible-plan expectations, and
-  docs/contracts/C4/ADR completion requirements. Do not use when the user asks
-  to implement, take, fix, or work on an existing issue; use issue-workflow for
-  that. Do not use for general GitHub issue summaries; use github:github.
+  technical GitHub issues for agent-driven development in this repository
+  before generic Git or GitHub skills. Use for issue bodies, templates,
+  readiness reviews, rewrites, or agent-ready specs for Industrial Data
+  Platform, Edge Telemetry Agent, Web Monitoring, Alarm Management, contracts,
+  architecture, infra, docs, or tests. Key triggers:
+  create/write/draft/refine an issue, adapt an issue for agents, split/scope an
+  issue, define acceptance criteria, "создай issue", "адаптируй issue под
+  агента", "сделай шаблон issue", "подготовь задачу для агента", "составь
+  issue", or similar. Draft a self-contained technical execution brief with
+  module impact, source-of-truth docs, validation, skill selection, visible-plan
+  expectations, and docs/contracts/C4/ADR requirements. Do not use
+  for issue implementation; use issue-workflow. Do not use for sales proposals,
+  commercial offers, pricing, product marketing, or general GitHub summaries.
 ---
 
 # Issue Planning
@@ -75,6 +75,50 @@ they include:
 - Completion comments that link PRs, summarize delivered scope, list validation
   evidence, and name residual risks.
 
+## Repository Technical Context
+
+Treat an issue as a technical execution brief for this monorepo, not as a
+generic proposal. The useful context is:
+
+- Which system or module changes: `industrial_data_platform`,
+  `edge_telemetry_agent`, `web_monitoring_module`, `alarm_management_module`,
+  `demo_and_knx_tooling`, docs-only, or cross-cutting C4.
+- Which technical surface changes: runtime behavior, public API, MQTT/Kafka
+  contract, ClickHouse/PostgreSQL storage, edge SQLite state, config model,
+  local infrastructure, Grafana/read model, LikeC4 architecture, README/docs,
+  tests, or CI/validation.
+- Which source of truth wins: `docs/contracts/` first for wire/storage details,
+  then `arch/likec4/`, then `docs/architecture/current-state.md`,
+  `glossary.md`, `open-questions.md`, `decisions.md`, and package docs.
+- Which compatibility identifiers must be preserved: `idp.*`, `idp/v1`,
+  stable Python package/import/entrypoint names, Docker service/image names,
+  ClickHouse table/view names, migration filenames, and contract ids.
+- What evidence proves done: targeted tests, integration tests, schema/contract
+  validation, `cd arch && npm run validate`, docs-site build, compose config,
+  or a clear "not automated" rationale.
+
+Do not add commercial sections such as pricing, product packages, buyer proof,
+discounts, offer validity, tax, VAT, or procurement terms. If business context
+matters, reduce it to technical motivation and acceptance criteria.
+
+## Technical Impact Classification
+
+Before drafting, classify the task with this checklist:
+
+1. Module and ownership: choose module ids and write paths from
+   `docs/agents/module-map.yaml`.
+2. Current behavior and target behavior: name the existing code, contract,
+   data flow, or doc state and the desired durable outcome.
+3. Contract/storage impact: MQTT, Kafka, ClickHouse, PostgreSQL, edge SQLite,
+   JSON schemas, migrations, producers, consumers, or no contract impact.
+4. Architecture impact: LikeC4, module boundaries, deployment paths, runtime
+   ownership, ADR/decision register, or "architecture unchanged".
+5. Validation impact: exact commands from `module-map.yaml`, plus integration,
+   docs, C4, compose, or link/reference checks.
+6. Stop conditions: breaking compatibility, source-of-truth conflict, unclear
+   owner, destructive migration, missing external docs decision, or user
+   approval needed.
+
 ## Question Policy
 
 - Ask the user only for decisions that block a correct issue: scope boundary,
@@ -102,11 +146,20 @@ they include:
 2. Resolve repository context before drafting.
    - Read `AGENTS.md`, `docs/agents/module-map.yaml`, and relevant scoped
      `AGENTS.md` files for likely paths.
+   - Read `docs/architecture/current-state.md` and `docs/architecture/decisions.md`
+     when module boundaries, current platform state, or product direction affect
+     the task.
+   - Read relevant `docs/contracts/` files before drafting requirements that
+     mention MQTT, Kafka, ClickHouse, edge config, edge SQLite state, schemas,
+     migrations, producers, or consumers.
    - Identify affected modules, write paths, source-of-truth docs, architecture
      model files, contracts, and compatibility identifiers before writing
      requirements.
    - If the work touches contracts, ClickHouse, Kafka, MQTT, C4, ADRs, runtime
      modules, or deployment topology, name the specialist skill to use.
+   - Avoid importing generic business proposal structure into technical issues.
+     Keep business motivation short and translate it into observable technical
+     behavior, constraints, and validation.
 
 3. Ask blocking questions before drafting when needed.
    - If the request is not ready, ask only the questions required to make the
@@ -120,6 +173,8 @@ they include:
      new issue, a template, or an agent-adapted rewrite.
    - Keep the issue self-contained enough that a new agent can start without
      relying on chat history.
+   - Include a `Technical Context / Impact` section when the task changes code,
+     contracts, infrastructure, architecture, or durable docs.
    - Make the implementation phases short and concrete enough to translate into
      a visible task plan in the Codex side panel.
    - Prefer concrete paths, commands, table/topic names, issue links, and
@@ -186,6 +241,7 @@ they include:
 - Issue title.
 - Issue body or changed sections.
 - Affected modules and source-of-truth docs used.
+- Technical impact classification and stop conditions.
 - Recommended repo-local and system/session skills for the future executor.
 - Required validation commands.
 - Docs/contracts/LikeC4/ADR completion expectations.

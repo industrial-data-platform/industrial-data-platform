@@ -1,7 +1,7 @@
 interface:
   display_name: "Issue Workflow"
-  short_description: "Implement existing repository issues"
-  default_prompt: "Use $issue-workflow to implement an existing issue in this repository."
+  short_description: "Implement technical issues safely"
+  default_prompt: "Use $issue-workflow to implement an existing technical issue in this repository."
 
 policy:
   allow_implicit_invocation: true

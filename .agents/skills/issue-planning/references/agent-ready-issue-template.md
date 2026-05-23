@@ -24,6 +24,20 @@ issues, PRs, incidents, or user requests.>
 
 Blocked by: <issue/PR/decision, or "none">.
 
+## Technical Context / Impact
+
+- Current behavior/state: <code path, contract, data flow, diagram, doc, or
+  test state today.>
+- Target behavior/state: <durable technical outcome after this issue.>
+- Technical surface: <runtime/API/MQTT/Kafka/ClickHouse/PostgreSQL/SQLite/
+  config/infra/Grafana/LikeC4/docs/tests/CI.>
+- Contract/storage impact: <affected contract ids, topics, schemas, tables,
+  migrations, producers, consumers, or "none".>
+- Architecture/docs impact: <LikeC4, ADR/decision register, current-state,
+  README, runbook, or "none".>
+- Stop conditions: <breaking compatibility, source-of-truth conflict,
+  destructive migration, unclear owner, or "none".>
+
 ## Scope
 
 - <Deliverable or behavior in scope.>
@@ -71,21 +85,30 @@ Blocked by: <issue/PR/decision, or "none">.
 
 ## Implementation Plan
 
-### Phase 0: Baseline and readiness
+### Phase 0: Source-of-truth and readiness
 
-- <Confirm blockers, source-of-truth docs, current tests, data shape, or local
-  stack state.>
+- <Confirm blockers, source-of-truth docs, current behavior, current tests,
+  data shape, compatibility identifiers, or local stack state.>
 
 Validation:
 
 - `<command>`
 
-### Phase 1: <Implementation increment>
+### Phase 1: Test or contract baseline
+
+- <Add/update the smallest useful failing test, contract fixture, schema check,
+  migration assertion, C4 expectation, or docs validation target.>
+
+Validation:
+
+- `<command>`
+
+### Phase 2: <Implementation increment>
 
 - <Smallest meaningful implementation step.>
 - <Expected tests or assertions.>
 
-### Phase 2: Tests, docs, contracts, and validation
+### Phase 3: Tests, docs, contracts, and validation
 
 - <Next scoped step.>
 - <Update docs, contracts, LikeC4, ADR/decision records, package READMEs, or

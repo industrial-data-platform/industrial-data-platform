@@ -71,9 +71,20 @@ Do not use this skill when:
 2. Review readiness before coding.
    - Use the architect role to check boundaries, contracts, C4, deployment,
      ADR impact, module ownership, and compatibility identifiers.
+   - Make a short technical impact pass:
+     module id, write paths, current behavior, target behavior, contract/storage
+     impact, architecture impact, docs impact, validation commands, and stop
+     conditions.
    - Use existing LikeC4 model context as architecture input, especially
      systems, containers, relationships, deployment views, and ownership
      boundaries for the affected module.
+   - Read `docs/architecture/current-state.md` and
+     `docs/architecture/decisions.md` when the task touches module boundaries,
+     current platform state, pilot direction, or accepted architectural
+     decisions.
+   - Read relevant `docs/contracts/` files before changing MQTT, Kafka,
+     ClickHouse, edge config, edge SQLite state, schemas, migrations, producers,
+     or consumers.
    - Use the docs role to check whether README, contracts, C4, ADRs, guides,
      or user-facing notes will need updates.
    - Use the reviewer role to identify likely regressions, missing acceptance
@@ -94,6 +105,12 @@ Do not use this skill when:
    - Prefer repo-local skills for repository-specific rules:
      `issue-workflow`, `industrial-data-contracts`, and
      `platform-architecture-change`.
+   - Use `industrial-data-contracts` when the technical impact pass includes
+     MQTT, Kafka, ClickHouse, edge config, edge SQLite state, schemas,
+     migrations, producers, consumers, or contract tests.
+   - Use `platform-architecture-change` when the impact pass includes LikeC4,
+     module boundaries, ownership, deployment views, ADRs, or a new runtime
+     package.
    - Add system/session skills for general specialist work such as external
      library docs (`context7`), Python architecture/testing, LikeC4 syntax,
      frontend/browser verification, security scans, GitHub workflows, or
