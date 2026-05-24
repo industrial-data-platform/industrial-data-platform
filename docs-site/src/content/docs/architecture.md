@@ -24,6 +24,14 @@ The current system boundary is:
 - `docs/architecture/glossary.md`: canonical terms and boundaries.
 - `docs/architecture/open-questions.md`: live unresolved product and operations
   decisions.
+- `docs/architecture/hierarchical-catalog-v1.md`: working plan for the first
+  tree projection inside the Asset Graph Registry boundary.
+- `docs/architecture/adrs/ADR-016-asset-graph-registry-boundary.md`:
+  accepted boundary decision for the separate Asset Graph
+  Registry service/package.
+- `docs/architecture/adrs/ADR-015-hierarchical-catalog-runtime-boundary.md`:
+  superseded comparison material for the Catalog V1 versus Asset Graph
+  boundary discussion.
 - `arch/README.md`: LikeC4 model entrypoint and commands.
 
 ## Rules

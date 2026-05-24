@@ -1,9 +1,31 @@
 model {
     extend industrial-data-platform {
         idp-config-registry = container 'idp_config_registry' {
-            description 'Первый backend-срез Config Registry из apps/idp_config_registry: хранит tenants, assets, agents, sources, points и agent runtime/source config revisions в PostgreSQL. Auth, alarm, telemetry read API и frontend boundary фиксируются отдельными ADR.'
+            description 'Первый backend-срез Config Registry из apps/idp_config_registry: хранит tenants, assets, agents, sources, points и agent runtime/source config revisions в PostgreSQL. Asset Graph Registry является отдельным service/package boundary по ADR-016. Auth, alarm, telemetry read API и frontend boundary фиксируются отдельными решениями.'
             technology 'apps/idp_config_registry / FastAPI async / SQLAlchemy / PostgreSQL'
             icon bootstrap:server
+
+            config-registry-api = component 'Config Registry API / Use Cases' {
+                description 'FastAPI/application use case boundary для registry entities и config rendering. Использует public codes в HTTP/domain surface и остается source для tenant/asset/agent/source/point lookup.'
+                technology 'FastAPI routers / application use cases'
+                icon bootstrap:braces
+            }
+
+            backoffice-admin-ui = component 'Backoffice Admin UI' {
+                description 'Internal SQLAdmin surface для Config Registry admin workflows. Asset Graph Registry tree/graph authoring относится к отдельному Next.js/React admin app.'
+                technology 'SQLAdmin / internal_mode / Playwright-covered browser workflow'
+                icon bootstrap:window-sidebar
+            }
+
+            service-engineer -> backoffice-admin-ui 'Использует internal backoffice для registry admin flows'
+
+            config-rendering = component 'Config Rendering / Outbox Boundary' {
+                description 'Собирает agent runtime/source config revisions и создает transactional config_outbox records для Kafka-first delivery.'
+                technology 'Application use cases / JSON Schema validation / transactional outbox'
+                icon bootstrap:file-earmark-code
+
+                -> platform-store 'Пишет rendered config revisions и config_outbox'
+            }
 
             -> platform-store 'Читает и изменяет tenants, assets, agents, sources, points и config revisions в PostgreSQL'
         }

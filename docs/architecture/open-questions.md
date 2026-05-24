@@ -46,8 +46,8 @@
   `Platform Store`, `Config Registry` и shared IAM остается следующей фазой
   развития поверх текущего `MVP`.
 - `Web Monitoring Module` и `Alarm Management Module` развиваются как отдельные
-  модули поверх data platform; старый `Monitoring & Alarm Platform` больше не
-  используется как имя центральной системы.
+  модули поверх data platform; прежнее имя центральной системы больше не
+  используется.
 
 ## Что принято в рабочих материалах по пилоту `KNX -> OPC`
 
@@ -81,8 +81,53 @@
 
 ## Следующий срез Industrial Data Platform и модулей
 
+`Asset Graph Registry` принят в
+`docs/architecture/adrs/ADR-016-asset-graph-registry-boundary.md` как
+отдельный service/package boundary внутри `Industrial Data Platform`, а не
+embedded slice внутри `Config Registry`. `Catalog V1` является первым tree
+projection внутри этой boundary, а не конечной самостоятельной моделью. Первый
+источник изменений — ручной internal admin workflow; ETS/KNX, OPC UA,
+synthetic generator и discovery/import остаются будущими источниками.
+V1 implementation baseline принят: existing Python/FastAPI service conventions,
+SQLAlchemy/Alembic, PostgreSQL/Platform Store and dedicated internal
+`Next.js` / `React` / `Ant Design Admin` app. Graph database, search/index,
+RDF/SPARQL, ontology runtime или другой admin/UI stack требуют отдельного
+technology ADR перед введением.
+
+Кандидат для ближайшего совместного обсуждения Industrial Data Platform / Web Monitoring:
+решить, должен ли первый срез после `Config Registry` быть read-only
+`latest/history` telemetry API поверх уже существующих ClickHouse read models
+`telemetry_latest_v1` и `telemetry_events_dedup_v1`. Материал к обсуждению для
+встречи: `docs/architecture/read-only-telemetry-api-discussion.md`.
+
+Если команда выбирает этот путь, следующее архитектурное решение должно
+зафиксировать отдельную tenant-facing read API boundary для `Web Monitoring
+Module`, а не расширять `Config Registry` до telemetry/alarm API. Возможный
+local/dev API surface для обсуждения:
+
+- `GET /health`
+- `GET /ready`
+- `GET /v1/tenants/{tenant_code}/telemetry/latest`
+- `GET /v1/tenants/{tenant_code}/telemetry/history`
+
+До отдельного auth/RBAC решения `tenant_code` в этом candidate API surface
+является явным local/dev input, а не результатом аутентифицированного контекста.
+API/backoffice/domain используют `*_code`; `tenant_id` остается wire/storage
+identity для Edge/Kafka/MQTT/ClickHouse.
+
+Alarm workflow обсуждается рядом, но остается отдельным slice и будущим
+решением `Alarm Management Module`: минимальный lifecycle (`active/raised`,
+`acknowledged`, `cleared/resolved`, `severity`) уже обозначен в рабочих
+материалах, но rule types, PostgreSQL current state, writer в
+`alarm_history_events_v1`, operator workflow и notification policy еще не
+зафиксированы. Operator UI, config rollout, auth/RBAC и write-back/control
+также остаются отдельными открытыми вопросами.
+
 | Вопрос | Почему это важно | Степень блокировки |
 | --- | --- | --- |
+| Какой минимальный Brick/Haystack/RealEstateCore vocabulary profile входит в первый Asset Graph implementation PR? | `ADR-016` выбирает готовые building ontologies как source, но первый PR должен ограничить конкретные term codes, relation types и seed data | Средняя |
+| Какая глубина первого Asset Graph Admin UI на `Next.js` / `React` / `Ant Design Admin` нужна для ручного наполнения: минимальные формы, tree editor или use-case driven admin flow? | Первый источник изменений уже выбран как ручной internal admin workflow, но UX depth влияет на размер PR и Playwright coverage | Средняя |
+| Когда V1 baseline станет недостаточным и потребуется graph/search/RDF/ontology technology ADR? | `ADR-016` разрешает первый implementation PR на existing Python/FastAPI, SQLAlchemy/Alembic, PostgreSQL and `Next.js` / `React` / `Ant Design Admin` baseline; новые infrastructure classes требуют load/use-case proof и отдельного решения | Средняя |
 | Какие конкретные API/use cases входят в первый tenant-facing API после `Config Registry`: telemetry read, config rollout, Web Monitoring read API или Alarm Management workflow API? | Data platform, Web Monitoring и Alarm Management разделены, поэтому следующий API contract должен явно назвать ownership | Высокая |
 | Где фиксируется `Redpanda Connect` pipeline config: в platform repository, IaC, Redpanda Cloud-managed pipeline или отдельном operations bundle? | MQTT input, mapping/transform и redpanda output становятся частью production data path, поэтому конфигурация pipeline должна быть версионирована и управляться так же строго, как edge source config | Высокая |
 | Нужно ли переходить с локального `Apache Kafka` broker runtime на `Redpanda broker`? | Apache Kafka остается локальным baseline; Redpanda broker требует отдельный compatibility PoC, чтобы не смешивать broker migration с connector/runtime cleanup | Средняя |

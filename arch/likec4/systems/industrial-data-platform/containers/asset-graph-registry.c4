@@ -1,0 +1,33 @@
+model {
+    extend industrial-data-platform {
+        asset-graph-registry = container 'Asset Graph Registry' {
+            description 'Отдельный service/package boundary Industrial Data Platform по ADR-016: хранит asset graph nodes, tree projections, semantic relations, logical attributes и telemetry bindings. Первый источник изменений — internal admin UI.'
+            technology 'Python/FastAPI / SQLAlchemy / Alembic / PostgreSQL / Next.js / React / Ant Design Admin'
+            icon bootstrap:diagram-3
+
+            asset-graph-api = component 'Asset Graph Registry API / Use Cases' {
+                description 'FastAPI/application use case boundary для asset graph nodes, default tree projection, logical attributes, relations и telemetry bindings. Использует public codes в HTTP/domain surface.'
+                technology 'FastAPI routers / application use cases'
+                icon bootstrap:braces
+
+                -> industrial-data-platform.idp-config-registry 'Проверяет tenant, asset, agent, source и point public-code references через internal lookup boundary'
+            }
+
+            ontology-profile = component 'Building Ontology Profile' {
+                description 'Curated Brick/Haystack/RealEstateCore vocabulary subset для relation types, attribute semantics и authoring validation; full ontology tooling остается future scope.'
+                technology 'Curated vocabulary profile'
+                icon bootstrap:tags
+            }
+
+            asset-graph-backoffice = component 'Asset Graph Admin UI' {
+                description 'Internal admin frontend для ручного создания, редактирования, move и validation asset graph nodes и catalog projection nodes до появления automatic importers. Работает через Asset Graph Registry API/use cases.'
+                technology 'Next.js / React / Ant Design Admin / Playwright'
+                icon bootstrap:window-sidebar
+
+                -> asset-graph-api 'Вызывает Asset Graph Registry API/use cases для manual authoring commands'
+            }
+
+            service-engineer -> asset-graph-backoffice 'Вручную создает и поддерживает asset graph nodes, tree projection nodes, relations и telemetry bindings'
+        }
+    }
+}

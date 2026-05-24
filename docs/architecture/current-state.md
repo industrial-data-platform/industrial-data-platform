@@ -5,8 +5,9 @@
 
 Этот документ является коротким operational snapshot для людей и AI-agent.
 Он описывает текущее состояние системы без истории решений. Активные решения
-сведены в `docs/architecture/decisions.md`; полные ADR остаются архивным
-rationale в `docs/architecture/adrs/archive/`.
+сведены в `docs/architecture/decisions.md`; принятые исторические ADR остаются
+архивным rationale в `docs/architecture/adrs/archive/`, а proposed ADR могут
+жить рядом с `docs/architecture/adrs/README.md` до решения команды.
 
 ## Статус MVP
 
@@ -97,6 +98,15 @@ surface как первый `Web Monitoring Module` surface.
   data-platform backend: authn/authz, richer revision workflow, rollout controls,
   approval/publish process и API boundaries beyond current internal/backoffice
   scope.
+- `Asset Graph Registry` принят как отдельный future
+  service/package boundary внутри `Industrial Data Platform`, а не embedded
+  slice внутри `Config Registry`. Первый implementation slice — ручной internal
+  admin workflow на `Next.js` / `React` / `Ant Design Admin` для минимальных
+  asset graph nodes, default tree projection, registry point references и
+  подготовленной модели telemetry bindings. Первый implementation PR может идти
+  на accepted baseline: Python/FastAPI-style service conventions,
+  SQLAlchemy/Alembic, PostgreSQL/Platform Store и dedicated internal admin app;
+  graph/search/RDF/ontology runtime требует отдельного technology ADR.
 - Tenant-facing UI для редактирования agent runtime/source config. На текущем этапе
   source of truth уже переехал в `Config Registry`/`PostgreSQL`, а versioned
   YAML bundle остается import/bootstrap path; полноценный внешний UI и workflow
@@ -151,7 +161,7 @@ surface как первый `Web Monitoring Module` surface.
 | --- | --- |
 | Текущий снимок системы | `docs/architecture/current-state.md` |
 | Активные архитектурные решения | `docs/architecture/decisions.md` |
-| История решений и trade-off | `docs/architecture/adrs/archive/` |
+| Proposed/исторические ADR и trade-off | `docs/architecture/adrs/`, `docs/architecture/adrs/archive/` |
 | Карта систем и контейнеров | `arch/likec4/` |
 | Термины | `docs/architecture/glossary.md` |
 | Открытые вопросы | `docs/architecture/open-questions.md` |
@@ -178,6 +188,9 @@ surface как первый `Web Monitoring Module` surface.
    `docs/contracts/kafka/`.
 8. Для backend хранения настроек платформы: `apps/idp_config_registry/README.md`
    и `docs/contracts/edge-telemetry-agent/config-revision-model.md`.
+   Для Asset Graph Registry boundary:
+   `docs/architecture/hierarchical-catalog-v1.md` и
+   `docs/architecture/adrs/ADR-016-asset-graph-registry-boundary.md`.
 9. Для deployment parity, cloud-first pilot, `OPC UA` read-only track и internal
    execution backlog: этот документ, `solution-architecture.md` и
    `open-questions.md`.
@@ -199,4 +212,17 @@ ADR объясняет решение, но не заменяет contract regis
   authoring workflow;
 - concrete `VK Cloud` vs `Yandex Cloud` choice, managed-service packaging and
   secrets backend for the cloud-first pilot;
-- production host/deployment model для edge runtime.
+- production host/deployment model для edge runtime;
+- первый implementation PR для accepted `Asset Graph Registry`:
+  узкий service/package skeleton для manual internal admin authoring,
+  минимальных asset graph nodes, tree projection, registry point refs и
+  prepared telemetry bindings на accepted Python/FastAPI,
+  SQLAlchemy/Alembic/PostgreSQL и `Next.js` / `React` /
+  `Ant Design Admin` baseline; отдельный technology ADR нужен только для
+  отклонения от baseline или добавления graph/search/RDF/ontology runtime;
+- кандидат для следующего Industrial Data Platform / Web Monitoring обсуждения: нужен ли
+  read-only `latest/history` API поверх существующих ClickHouse views
+  `telemetry_latest_v1` и `telemetry_events_dedup_v1`; это отдельная
+  tenant-facing read API boundary, не расширение `Config Registry`, и она не
+  включает UI, alarm workflow, RBAC или write-back/control. Материал к обсуждению:
+  `docs/architecture/read-only-telemetry-api-discussion.md`.

@@ -17,4 +17,21 @@ views 'Developed Systems / Industrial Data Platform' {
             edge-telemetry-agent, service-engineer
         }
     }
+
+    view c3-asset-graph-registry-authoring of industrial-data-platform.asset-graph-registry {
+        title 'C3 Asset Graph Registry Authoring'
+        description 'Компонентная декомпозиция Asset Graph Registry: internal Next.js/React admin UI вручную создает asset graph nodes, tree projection nodes, relations и telemetry bindings через API, а API проверяет registry public-code references через Config Registry.'
+
+        include *
+        include industrial-data-platform.idp-config-registry
+        include service-engineer
+
+        style industrial-data-platform.asset-graph-registry {
+            color primary
+        }
+
+        rank source {
+            service-engineer
+        }
+    }
 }
