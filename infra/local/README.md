@@ -15,9 +15,10 @@ foundation и первого `Web Monitoring Module` surface.
   `Kafka edge configs -> Kafka source configs`
 - поднять `ClickHouse` как локальный `Telemetry Store` foundation
 - поднять `PostgreSQL` как локальный `Platform Store` foundation для
-  `Config Registry`
+  `Config Registry` и `Asset Graph Registry`
 - поднять `Config Registry API` как отдельный backend-контейнер
 - поднять `Config Registry Outbox Worker` как отдельный worker-контейнер
+- поднять `Asset Graph Registry API` как отдельный backend-контейнер
 - поднять `Kafka Connect` с `ClickHouse Kafka Connect Sink`
 - поднять `Grafana` как локальный `Web Monitoring Module` surface с
   provisioned ClickHouse datasource/dashboard
@@ -35,8 +36,8 @@ connector runtime для MQTT/Kafka projection. Активное решение 
 Ownership в этом stack:
 
 - `Industrial Data Platform`: MQTT/Kafka ingestion, Redpanda Connect
-  pipelines, Kafka Connect, ClickHouse, PostgreSQL, Config Registry API и
-  Config Registry Outbox Worker.
+  pipelines, Kafka Connect, ClickHouse, PostgreSQL, Config Registry API,
+  Config Registry Outbox Worker и Asset Graph Registry API.
 - `Web Monitoring Module`: Grafana datasource/dashboard поверх ClickHouse read
   models.
 - `Demo/integration glue`: seed/publish helpers из `idp-demo-stack`.
@@ -59,6 +60,8 @@ Ownership в этом stack:
 - `clickhouse` — локальный `ClickHouse` для пути
   `Kafka -> Kafka Connect -> ClickHouse` и read models для Grafana
 - `postgres` — локальный `PostgreSQL` для `Config Registry`
+- `idp-asset-graph-registry` — FastAPI backend контейнер для ADR-016
+  Asset Graph Registry internal API и Catalog V1 tree projection
 - `idp-config-registry` — FastAPI backend контейнер для registry write/read API
 - `idp-config-registry-outbox-worker` — отдельный worker-контейнер, который
   непрерывно публикует `config_outbox` records в
@@ -92,8 +95,10 @@ ClickHouse и Grafana описан в
 
 `up-platform.sh` делает три шага подряд:
 
-- пересобирает локальные image `idp-config-registry`, `grafana`, `kafka-connect`
-- выполняет one-shot Alembic migrations для `Config Registry`
+- пересобирает локальные image `idp-config-registry`,
+  `idp-asset-graph-registry`, `grafana`, `kafka-connect`
+- выполняет one-shot Alembic migrations для `Config Registry` и
+  `Asset Graph Registry`
 - поднимает полный platform slice через `docker compose up -d`
 
 После старта сначала удобно открыть browser/UI поверхности:
@@ -101,6 +106,7 @@ ClickHouse и Grafana описан в
 - `Config Registry API`: [http://localhost:8000](http://localhost:8000)
 - `Config Registry Backoffice`: [http://localhost:8000/backoffice](http://localhost:8000/backoffice)
   доступен только когда `CONFIG_REGISTRY_INTERNAL_MODE=true`
+- `Asset Graph Registry API`: [http://localhost:8010](http://localhost:8010)
 - `Kafka UI`: [http://localhost:8080](http://localhost:8080)
 - `MQTTX Web`: [http://localhost:8081](http://localhost:8081)
 - `Grafana`: [http://localhost:3000](http://localhost:3000)
@@ -123,6 +129,7 @@ ClickHouse и Grafana описан в
 - `ClickHouse HTTP`: [http://localhost:8123](http://localhost:8123)
 - `ClickHouse native`: `localhost:9000`
 - `PostgreSQL`: `localhost:5432`
+- `Asset Graph Registry API`: [http://localhost:8010](http://localhost:8010)
 
 Credentials и переменные окружения:
 

@@ -4,6 +4,7 @@ version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
     "edge-telemetry-agent",
+    "idp-asset-graph-registry",
     "knx-demo",
     "idp-config-registry",
     "knx-project-parser",
@@ -36,6 +37,7 @@ package = false
 
 [tool.uv.sources]
 edge-telemetry-agent = { workspace = true }
+idp-asset-graph-registry = { workspace = true }
 knx-demo = { workspace = true }
 idp-config-registry = { workspace = true }
 knx-project-parser = { workspace = true }
@@ -69,6 +71,7 @@ line-length = 88
 target-version = "py312"
 src = [
     "apps/edge_telemetry_agent/src",
+    "apps/idp_asset_graph_registry/src",
     "apps/knx_demo/src",
     "apps/idp_config_registry/src",
     "apps/knx_source_emulator/src",
@@ -87,6 +90,7 @@ branch = true
 relative_files = true
 source = [
     "apps/edge_telemetry_agent/src/edge_telemetry_agent",
+    "apps/idp_asset_graph_registry/src/idp_asset_graph_registry",
     "apps/knx_demo/src/knx_demo",
     "apps/idp_config_registry/src/idp_config_registry",
     "libs/knx_project_parser/src/knx_project_parser",

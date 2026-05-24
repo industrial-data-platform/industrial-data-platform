@@ -66,9 +66,14 @@ surface как первый `Web Monitoring Module` surface.
 - `Config Registry` foundation: FastAPI backend на clean architecture,
   PostgreSQL persistence, Alembic migrations, transactional outbox и Kafka
   config delivery publisher.
+- `Asset Graph Registry` foundation: отдельный FastAPI backend/package
+  `apps/idp_asset_graph_registry` на clean architecture с собственными
+  Alembic migrations, PostgreSQL tables, internal API для asset graph nodes,
+  default Catalog V1 tree projection, relation vocabulary и prepared telemetry
+  bindings.
 - Local development stack: MQTT broker, Apache Kafka, Redpanda Connect
-  ingestion/config projection pipelines, PostgreSQL, ClickHouse, Kafka Connect
-  и provisioned Grafana.
+  ingestion/config projection pipelines, PostgreSQL, ClickHouse, Kafka Connect,
+  Asset Graph Registry API и provisioned Grafana.
 - `Kafka Event Log` зафиксирован как логический Kafka-compatible event stream:
   локальный broker runtime сейчас `Apache Kafka`, а `Redpanda broker` остается
   candidate после отдельного compatibility PoC.
@@ -98,15 +103,14 @@ surface как первый `Web Monitoring Module` surface.
   data-platform backend: authn/authz, richer revision workflow, rollout controls,
   approval/publish process и API boundaries beyond current internal/backoffice
   scope.
-- `Asset Graph Registry` принят как отдельный future
-  service/package boundary внутри `Industrial Data Platform`, а не embedded
-  slice внутри `Config Registry`. Первый implementation slice — ручной internal
-  admin workflow на `Next.js` / `React` / `Ant Design Admin` для минимальных
-  asset graph nodes, default tree projection, registry point references и
-  подготовленной модели telemetry bindings. Первый implementation PR может идти
-  на accepted baseline: Python/FastAPI-style service conventions,
-  SQLAlchemy/Alembic, PostgreSQL/Platform Store и dedicated internal admin app;
-  graph/search/RDF/ontology runtime требует отдельного technology ADR.
+- `Asset Graph Registry` принят как отдельный service/package boundary внутри
+  `Industrial Data Platform`, а не embedded slice внутри `Config Registry`.
+  Первый backend implementation slice добавляет `apps/idp_asset_graph_registry`
+  для минимальных asset graph nodes, default tree projection, registry
+  references и подготовленной модели telemetry bindings. Dedicated internal
+  admin workflow на `Next.js` / `React` / `Ant Design Admin` остается
+  следующим issue; graph/search/RDF/ontology runtime требует отдельного
+  technology ADR.
 - Tenant-facing UI для редактирования agent runtime/source config. На текущем этапе
   source of truth уже переехал в `Config Registry`/`PostgreSQL`, а versioned
   YAML bundle остается import/bootstrap path; полноценный внешний UI и workflow

@@ -10,6 +10,7 @@ from idp_config_registry.api.routers import (
     agents,
     assets,
     health,
+    internal_lookup,
     points,
     sources,
     tenants,
@@ -64,6 +65,7 @@ def create_app(
         )
     )
     app.include_router(health.router)
+    app.include_router(internal_lookup.router)
     app.include_router(tenants.router)
     app.include_router(assets.router)
     app.include_router(agents.router)

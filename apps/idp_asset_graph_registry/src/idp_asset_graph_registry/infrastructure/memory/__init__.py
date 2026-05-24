@@ -1,0 +1,2 @@
+"""In-memory infrastructure adapters."""
+

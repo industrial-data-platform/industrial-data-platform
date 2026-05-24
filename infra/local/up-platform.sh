@@ -20,6 +20,7 @@ compose() {
 }
 
 compose build \
+  idp-asset-graph-registry \
   idp-config-registry \
   grafana \
   kafka-connect
@@ -28,6 +29,9 @@ compose up -d --remove-orphans postgres
 
 compose run --rm --no-deps idp-config-registry \
   alembic -c apps/idp_config_registry/alembic.ini upgrade head
+
+compose run --rm --no-deps idp-asset-graph-registry \
+  alembic -c apps/idp_asset_graph_registry/alembic.ini upgrade head
 
 compose up -d --remove-orphans \
   mqtt-broker \
@@ -38,6 +42,7 @@ compose up -d --remove-orphans \
   redpanda-connect-source-config-snapshot \
   clickhouse \
   postgres \
+  idp-asset-graph-registry \
   idp-config-registry \
   idp-config-registry-outbox-worker \
   kafka-connect \

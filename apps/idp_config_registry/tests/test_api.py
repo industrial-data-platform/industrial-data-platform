@@ -12,6 +12,41 @@ def test_health_and_ready_endpoints() -> None:
     assert client.get("/ready").json() == {"status": "ready"}
 
 
+def test_internal_reference_lookup_uses_public_codes() -> None:
+    client = TestClient(create_app())
+    client.post("/tenants", json={"tenant_code": "tenant-a", "name": "Tenant A"})
+    client.post(
+        "/tenants/tenant-a/assets",
+        json={"asset_code": "asset-a", "name": "Asset A"},
+    )
+
+    response = client.get(
+        "/internal/registry/reference-lookup",
+        params={
+            "reference_type": "asset",
+            "tenant_code": "tenant-a",
+            "asset_code": "asset-a",
+        },
+    )
+    missing_response = client.get(
+        "/internal/registry/reference-lookup",
+        params={
+            "reference_type": "asset",
+            "tenant_code": "tenant-a",
+            "asset_code": "missing",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "valid"
+    assert response.json()["snapshot_json"] == {
+        "tenant_code": "tenant-a",
+        "asset_code": "asset-a",
+    }
+    assert missing_response.status_code == 200
+    assert missing_response.json()["status"] == "stale"
+
+
 def test_openapi_uses_code_path_parameter_names() -> None:
     client = TestClient(create_app())
 
