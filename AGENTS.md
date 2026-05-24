@@ -69,6 +69,56 @@ old product boundary name.
 - For external libraries or service APIs, verify current docs before changing
   version-sensitive code.
 
+## Architecture Docs And Review Hygiene
+
+Use these rules to keep reviews focused on substance instead of documentation
+process cleanup:
+
+- Do not put project-management, repository-transfer, GitHub organization,
+  credential, or onboarding checklist docs under `docs/architecture/` unless
+  they describe product/runtime architecture. Architecture docs should not carry
+  one-off operational migration notes.
+- Keep `decisions.md` as the only compact register of accepted decisions.
+  Draft/proposed ADRs may live under `docs/architecture/adrs/`, but their title
+  and status must clearly say draft/proposed/not accepted until `decisions.md`
+  has a matching accepted entry. Accepted historical ADRs stay under
+  `docs/architecture/adrs/archive/`.
+- When adding or changing a draft/proposed ADR, update the architecture index and
+  `docs-site` reading path so humans and agents can find it. A hidden draft ADR
+  is review noise.
+- Do not let working plans leak into current-state or C4 as accepted facts. If a
+  boundary, service, dependency, deployment relation, or storage owner is still
+  open, either leave it out of current C2/deployment views or label the view and
+  relation as candidate/proposed.
+- In LikeC4 views, include an actor only when the view has an explicit
+  relationship explaining why the actor belongs there.
+- Keep API/domain/backoffice identity separate from wire/storage identity:
+  Config Registry and candidate tenant-facing APIs use public codes such as
+  `tenant_code`, `asset_code`, `agent_code`, `source_code`, and `point_code`;
+  Edge, MQTT, Kafka, ClickHouse, and retained config contracts keep
+  `tenant_id`, `asset_id`, `agent_id`, `source_id`, `point_id` unless a
+  contract migration is explicitly approved.
+- Treat `Hierarchical Catalog V1` and `Asset Graph Registry` as different
+  scopes. Catalog V1 is a navigation/authoring tree over registry entities. An
+  asset graph layer is a broader domain model with arbitrary attributes,
+  non-tree relationships, telemetry bindings, units, quality/status semantics,
+  and computed/derived attributes.
+- Before choosing Catalog/Asset Graph runtime placement, compare the intended
+  domain model with relevant primary references such as Azure ADT,
+  AWS IoT SiteWise, Cognite Data Fusion, Eclipse BaSyx/AAS, Eclipse Ditto,
+  NGSI-LD, Brick, Haystack, and RealEstateCore. Do not argue only from scaffold
+  or code generation cost.
+- Existing Config Registry SQLAdmin/backoffice is acceptable for narrow internal
+  CRUD/admin flows and UUID-to-public-code bridge checks. Do not use SQLAdmin
+  for the Asset Graph Registry implementation: tree editing, subtree moves,
+  sibling ordering, reference validation and asset graph management need a
+  dedicated internal `Next.js` / `React` / `Ant Design Admin` UI backed by the
+  Asset Graph Registry API/use cases.
+- For read-only telemetry APIs, V1 may expose raw latest/history over ClickHouse
+  read models, but leave room for future semantic enrichment:
+  raw point/series -> `asset_graph_node.attribute` -> Web Monitoring/Alarm reads by
+  semantic object/attribute path.
+
 ## Skill Routing
 
 - For issue-driven implementation or preparation from issue links or numbers,

@@ -81,14 +81,18 @@
 
 ## Следующий срез Industrial Data Platform и модулей
 
-`Digital Twin / Asset Graph Registry` принят в
-`docs/architecture/adrs/ADR-016-digital-twin-asset-graph-boundary.md` как
+`Asset Graph Registry` принят в
+`docs/architecture/adrs/ADR-016-asset-graph-registry-boundary.md` как
 отдельный service/package boundary внутри `Industrial Data Platform`, а не
 embedded slice внутри `Config Registry`. `Catalog V1` является первым tree
 projection внутри этой boundary, а не конечной самостоятельной моделью. Первый
-creator nodes — ручной internal `/backoffice` workflow; ETS/KNX, OPC UA,
+источник изменений — ручной internal admin workflow; ETS/KNX, OPC UA,
 synthetic generator и discovery/import остаются будущими источниками.
-Technology stack selection вынесен в отдельную будущую ADR.
+V1 implementation baseline принят: existing Python/FastAPI service conventions,
+SQLAlchemy/Alembic, PostgreSQL/Platform Store and dedicated internal
+`Next.js` / `React` / `Ant Design Admin` app. Graph database, search/index,
+RDF/SPARQL, ontology runtime или другой admin/UI stack требуют отдельного
+technology ADR перед введением.
 
 Кандидат для ближайшего совместного обсуждения Industrial Data Platform / Web Monitoring:
 решить, должен ли первый срез после `Config Registry` быть read-only
@@ -121,9 +125,9 @@ Alarm workflow обсуждается рядом, но остается отде
 
 | Вопрос | Почему это важно | Степень блокировки |
 | --- | --- | --- |
-| Какой минимальный Brick/Haystack/RealEstateCore vocabulary profile входит в первый Digital Twin / Asset Graph implementation PR? | `ADR-016` выбирает готовые building ontologies как source, но первый PR должен ограничить конкретные term codes, relation types и seed data | Средняя |
-| Какой internal `/backoffice` UX нужен для первого ручного наполнения Digital Twin / Asset Graph Registry: формы CRUD, tree editor или минимальный use-case driven admin flow? | Первый creator уже выбран как ручной `/backoffice`, но UX depth влияет на размер PR и Playwright coverage | Средняя |
-| Какой technology stack выбираем для Digital Twin / Asset Graph Registry? | `ADR-016` намеренно не выбирает PostgreSQL vs graph DB, search/indexing, API framework/package shape, UI stack и ontology tooling | Высокая |
+| Какой минимальный Brick/Haystack/RealEstateCore vocabulary profile входит в первый Asset Graph implementation PR? | `ADR-016` выбирает готовые building ontologies как source, но первый PR должен ограничить конкретные term codes, relation types и seed data | Средняя |
+| Какая глубина первого Asset Graph Admin UI на `Next.js` / `React` / `Ant Design Admin` нужна для ручного наполнения: минимальные формы, tree editor или use-case driven admin flow? | Первый источник изменений уже выбран как ручной internal admin workflow, но UX depth влияет на размер PR и Playwright coverage | Средняя |
+| Когда V1 baseline станет недостаточным и потребуется graph/search/RDF/ontology technology ADR? | `ADR-016` разрешает первый implementation PR на existing Python/FastAPI, SQLAlchemy/Alembic, PostgreSQL and `Next.js` / `React` / `Ant Design Admin` baseline; новые infrastructure classes требуют load/use-case proof и отдельного решения | Средняя |
 | Какие конкретные API/use cases входят в первый tenant-facing API после `Config Registry`: telemetry read, config rollout, Web Monitoring read API или Alarm Management workflow API? | Data platform, Web Monitoring и Alarm Management разделены, поэтому следующий API contract должен явно назвать ownership | Высокая |
 | Где фиксируется `Redpanda Connect` pipeline config: в platform repository, IaC, Redpanda Cloud-managed pipeline или отдельном operations bundle? | MQTT input, mapping/transform и redpanda output становятся частью production data path, поэтому конфигурация pipeline должна быть версионирована и управляться так же строго, как edge source config | Высокая |
 | Нужно ли переходить с локального `Apache Kafka` broker runtime на `Redpanda broker`? | Apache Kafka остается локальным baseline; Redpanda broker требует отдельный compatibility PoC, чтобы не смешивать broker migration с connector/runtime cleanup | Средняя |

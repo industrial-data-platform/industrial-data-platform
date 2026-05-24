@@ -18,15 +18,15 @@ views 'Developed Systems / Industrial Data Platform' {
         }
     }
 
-    view c3-digital-twin-asset-graph-authoring of industrial-data-platform.digital-twin-asset-graph-registry {
-        title 'C3 Digital Twin / Asset Graph Authoring'
-        description 'Accepted ADR-016 boundary: internal backoffice вручную создает twins, tree projection nodes, uses curated building ontology vocabulary and validates registry public-code references through Config Registry.'
+    view c3-asset-graph-registry-authoring of industrial-data-platform.asset-graph-registry {
+        title 'C3 Asset Graph Registry Authoring'
+        description 'Компонентная декомпозиция Asset Graph Registry: internal Next.js/React admin UI вручную создает asset graph nodes, tree projection nodes, relations и telemetry bindings через API, а API проверяет registry public-code references через Config Registry.'
 
         include *
         include industrial-data-platform.idp-config-registry
         include service-engineer
 
-        style industrial-data-platform.digital-twin-asset-graph-registry {
+        style industrial-data-platform.asset-graph-registry {
             color primary
         }
 

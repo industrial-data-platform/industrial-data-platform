@@ -84,9 +84,9 @@ Target-state flow должен оставить место для semantic enric
 
 1. raw edge telemetry приходит с technical wire/storage ids;
 2. future enrichment связывает `source.point` / `point_code` / telemetry series
-   с `twin.attribute`;
+   с `asset_graph_node.attribute`;
 3. Web Monitoring и Alarm Management смогут читать latest/history по
-   `twin_id`, `twin_type`, `attribute_key`, unit/path/relations и
+   `asset_graph_node_code`, `object_type`, `attribute_key`, unit/path/relations и
    quality/status semantics, а не только по raw point identity.
 
 Это не входит в V1 API, но важно не зацементировать будущие UI/alarm contracts
@@ -109,7 +109,7 @@ Target-state flow должен оставить место для semantic enric
 - Достаточно ли для V1 только `latest/history`, а metadata joins, rollups и
   operator UI оставить следующими шагами?
 - Какой future semantic enrichment нужен после V1: `point_code` / telemetry
-  series -> `twin.attribute`, unit, quality/status и graph path?
+  series -> `asset_graph_node.attribute`, unit, quality/status и graph path?
 - Принимаем ли correctness-first query views как baseline для dev/local и первого
   API contract, а production optimization откладываем до load PoC?
 - Фиксируем ли результат только в `decisions.md` и living docs, или команде нужен

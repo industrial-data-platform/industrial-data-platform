@@ -98,12 +98,15 @@ surface как первый `Web Monitoring Module` surface.
   data-platform backend: authn/authz, richer revision workflow, rollout controls,
   approval/publish process и API boundaries beyond current internal/backoffice
   scope.
-- `Digital Twin / Asset Graph Registry` принят как отдельный future
+- `Asset Graph Registry` принят как отдельный future
   service/package boundary внутри `Industrial Data Platform`, а не embedded
   slice внутри `Config Registry`. Первый implementation slice — ручной internal
-  `/backoffice` workflow для минимальных twins/assets, default tree projection,
-  registry point references и подготовленной модели telemetry bindings.
-  Конкретный technology stack выносится в отдельное решение.
+  admin workflow на `Next.js` / `React` / `Ant Design Admin` для минимальных
+  asset graph nodes, default tree projection, registry point references и
+  подготовленной модели telemetry bindings. Первый implementation PR может идти
+  на accepted baseline: Python/FastAPI-style service conventions,
+  SQLAlchemy/Alembic, PostgreSQL/Platform Store и dedicated internal admin app;
+  graph/search/RDF/ontology runtime требует отдельного technology ADR.
 - Tenant-facing UI для редактирования agent runtime/source config. На текущем этапе
   source of truth уже переехал в `Config Registry`/`PostgreSQL`, а versioned
   YAML bundle остается import/bootstrap path; полноценный внешний UI и workflow
@@ -185,9 +188,9 @@ surface как первый `Web Monitoring Module` surface.
    `docs/contracts/kafka/`.
 8. Для backend хранения настроек платформы: `apps/idp_config_registry/README.md`
    и `docs/contracts/edge-telemetry-agent/config-revision-model.md`.
-   Для Digital Twin / Asset Graph boundary:
+   Для Asset Graph Registry boundary:
    `docs/architecture/hierarchical-catalog-v1.md` и
-   `docs/architecture/adrs/ADR-016-digital-twin-asset-graph-boundary.md`.
+   `docs/architecture/adrs/ADR-016-asset-graph-registry-boundary.md`.
 9. Для deployment parity, cloud-first pilot, `OPC UA` read-only track и internal
    execution backlog: этот документ, `solution-architecture.md` и
    `open-questions.md`.
@@ -210,11 +213,13 @@ ADR объясняет решение, но не заменяет contract regis
 - concrete `VK Cloud` vs `Yandex Cloud` choice, managed-service packaging and
   secrets backend for the cloud-first pilot;
 - production host/deployment model для edge runtime;
-- первый implementation PR для accepted `Digital Twin / Asset Graph Registry`:
-  узкий service/package skeleton для manual `/backoffice` authoring,
-  минимальных twins/assets, tree projection, registry point refs и prepared
-  telemetry bindings; конкретные persistence/API/UI технологии должны быть
-  подтверждены отдельным technology ADR;
+- первый implementation PR для accepted `Asset Graph Registry`:
+  узкий service/package skeleton для manual internal admin authoring,
+  минимальных asset graph nodes, tree projection, registry point refs и
+  prepared telemetry bindings на accepted Python/FastAPI,
+  SQLAlchemy/Alembic/PostgreSQL и `Next.js` / `React` /
+  `Ant Design Admin` baseline; отдельный technology ADR нужен только для
+  отклонения от baseline или добавления graph/search/RDF/ontology runtime;
 - кандидат для следующего Industrial Data Platform / Web Monitoring обсуждения: нужен ли
   read-only `latest/history` API поверх существующих ClickHouse views
   `telemetry_latest_v1` и `telemetry_events_dedup_v1`; это отдельная

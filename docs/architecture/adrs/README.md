@@ -16,11 +16,11 @@ the time.
 
 ## Accepted ADRs in current review
 
-- [`ADR-016: Digital Twin / Asset Graph Registry boundary`](ADR-016-digital-twin-asset-graph-boundary.md)
+- [`ADR-016: Asset Graph Registry boundary`](ADR-016-asset-graph-registry-boundary.md)
 
 ## Superseded discussion material
 
-- [`ADR-015: Hierarchical Catalog and Digital Twin boundary comparison`](ADR-015-hierarchical-catalog-runtime-boundary.md)
+- [`ADR-015: Hierarchical Catalog and Asset Graph boundary comparison`](ADR-015-hierarchical-catalog-runtime-boundary.md)
 
 ## Draft / Proposed ADRs
 

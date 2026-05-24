@@ -13,8 +13,8 @@
 | Термины и границы понятий | `glossary.md` |
 | Какие вопросы еще открыты | `open-questions.md` |
 | Какие архитектурные решения активны | `decisions.md` |
-| Как спланирован Digital Twin / Asset Graph Registry | `hierarchical-catalog-v1.md`, `adrs/ADR-016-digital-twin-asset-graph-boundary.md` |
-| Как сравнивали Catalog / Digital Twin boundary | `adrs/ADR-015-hierarchical-catalog-runtime-boundary.md` |
+| Как спланирован Asset Graph Registry | `hierarchical-catalog-v1.md`, `adrs/ADR-016-asset-graph-registry-boundary.md` |
+| Как сравнивали Catalog / Asset Graph boundary | `adrs/ADR-015-hierarchical-catalog-runtime-boundary.md` |
 | Что обсудить по read-only telemetry API | `read-only-telemetry-api-discussion.md` |
 | Что принято после MVP по pilot/cloud/OPC UA/issue tracker governance | `current-state.md`, `solution-architecture.md`, `open-questions.md` |
 | Где граница между data platform, web monitoring и alarms | `current-state.md`, `decisions.md`, `../../arch/README.md` |

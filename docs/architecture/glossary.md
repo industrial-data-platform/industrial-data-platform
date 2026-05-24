@@ -41,37 +41,45 @@ LikeC4-модель в `arch/likec4/` и markdown-документы в `docs/ar
 - `Grafana` — текущий read-only visualization surface внутри `Web Monitoring Module`; в production-контуре читает подготовленные данные из `Telemetry Store`.
 - `Platform API` — deprecated/ambiguous umbrella term для будущих tenant-facing API. Новые API должны проектироваться как data-platform API, web-monitoring API или alarm-management API в зависимости от ownership.
 - `Config Registry` — первый реализованный backend-срез `apps/idp_config_registry` / package `idp_config_registry`: хранит tenants, assets, agents, sources, points и config revisions в PostgreSQL.
-- `Digital Twin / Asset Graph Registry` — accepted отдельный service/package
-  boundary внутри `Industrial Data Platform`: владеет real-world twins/assets,
+- `Asset Graph Registry` — accepted отдельный service/package
+  boundary внутри `Industrial Data Platform`: владеет asset graph nodes,
   tree projections, logical attributes, semantic relations и telemetry bindings.
-  Не является embedded slice внутри `Config Registry`; конкретный technology
-  stack выносится в отдельное решение.
+  Основная data model entity называется `asset graph node`. Не является
+  embedded slice внутри `Config Registry`; V1 implementation baseline —
+  existing Python/FastAPI service conventions, SQLAlchemy/Alembic,
+  PostgreSQL/Platform Store и dedicated internal `Next.js` / `React` /
+  `Ant Design Admin` app.
 - `Catalog` / `Hierarchical Catalog V1` — первый tree projection внутри
-  `Digital Twin / Asset Graph Registry`: navigation/authoring tree поверх
-  registry entities и twin refs для internal `/backoffice`, будущего
+  `Asset Graph Registry`: navigation/authoring tree поверх
+  registry entities и asset graph node refs для internal admin UI, будущего
   presentation layer и ручного наполнения. Это не самостоятельная конечная
   domain model.
 - `catalog tree` — именованное дерево catalog nodes внутри tenant; V1 использует
   один tree `default`.
 - `catalog node` — элемент tree projection с собственным public code, parent
   reference, display name, sort order и типом (`folder`, `asset_ref`,
-  `agent_ref`, `source_ref`, `registry_point_ref`, `twin_ref`). Node может
-  ссылаться на registry entity или twin, но его identity не совпадает с
-  identity target entity.
-- `Digital Twin Registry` / `Asset Graph Registry` — synonym for the accepted
-  `Digital Twin / Asset Graph Registry` boundary.
-- `twin attribute` — логический атрибут объекта в будущей twin/asset graph
+  `agent_ref`, `source_ref`, `registry_point_ref`, `asset_graph_node_ref`).
+  Node может ссылаться на registry entity или asset graph node, но его identity
+  не совпадает с identity target entity.
+- `asset graph node` — tenant-scoped real-world object in the Asset Graph,
+  например site, factory, building, quarry, area, line, machine, assembly,
+  component или space.
+- `asset graph node attribute` — логический атрибут объекта в asset graph
   модели, например `temperature`, `status`, `rpm` или derived KPI. Может быть
   связан с одной или несколькими technical telemetry series.
 - `telemetry binding` — связь между technical telemetry identity
   (`source.point`, `point_code`, ClickHouse/Kafka series) и логическим
-  `twin attribute`, включая unit, value type, quality/status semantics и future
-  computed/derived behavior.
+  `asset graph node attribute`, включая unit, value type, quality/status
+  semantics и future computed/derived behavior.
 - `public code` — стабильный человеко-читаемый identifier в Config Registry
   domain/API/backoffice (`tenant_code`, `asset_code`, `agent_code`,
   `source_code`, `point_code`); отличается от internal UUID primary key в
   PostgreSQL.
-- `Backoffice Admin UI` — внутренний operational UI на базе `SQLAdmin` для команды платформы; не доступен tenant/client users, допускает internal CRUD shortcut, а выпуск config state выполняется отдельным render action через application use cases и transactional outbox.
+- `Backoffice Admin UI` — семейство внутренних operational/admin surfaces для
+  команды платформы; не доступно tenant/client users. Текущий Config Registry
+  surface использует `SQLAdmin` для narrow CRUD/admin workflows, а Asset Graph
+  Registry использует отдельный internal `Next.js` / `React` /
+  `Ant Design Admin` app поверх собственных API/use cases.
 - `Web Monitoring Frontend` — future browser-приложение модуля мониторинга, которое будет аутентифицироваться через Keycloak и работать с data-platform/read API; в текущем MVP отдельный frontend еще не реализован.
 - `Keycloak` — IAM-компонент платформы: пользователи, группы, роли, OIDC clients, sessions и JWT issuance.
 - `JWT` — access token, выпускаемый Keycloak и валидируемый будущими tenant-facing API локально по OIDC discovery/JWKS.

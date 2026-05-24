@@ -1,7 +1,7 @@
 model {
     extend industrial-data-platform {
         idp-config-registry = container 'idp_config_registry' {
-            description 'Первый backend-срез Config Registry из apps/idp_config_registry: хранит tenants, assets, agents, sources, points и agent runtime/source config revisions в PostgreSQL. Digital Twin / Asset Graph вынесен в отдельный service/package boundary по ADR-016. Auth, alarm, telemetry read API и frontend boundary фиксируются отдельными решениями.'
+            description 'Первый backend-срез Config Registry из apps/idp_config_registry: хранит tenants, assets, agents, sources, points и agent runtime/source config revisions в PostgreSQL. Asset Graph Registry является отдельным service/package boundary по ADR-016. Auth, alarm, telemetry read API и frontend boundary фиксируются отдельными решениями.'
             technology 'apps/idp_config_registry / FastAPI async / SQLAlchemy / PostgreSQL'
             icon bootstrap:server
 
@@ -12,7 +12,7 @@ model {
             }
 
             backoffice-admin-ui = component 'Backoffice Admin UI' {
-                description 'Internal SQLAdmin surface для Config Registry admin workflows. Digital Twin / Asset Graph tree projection editing belongs to its own backoffice.'
+                description 'Internal SQLAdmin surface для Config Registry admin workflows. Asset Graph Registry tree/graph authoring относится к отдельному Next.js/React admin app.'
                 technology 'SQLAdmin / internal_mode / Playwright-covered browser workflow'
                 icon bootstrap:window-sidebar
             }
