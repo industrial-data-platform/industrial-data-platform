@@ -1,4 +1,4 @@
-# ADR-015: Internal Grafana service telemetry dashboards
+# ADR-017: Internal Grafana service telemetry dashboards
 
 Дата: 2026-05-23
 Статус: proposed
@@ -106,6 +106,42 @@ source instance внутри agent:
 tenant_id -> asset_id -> source_type -> agent_id -> source_id -> point_key
 ```
 
+## Relation to Asset Graph Registry
+
+Этот ADR фиксирует первый internal/service increment для технической
+observability по raw telemetry identity. Он не является целевой semantic
+monitoring model и не заменяет принятое решение
+[`ADR-016: Asset Graph Registry boundary`](ADR-016-asset-graph-registry-boundary.md).
+
+`Asset Graph Registry` владеет объектной моделью: `asset graph node`,
+logical attributes, semantic relations и telemetry bindings. Telemetry binding
+связывает technical point/series identity (`point_code`,
+`source_id + point_key`, ClickHouse/Kafka series) с logical attribute:
+`asset_graph_node_code + attribute_key`.
+
+Будущий tenant-facing `Web Monitoring Frontend` и semantic monitoring/API
+должны уметь идти от смыслового объекта, а не только от source/point:
+
+```text
+building / area / machine / component
+  -> attribute
+  -> telemetry binding
+  -> ClickHouse latest/history
+```
+
+Эквивалентный machine-readable path:
+
+```text
+asset_graph_node_code -> attribute_key -> telemetry binding -> ClickHouse latest/history
+```
+
+Grafana service dashboards в этом решении остаются technical/internal. Они
+могут читать prepared semantic read models в будущем, но не должны дергать
+`Asset Graph Registry` API на каждый panel refresh. Если появится semantic
+Grafana/dashboard surface, binding должен быть заранее материализован в
+contract-backed ClickHouse read model/projection, которой владеет `Telemetry
+Store` / `Industrial Data Platform`.
+
 Для будущего contract increment `source_type` должен получить controlled
 vocabulary. Начальные кандидаты для этого vocabulary:
 
@@ -150,6 +186,12 @@ Production dashboard не должен регулярно парсить `points
   `tenant_id + asset_id + source_type + agent_id + source_id + point_key`;
 - telemetry activity rollups по tenant/source type/source instance/point для
   dashboard counts и top-N.
+
+Ownership этих read models остается за `Telemetry Store` /
+`Industrial Data Platform`. `Web Monitoring Module` владеет dashboard JSON,
+variables, links и read-only visualization workflow, но не storage contract,
+ClickHouse migrations или ingestion semantics. Grafana только читает
+contract-backed read models.
 
 Имена новых tables/views должны быть зафиксированы в
 `docs/contracts/clickhouse/telemetry-store.v1.md` или новой версии контракта до
@@ -378,6 +420,14 @@ Decision drivers:
   sources, points и telemetry health.
 - First increment не показывает `configured_points` как production-ready
   метрику без current inventory read model.
+- First increment остается technical service observability over raw point
+  identity и не блокирует future semantic/object drilldown через `Asset Graph
+  Registry` telemetry bindings.
+- Future semantic dashboards читают prepared ClickHouse read models/projections,
+  а не вызывают `Asset Graph Registry` API на каждый panel refresh.
+- ClickHouse inventory/status/rollup/projection read models принадлежат
+  `Telemetry Store` / `Industrial Data Platform`; Grafana и `Web Monitoring
+  Module` владеют только visualization/query surface поверх этих контрактов.
 - Drilldown dashboard позволяет выбрать `tenant_id`, `asset_id`, `source_type`,
   `agent_id`, `source_id`, `point_key` и посмотреть графики выбранных points.
 - `source_type` рассматривается как protocol/adapter type; controlled
