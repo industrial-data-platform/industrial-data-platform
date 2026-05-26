@@ -36,6 +36,7 @@
 | ADR-013 | accepted | Post-MVP direction: cloud-first Russian pilot, local Docker dev/test baseline, `OPC UA` read-only ingestion track, internal-only execution backlog. | `current-state.md`, `solution-architecture.md`, `open-questions.md` | `adrs/archive/ADR-013-post-mvp-product-and-execution-governance.md` |
 | ADR-014 | accepted | Central core is `Industrial Data Platform`; `Web Monitoring Module` and `Alarm Management Module` are separate modules above it. Runtime/contract identifiers stay `idp.*`/`idp/v1`. | `current-state.md`, `arch/likec4/`, `docs/contracts/README.md` | `adrs/archive/ADR-014-data-platform-core-and-modules.md` |
 | ADR-016 | accepted | Target boundary is a separate `Asset Graph Registry`; `Catalog V1` is only the first tree projection and does not extend Config Registry beyond configuration ownership. Main data entity is `asset graph node`; V1 implementation may use existing Python/FastAPI, SQLAlchemy/Alembic, PostgreSQL and dedicated `Next.js` / `React` / `Ant Design Admin` internal admin baseline. | `hierarchical-catalog-v1.md`, `glossary.md`, `arch/likec4/` | `adrs/ADR-016-asset-graph-registry-boundary.md` |
+| ADR-017 | proposed | Draft decision: internal Grafana service dashboards give platform/service roles all-tenant technical observability over raw point identity; future semantic/object drilldown is owned through `Asset Graph Registry` telemetry bindings and prepared `Telemetry Store` read models. | `adrs/ADR-017-internal-grafana-service-telemetry-dashboard.md` | n/a |
 
 ## Maintenance
 
