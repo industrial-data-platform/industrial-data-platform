@@ -171,20 +171,30 @@ materialized views, которые преобразуют raw JSON в contract t
 ## Grafana -> ClickHouse read models
 
 Grafana поставляется как локальная read-only поверхность над ClickHouse.
-Datasource и dashboard создаются через provisioning, без ручной настройки в UI.
+Datasource и internal/service dashboards создаются через provisioning, без
+ручной настройки в UI.
 
 Provisioning files:
 
 - `infra/local/grafana/provisioning/datasources/clickhouse.yaml`
 - `infra/local/grafana/provisioning/dashboards/dashboards.yaml`
-- `infra/local/grafana/dashboards/telemetry-overview.json`
+- `infra/local/grafana/dashboards/service-telemetry-overview.json`
+- `infra/local/grafana/dashboards/telemetry-point-drilldown.json`
 
-Dashboard `Telemetry Overview` читает:
+Dashboards в folder `Service Operations`:
+
+- `Service Telemetry Overview` — internal all-tenant service overview по
+  observed telemetry inventory, health и top-N diagnostics.
+- `Telemetry Point Drilldown` — bounded drilldown по
+  `tenant_id -> asset_id -> source_type -> agent_id -> source_id -> point_key`.
+
+Dashboard set читает:
 
 - `telemetry_latest_v1` — последние значения по точкам
 - `telemetry_1m_v1` — минутные тренды
 - `telemetry_1h_v1` — часовые агрегаты
-- `telemetry_events_dedup_v1` и raw/contract tables — ingestion diagnostics
+- `telemetry_events_dedup_v1` — короткие bounded drilldown/quality queries
+- `agent_status_events_v1` и `source_connection_events_v1` — status context
 
 Быстрый seed для ручной проверки:
 
@@ -198,7 +208,8 @@ uv run --env-file .env idp-telemetry-store load-poc telemetry-read-models \
 ```
 
 После этого откройте `http://localhost:3000`, войдите с credentials из `.env`
-и выберите `Web Monitoring / Telemetry Overview`.
+и выберите `Service Operations / Service Telemetry Overview` или
+`Service Operations / Telemetry Point Drilldown`.
 
 ## ClickHouse migrations
 

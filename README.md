@@ -367,8 +367,10 @@ uv run --env-file .env idp-telemetry-store load-poc telemetry-read-models \
   --duplicate-every 10
 ```
 
-После загрузки PoC откройте `Grafana -> Web Monitoring -> Telemetry Overview`.
-Dashboard читает `telemetry_latest_v1`, `telemetry_1m_v1`,
-`telemetry_1h_v1` и ingestion diagnostics из ClickHouse. Это локальная
-read-only поверхность поверх ClickHouse read models; старый MQTT/Grafana
-dashboard path не используется.
+После загрузки PoC откройте
+`Grafana -> Service Operations -> Service Telemetry Overview` или
+`Grafana -> Service Operations -> Telemetry Point Drilldown`.
+Dashboard set читает `telemetry_latest_v1`, `telemetry_1m_v1`,
+`telemetry_1h_v1`, bounded drilldown/status queries и top-N diagnostics из
+ClickHouse. Это локальная read-only поверхность поверх ClickHouse read models;
+старый MQTT/Grafana dashboard path не используется.

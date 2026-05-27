@@ -1,7 +1,7 @@
 # ADR-017: Internal Grafana service telemetry dashboards
 
 Дата: 2026-05-23
-Статус: proposed
+Статус: принято
 
 ## Контекст
 

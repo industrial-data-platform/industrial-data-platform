@@ -137,7 +137,8 @@ docker exec industrial-data-platform-local-clickhouse-1 sh -lc \
 Grafana:
 
 - URL: `http://localhost:3000`
-- Dashboard: `Web Monitoring / Telemetry Overview`
+- Dashboard: `Service Operations / Service Telemetry Overview`
+- Dashboard: `Service Operations / Telemetry Point Drilldown`
 - Credentials: `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD` from `.env`
 
 Operational UIs:

@@ -347,7 +347,8 @@ curl -fsS http://localhost:4197/ready
 `GRAFANA_ADMIN_PASSWORD` из `.env` и откройте dashboard:
 
 ```text
-Web Monitoring / Telemetry Overview
+Service Operations / Service Telemetry Overview
+Service Operations / Telemetry Point Drilldown
 ```
 
 Dashboard начнет показывать данные после того, как telemetry дошла до
