@@ -61,4 +61,3 @@ def require_optional_path_code(value: str | None, *, field_name: str) -> str | N
     if value is None:
         return None
     return require_path_code(value, field_name=field_name)
-

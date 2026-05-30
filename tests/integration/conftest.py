@@ -921,6 +921,99 @@ class LocalFullStorageStack(LocalStorageStack):
     config_registry_json = LocalConfigDeliveryStack.config_registry_json
 
 
+@dataclass(frozen=True)
+class LocalAssetGraphRegistryStack(LocalComposeStack):
+    postgres_port: int
+    config_registry_port: int
+    asset_graph_registry_port: int
+    database_url: str
+
+    wait_for_postgres = LocalConfigDeliveryStack.wait_for_postgres
+    wait_for_config_registry_api = LocalConfigDeliveryStack.wait_for_config_registry_api
+    run_config_registry_migrations = LocalConfigDeliveryStack.run_config_registry_migrations
+    config_registry_json = LocalConfigDeliveryStack.config_registry_json
+
+    def run_asset_graph_registry_migrations(self, timeout: int = 300) -> None:
+        self.compose(
+            "run",
+            "--rm",
+            "--no-deps",
+            "idp-asset-graph-registry",
+            "alembic",
+            "-c",
+            "apps/idp_asset_graph_registry/alembic.ini",
+            "upgrade",
+            "head",
+            timeout=timeout,
+        )
+
+    def wait_for_asset_graph_registry_api(self, timeout: float = 90.0) -> None:
+        deadline = time.monotonic() + timeout
+        url = f"http://127.0.0.1:{self.asset_graph_registry_port}/ready"
+        last_error = "Asset Graph Registry API is not reachable yet."
+
+        while time.monotonic() < deadline:
+            try:
+                with urllib.request.urlopen(url, timeout=5) as response:
+                    if response.status == 200:
+                        return
+            except (OSError, urllib.error.URLError) as exc:
+                last_error = f"{type(exc).__name__}: {exc}"
+            time.sleep(1)
+
+        raise AssertionError(
+            "Asset Graph Registry API did not become ready within "
+            f"{timeout:.0f}s. Last error: {last_error}\n\nCompose logs:\n{self.logs()}"
+        )
+
+    def asset_graph_json(
+        self,
+        method: str,
+        path: str,
+        payload: dict[str, object] | None = None,
+        *,
+        timeout: int = 30,
+    ) -> dict[str, object] | list[object]:
+        status_code, response_payload = self.asset_graph_response(
+            method,
+            path,
+            payload,
+            timeout=timeout,
+        )
+        if status_code >= 400:
+            raise AssertionError(
+                f"Asset Graph Registry API returned HTTP {status_code}: "
+                f"{response_payload}"
+            )
+        return response_payload
+
+    def asset_graph_response(
+        self,
+        method: str,
+        path: str,
+        payload: dict[str, object] | None = None,
+        *,
+        timeout: int = 30,
+    ) -> tuple[int, dict[str, object] | list[object]]:
+        url = f"http://127.0.0.1:{self.asset_graph_registry_port}{path}"
+        data = None
+        if payload is not None:
+            data = json.dumps(payload).encode()
+        request = urllib.request.Request(url, data=data, method=method)
+        request.add_header("Accept", "application/json")
+        request.add_header("Content-Type", "application/json")
+
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                response_text = response.read().decode()
+                response_payload = json.loads(response_text) if response_text else {}
+                return response.status, response_payload
+        except urllib.error.HTTPError as exc:
+            response_text = exc.read().decode()
+            response_payload = json.loads(response_text) if response_text else {}
+            return exc.code, response_payload
+
+
 def publish_json_message(
     *,
     host: str,
@@ -988,6 +1081,68 @@ def local_stack(tmp_path_factory: pytest.TempPathFactory) -> LocalMqttStack:
     except subprocess.CalledProcessError as exc:
         raise AssertionError(
             "Failed to start the local MQTT stack.\n\n"
+            f"stdout:\n{exc.stdout}\n\nstderr:\n{exc.stderr}"
+        ) from exc
+    finally:
+        stack.compose("down", "-v", "--remove-orphans", check=False, timeout=300)
+
+
+@pytest.fixture(scope="module")
+def local_asset_graph_registry_stack(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> LocalAssetGraphRegistryStack:
+    if not _docker_is_available():
+        pytest.skip("Docker Compose is required for Asset Graph integration tests.")
+
+    env_values = _read_env_file(BASE_ENV_FILE)
+    postgres_port = _reserve_free_port()
+    config_registry_port = _reserve_free_port()
+    asset_graph_registry_port = _reserve_free_port()
+    database_url = (
+        "postgresql+asyncpg://idp:change-me-local-postgres"
+        f"@127.0.0.1:{postgres_port}/idp_config_registry"
+    )
+
+    env_values.update(
+        {
+            "POSTGRES_HOST": "127.0.0.1",
+            "POSTGRES_PORT": str(postgres_port),
+            "CONFIG_REGISTRY_PORT": str(config_registry_port),
+            "ASSET_GRAPH_REGISTRY_PORT": str(asset_graph_registry_port),
+        }
+    )
+
+    env_dir = tmp_path_factory.mktemp("asset-graph-registry-stack")
+    env_file = env_dir / ".env.integration"
+    _write_env_file(env_file, env_values)
+
+    stack = LocalAssetGraphRegistryStack(
+        project_name=f"idp-it-{uuid.uuid4().hex[:10]}",
+        env_file=env_file,
+        postgres_port=postgres_port,
+        config_registry_port=config_registry_port,
+        asset_graph_registry_port=asset_graph_registry_port,
+        database_url=database_url,
+    )
+
+    try:
+        stack.compose("up", "-d", "postgres", timeout=300)
+        stack.wait_for_postgres()
+        stack.run_config_registry_migrations(timeout=900)
+        stack.run_asset_graph_registry_migrations(timeout=900)
+        stack.compose(
+            "up",
+            "-d",
+            "idp-config-registry",
+            "idp-asset-graph-registry",
+            timeout=900,
+        )
+        stack.wait_for_config_registry_api()
+        stack.wait_for_asset_graph_registry_api()
+        yield stack
+    except subprocess.CalledProcessError as exc:
+        raise AssertionError(
+            "Failed to start the local Asset Graph Registry stack.\n\n"
             f"stdout:\n{exc.stdout}\n\nstderr:\n{exc.stderr}"
         ) from exc
     finally:

@@ -13,4 +13,3 @@ async def health() -> dict[str, str]:
 @router.get("/ready")
 async def ready() -> dict[str, str]:
     return {"status": "ready"}
-

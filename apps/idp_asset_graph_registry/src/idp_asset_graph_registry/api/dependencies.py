@@ -18,4 +18,3 @@ def get_unit_of_work_factory(request: Request) -> UnitOfWorkFactory:
 
 def get_registry_lookup(request: Request) -> RegistryReferenceLookup:
     return request.app.state.registry_lookup
-

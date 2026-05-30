@@ -38,4 +38,3 @@ class PostgresSessionManager:
 
     async def dispose(self) -> None:
         await self.engine.dispose()
-

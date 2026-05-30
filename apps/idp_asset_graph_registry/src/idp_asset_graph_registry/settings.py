@@ -19,4 +19,3 @@ class AssetGraphRegistrySettings:
             database_url=os.getenv("ASSET_GRAPH_REGISTRY_DATABASE_URL"),
             config_registry_url=os.getenv("ASSET_GRAPH_CONFIG_REGISTRY_URL"),
         )
-

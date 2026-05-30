@@ -218,4 +218,3 @@ class CatalogNode:
             "display_name",
             require_non_empty(self.display_name, field_name="display_name"),
         )
-

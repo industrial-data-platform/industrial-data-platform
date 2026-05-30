@@ -26,4 +26,3 @@ class RegistryReferenceLookupResponse(BaseModel):
             display_name=result.display_name,
             snapshot_json=result.snapshot_json,
         )
-

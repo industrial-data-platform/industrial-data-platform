@@ -43,4 +43,3 @@ class RegistryReferenceLookup(Protocol):
         tenant_code: str,
         point_code: str,
     ) -> RegistryReference: ...
-

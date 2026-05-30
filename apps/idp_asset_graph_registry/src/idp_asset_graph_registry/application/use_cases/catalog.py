@@ -81,6 +81,9 @@ class CreateCatalogNode:
         self._registry_lookup = registry_lookup
 
     async def execute(self, command: CreateCatalogNodeCommand) -> CatalogNode:
+        tenant_reference = await self._registry_lookup.tenant(command.tenant_code)
+        if tenant_reference.status != ReferenceStatus.VALID:
+            raise InvalidReferenceError("tenant", command.tenant_code)
         async with self._unit_of_work as unit_of_work:
             if await unit_of_work.catalog_nodes.get(
                 command.tenant_code,

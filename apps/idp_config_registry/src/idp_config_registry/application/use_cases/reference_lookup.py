@@ -121,4 +121,3 @@ def _result(
         display_name=display_name,
         snapshot_json=snapshot if exists else {},
     )
-

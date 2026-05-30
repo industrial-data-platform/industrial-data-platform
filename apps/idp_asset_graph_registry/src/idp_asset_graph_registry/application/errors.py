@@ -29,3 +29,11 @@ class InvalidReferenceError(ApplicationError):
         self.reference_type = reference_type
         self.reference = reference
 
+
+class RegistryLookupUnavailableError(ApplicationError):
+    def __init__(self, reference_type: str, reason: str) -> None:
+        super().__init__(
+            f"{reference_type} reference lookup is unavailable: {reason}"
+        )
+        self.reference_type = reference_type
+        self.reason = reason

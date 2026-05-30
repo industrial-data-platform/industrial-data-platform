@@ -2,6 +2,12 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
+from idp_asset_graph_registry.application.errors import (
+    RegistryLookupUnavailableError,
+)
+from idp_asset_graph_registry.application.ports.registry_lookup import (
+    RegistryReference,
+)
 from idp_asset_graph_registry.infrastructure.registry_lookup import (
     InMemoryRegistryReferenceLookup,
 )
@@ -17,6 +23,34 @@ def _client() -> TestClient:
         points={("tenant-a", "point-a")},
     )
     return TestClient(create_app(registry_lookup=registry_lookup))
+
+
+class UnavailableRegistryReferenceLookup:
+    async def tenant(self, tenant_code: str) -> RegistryReference:
+        raise RegistryLookupUnavailableError("tenant", "test dependency failure")
+
+    async def asset(self, tenant_code: str, asset_code: str) -> RegistryReference:
+        raise RegistryLookupUnavailableError("asset", "test dependency failure")
+
+    async def agent(
+        self,
+        tenant_code: str,
+        asset_code: str,
+        agent_code: str,
+    ) -> RegistryReference:
+        raise RegistryLookupUnavailableError("agent", "test dependency failure")
+
+    async def source(
+        self,
+        tenant_code: str,
+        asset_code: str,
+        agent_code: str,
+        source_code: str,
+    ) -> RegistryReference:
+        raise RegistryLookupUnavailableError("source", "test dependency failure")
+
+    async def point(self, tenant_code: str, point_code: str) -> RegistryReference:
+        raise RegistryLookupUnavailableError("point", "test dependency failure")
 
 
 def test_health_and_ready_endpoints() -> None:
@@ -196,6 +230,38 @@ def test_catalog_tree_supports_create_move_read_and_delete_leaf() -> None:
         "child",
     ]
     assert delete_response.status_code == 204
+
+
+def test_catalog_folder_rejects_missing_tenant_reference() -> None:
+    client = TestClient(create_app(registry_lookup=InMemoryRegistryReferenceLookup()))
+
+    response = client.post(
+        "/internal/tenants/tenant-a/catalog/default/nodes",
+        json={
+            "node_code": "root",
+            "node_type": "folder",
+            "display_name": "Root",
+        },
+    )
+    tree_response = client.get("/internal/tenants/tenant-a/catalog/default/tree")
+
+    assert response.status_code == 404
+    assert tree_response.json()["nodes"] == []
+
+
+def test_registry_lookup_unavailability_returns_503() -> None:
+    client = TestClient(create_app(registry_lookup=UnavailableRegistryReferenceLookup()))
+
+    response = client.post(
+        "/internal/tenants/tenant-a/catalog/default/nodes",
+        json={
+            "node_code": "root",
+            "node_type": "folder",
+            "display_name": "Root",
+        },
+    )
+
+    assert response.status_code == 503
 
 
 def test_catalog_node_rejects_missing_registry_reference() -> None:

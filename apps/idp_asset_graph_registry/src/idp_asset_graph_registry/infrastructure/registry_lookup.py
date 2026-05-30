@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-import json
-import urllib.parse
-import urllib.request
 from dataclasses import dataclass, field
 from typing import Any
 
+import httpx
+
+from idp_asset_graph_registry.application.errors import (
+    RegistryLookupUnavailableError,
+)
 from idp_asset_graph_registry.application.ports.registry_lookup import (
     RegistryReference,
 )
@@ -119,12 +121,15 @@ class InMemoryRegistryReferenceLookup:
 @dataclass(frozen=True)
 class ConfigRegistryHttpReferenceLookup:
     base_url: str
+    timeout_seconds: float = 5.0
 
     async def tenant(self, tenant_code: str) -> RegistryReference:
-        return self._get({"reference_type": "tenant", "tenant_code": tenant_code})
+        return await self._get(
+            {"reference_type": "tenant", "tenant_code": tenant_code}
+        )
 
     async def asset(self, tenant_code: str, asset_code: str) -> RegistryReference:
-        return self._get(
+        return await self._get(
             {
                 "reference_type": "asset",
                 "tenant_code": tenant_code,
@@ -138,7 +143,7 @@ class ConfigRegistryHttpReferenceLookup:
         asset_code: str,
         agent_code: str,
     ) -> RegistryReference:
-        return self._get(
+        return await self._get(
             {
                 "reference_type": "agent",
                 "tenant_code": tenant_code,
@@ -154,7 +159,7 @@ class ConfigRegistryHttpReferenceLookup:
         agent_code: str,
         source_code: str,
     ) -> RegistryReference:
-        return self._get(
+        return await self._get(
             {
                 "reference_type": "source",
                 "tenant_code": tenant_code,
@@ -165,7 +170,7 @@ class ConfigRegistryHttpReferenceLookup:
         )
 
     async def point(self, tenant_code: str, point_code: str) -> RegistryReference:
-        return self._get(
+        return await self._get(
             {
                 "reference_type": "point",
                 "tenant_code": tenant_code,
@@ -173,19 +178,49 @@ class ConfigRegistryHttpReferenceLookup:
             }
         )
 
-    def _get(self, query: dict[str, str]) -> RegistryReference:
-        encoded = urllib.parse.urlencode(query)
-        url = f"{self.base_url.rstrip('/')}/internal/registry/reference-lookup?{encoded}"
+    async def _get(self, query: dict[str, str]) -> RegistryReference:
+        reference_type = query["reference_type"]
+        url = f"{self.base_url.rstrip('/')}/internal/registry/reference-lookup"
         try:
-            with urllib.request.urlopen(url, timeout=5) as response:
-                payload = json.loads(response.read().decode())
-        except Exception:
-            return RegistryReference(query["reference_type"], ReferenceStatus.UNKNOWN)
+            async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
+                response = await client.get(url, params=query)
+                response.raise_for_status()
+            payload = response.json()
+            if not isinstance(payload, dict):
+                raise TypeError("lookup response must be a JSON object")
+            payload_reference_type = payload["reference_type"]
+            payload_status = payload["status"]
+            if not isinstance(payload_reference_type, str):
+                raise TypeError("lookup response reference_type must be a string")
+            display_name = payload.get("display_name")
+            if display_name is not None and not isinstance(display_name, str):
+                raise TypeError("lookup response display_name must be a string")
+            snapshot_json = payload.get("snapshot_json") or {}
+            if not isinstance(snapshot_json, dict):
+                raise TypeError("lookup response snapshot_json must be an object")
+            status = ReferenceStatus(payload_status)
+        except httpx.HTTPStatusError as exc:
+            raise RegistryLookupUnavailableError(
+                reference_type,
+                f"HTTP {exc.response.status_code}",
+            ) from exc
+        except httpx.TimeoutException as exc:
+            raise RegistryLookupUnavailableError(reference_type, "timeout") from exc
+        except httpx.RequestError as exc:
+            raise RegistryLookupUnavailableError(
+                reference_type,
+                exc.__class__.__name__,
+            ) from exc
+        except (KeyError, TypeError, ValueError) as exc:
+            raise RegistryLookupUnavailableError(
+                reference_type,
+                "invalid response",
+            ) from exc
         return RegistryReference(
-            reference_type=payload["reference_type"],
-            status=ReferenceStatus(payload["status"]),
-            display_name=payload.get("display_name"),
-            snapshot_json=dict(payload.get("snapshot_json") or {}),
+            reference_type=payload_reference_type,
+            status=status,
+            display_name=display_name,
+            snapshot_json=dict(snapshot_json),
         )
 
 

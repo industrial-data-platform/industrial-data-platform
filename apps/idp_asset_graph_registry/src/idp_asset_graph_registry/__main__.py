@@ -48,4 +48,3 @@ def _build_parser() -> argparse.ArgumentParser:
 
 if __name__ == "__main__":
     main()
-

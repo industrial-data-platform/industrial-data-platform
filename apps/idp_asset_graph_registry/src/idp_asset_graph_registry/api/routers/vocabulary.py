@@ -10,4 +10,3 @@ router = APIRouter(prefix="/internal/vocabulary", tags=["vocabulary"])
 @router.get("/relation-types", response_model=list[str])
 async def relation_types() -> list[str]:
     return [relation_type.value for relation_type in RelationType]
-

@@ -26,6 +26,7 @@ from idp_asset_graph_registry.application.errors import (
     DuplicateResourceError,
     InvalidOperationError,
     InvalidReferenceError,
+    RegistryLookupUnavailableError,
     ResourceNotFoundError,
 )
 from idp_asset_graph_registry.application.ports.registry_lookup import (
@@ -489,6 +490,11 @@ async def delete_telemetry_binding(
 
 
 def _raise_http_error(exc: Exception) -> None:
+    if isinstance(exc, RegistryLookupUnavailableError):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        )
     if isinstance(exc, DuplicateResourceError):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
     if isinstance(exc, (ResourceNotFoundError, InvalidReferenceError)):

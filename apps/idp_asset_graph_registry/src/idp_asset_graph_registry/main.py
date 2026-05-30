@@ -78,4 +78,3 @@ def create_app(
     app.include_router(catalog.router)
     app.include_router(asset_graph.router)
     return app
-
