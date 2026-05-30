@@ -147,7 +147,7 @@
           },
           "pluginVersion": "4.15.0",
           "queryType": "time-series",
-          "rawSql": "WITH (SELECT greatest(coalesce(max(value_avg), 1), 1) FROM telemetry_1m_v1 WHERE tenant_id IN (${tenant_id:singlequote}) AND asset_id IN (${asset_id:singlequote}) AND agent_id IN (${agent_id:singlequote}) AND source_id IN (${source_id:singlequote}) AND point_key IN (${point_key:singlequote}) AND value_avg IS NOT NULL AND $__timeFilter_ms(bucket_start)) AS bool_scale SELECT ts AS time, concat(point_key, ' boolean high/low') AS metric, if(value_bool, bool_scale, 0) AS value FROM telemetry_events_dedup_v1 WHERE tenant_id IN (${tenant_id:singlequote}) AND asset_id IN (${asset_id:singlequote}) AND agent_id IN (${agent_id:singlequote}) AND source_id IN (${source_id:singlequote}) AND point_key IN (${point_key:singlequote}) AND value_type = 'boolean' AND value_bool IS NOT NULL AND $__timeFilter_ms(ts) ORDER BY time ASC, metric ASC LIMIT 5000",
+          "rawSql": "WITH (SELECT greatest(coalesce(max(value_float), 1), 1) FROM telemetry_events_dedup_v1 WHERE tenant_id IN (${tenant_id:singlequote}) AND asset_id IN (${asset_id:singlequote}) AND agent_id IN (${agent_id:singlequote}) AND source_id IN (${source_id:singlequote}) AND point_key IN (${point_key:singlequote}) AND value_type = 'number' AND value_float IS NOT NULL AND $__timeFilter_ms(ts)) AS bool_scale SELECT ts AS time, concat(point_ref, ' boolean high/low') AS metric, if(value_bool, bool_scale, 0) AS value FROM telemetry_events_dedup_v1 WHERE tenant_id IN (${tenant_id:singlequote}) AND asset_id IN (${asset_id:singlequote}) AND agent_id IN (${agent_id:singlequote}) AND source_id IN (${source_id:singlequote}) AND point_key IN (${point_key:singlequote}) AND value_type = 'boolean' AND value_bool IS NOT NULL AND $__timeFilter_ms(ts) ORDER BY time ASC, metric ASC LIMIT 5000",
           "refId": "A"
         },
         {
@@ -169,7 +169,7 @@
           },
           "pluginVersion": "4.15.0",
           "queryType": "time-series",
-          "rawSql": "SELECT bucket_start AS time, point_key AS metric, value_avg AS value FROM telemetry_1m_v1 WHERE tenant_id IN (${tenant_id:singlequote}) AND asset_id IN (${asset_id:singlequote}) AND agent_id IN (${agent_id:singlequote}) AND source_id IN (${source_id:singlequote}) AND point_key IN (${point_key:singlequote}) AND value_avg IS NOT NULL AND $__timeFilter_ms(bucket_start) ORDER BY bucket_start ASC, point_key ASC LIMIT 5000",
+          "rawSql": "SELECT ts AS time, point_ref AS metric, value_float AS value FROM telemetry_events_dedup_v1 WHERE tenant_id IN (${tenant_id:singlequote}) AND asset_id IN (${asset_id:singlequote}) AND agent_id IN (${agent_id:singlequote}) AND source_id IN (${source_id:singlequote}) AND point_key IN (${point_key:singlequote}) AND value_type = 'number' AND value_float IS NOT NULL AND $__timeFilter_ms(ts) ORDER BY time ASC, metric ASC LIMIT 5000",
           "refId": "B"
         }
       ],

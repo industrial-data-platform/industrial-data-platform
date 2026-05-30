@@ -194,10 +194,10 @@ Dashboard set читает:
 - `service_latest_agent_status_v1` — latest agent health context
 - `service_latest_source_connection_v1` — latest source connection health
 - `service_telemetry_activity_1m_v1` — overview event rate, quality, top-N и
-  selected-point event rate
+  selected-points event rate
 - `telemetry_latest_v1` — bounded latest values drilldown
-- `telemetry_1m_v1` — bounded selected-point value trends
-- `telemetry_events_dedup_v1` — короткие bounded drilldown/quality queries
+- `telemetry_events_dedup_v1` — короткие bounded drilldown/quality queries и
+  selected-points value trends
 
 Быстрый seed для ручной проверки:
 

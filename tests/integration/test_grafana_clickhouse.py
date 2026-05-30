@@ -265,6 +265,59 @@ def test_seeded_clickhouse_rows_are_visible_through_service_dashboard_api(
         sort_keys=True,
     )
 
+    point_trend_responses = _query_dashboard_panel(
+        local_grafana_clickhouse_stack,
+        drilldown,
+        "Point trend",
+        seed=seed,
+    )
+    point_trend_values = [
+        value
+        for response in point_trend_responses
+        for value in _grafana_field_values(response, "value")
+    ]
+    assert len(point_trend_values) == seed.event_count, json.dumps(
+        point_trend_responses,
+        indent=2,
+        sort_keys=True,
+    )
+    assert _contains_scalar_value(point_trend_responses, 1000), json.dumps(
+        point_trend_responses,
+        indent=2,
+        sort_keys=True,
+    )
+    assert _contains_scalar_value(
+        point_trend_responses,
+        1000 + seed.event_count - 1,
+    ), json.dumps(point_trend_responses, indent=2, sort_keys=True)
+
+    second_seed = _DashboardApiSeed(
+        tenant_id=seed.tenant_id,
+        asset_id=seed.asset_id,
+        agent_id=seed.agent_id,
+        source_id=seed.source_id,
+        source_type=seed.source_type,
+        point_key=f"{seed.point_key}-second",
+        source_config_revision=f"{seed.source_config_revision}-second",
+        event_count=25,
+    )
+    _seed_clickhouse_dashboard_rows(local_grafana_clickhouse_stack, second_seed)
+    multi_point_trend_responses = _query_dashboard_panel(
+        local_grafana_clickhouse_stack,
+        drilldown,
+        "Point trend",
+        seed=seed,
+        point_keys=[seed.point_key, second_seed.point_key],
+    )
+    multi_point_trend_values = [
+        value
+        for response in multi_point_trend_responses
+        for value in _grafana_field_values(response, "value")
+    ]
+    assert len(multi_point_trend_values) == (
+        seed.event_count + second_seed.event_count
+    ), json.dumps(multi_point_trend_responses, indent=2, sort_keys=True)
+
     event_rate_response = _query_dashboard_panel(
         local_grafana_clickhouse_stack,
         drilldown,
@@ -319,7 +372,6 @@ def _assert_service_dashboard_contract(
     assert "service_latest_agent_status_v1" in dashboard_json
     assert "service_latest_source_connection_v1" in dashboard_json
     assert "telemetry_latest_v1" in dashboard_json
-    assert "telemetry_1m_v1" in dashboard_json
     assert "telemetry_events_dedup_v1" in dashboard_json
     assert "agent_status_events_v1" not in dashboard_json
     assert "source_connection_events_v1" not in dashboard_json
@@ -363,11 +415,25 @@ def _assert_service_dashboard_contract(
         assert variable["type"] == "query"
         assert variable["datasource"]["uid"] == DATASOURCE_UID
         assert "LIMIT" in variable["query"].upper()
+        assert variable["multi"] is (variable_name == "point_key")
     assert "${tenant_id:singlequote}" in variable_by_name["asset_id"]["query"]
     assert "${asset_id:singlequote}" in variable_by_name["source_type"]["query"]
     assert "${source_type:singlequote}" in variable_by_name["agent_id"]["query"]
     assert "${agent_id:singlequote}" in variable_by_name["source_id"]["query"]
     assert "${source_id:singlequote}" in variable_by_name["point_key"]["query"]
+
+    point_trend_sql = "\n".join(_dashboard_panel_sql(drilldown, "Point trend"))
+    _assert_sql_contains_fragments(
+        point_trend_sql,
+        [
+            "FROM telemetry_events_dedup_v1",
+            "tenant_id IN (${tenant_id:singlequote})",
+            "asset_id IN (${asset_id:singlequote})",
+            "source_id IN (${source_id:singlequote})",
+            "point_key IN (${point_key:singlequote})",
+            "value_float AS value",
+        ],
+    )
 
 
 def _time_series_points_are_visible(panel: dict[str, Any]) -> bool:
@@ -517,6 +583,7 @@ def _query_dashboard_panel(
     title: str,
     *,
     seed: _DashboardApiSeed | None = None,
+    point_keys: list[str] | None = None,
 ) -> list[dict[str, Any]]:
     responses: list[dict[str, Any]] = []
     for raw_sql in _dashboard_panel_sql(dashboard, title):
@@ -524,7 +591,11 @@ def _query_dashboard_panel(
             "POST",
             "/api/ds/query",
             _grafana_table_query_payload(
-                _replace_dashboard_variables(raw_sql, seed=seed)
+                _replace_dashboard_variables(
+                    raw_sql,
+                    seed=seed,
+                    point_keys=point_keys,
+                )
             ),
             timeout=60,
         )
@@ -611,6 +682,7 @@ def _replace_dashboard_variables(
     raw_sql: str,
     *,
     seed: _DashboardApiSeed | None = None,
+    point_keys: list[str] | None = None,
 ) -> str:
     tenant_id = RUN_TENANT_ID if seed is None else seed.tenant_id
     asset_id = RUN_ASSET_ID if seed is None else seed.asset_id
@@ -618,13 +690,14 @@ def _replace_dashboard_variables(
     agent_id = RUN_AGENT_ID if seed is None else seed.agent_id
     source_id = RUN_SOURCE_ID if seed is None else seed.source_id
     point_key = RUN_POINT_KEY if seed is None else seed.point_key
+    point_key_values = point_keys if point_keys is not None else [point_key]
     replacements = {
         "${tenant_id:singlequote}": f"'{tenant_id}'",
         "${asset_id:singlequote}": f"'{asset_id}'",
         "${source_type:singlequote}": f"'{source_type}'",
         "${agent_id:singlequote}": f"'{agent_id}'",
         "${source_id:singlequote}": f"'{source_id}'",
-        "${point_key:singlequote}": f"'{point_key}'",
+        "${point_key:singlequote}": ",".join(f"'{key}'" for key in point_key_values),
     }
     sql = raw_sql
     for needle, replacement in replacements.items():
@@ -763,6 +836,7 @@ class _DashboardApiSeed:
         self.source_id = source_id
         self.source_type = source_type
         self.point_key = point_key
+        self.point_ref = f"1/2/{point_key}"
         self.source_config_revision = source_config_revision
         self.event_count = event_count
 
@@ -794,7 +868,7 @@ def _seed_clickhouse_dashboard_rows(
                     seed.source_type,
                     f"{seed.tenant_id}|{seed.asset_id}|{seed.source_id}|{seed.point_key}",
                     seed.point_key,
-                    f"1/2/{index}",
+                    seed.point_ref,
                     seed.source_config_revision,
                     _format_clickhouse_datetime64(ts),
                     _format_clickhouse_datetime64(ts + timedelta(milliseconds=1)),
@@ -916,7 +990,7 @@ def _seed_clickhouse_dashboard_rows(
                         [
                             {
                                 "point_key": seed.point_key,
-                                "point_ref": "1/2/0",
+                                "point_ref": seed.point_ref,
                                 "value_type": "number",
                             }
                         ],

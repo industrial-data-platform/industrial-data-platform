@@ -85,7 +85,7 @@ Dashboard set строится как общий service overview плюс гр�
 | `Service inventory` | tenants, assets, agents, sources, observed/current points; configured points только после config/inventory-backed read model |
 | `Runtime health` | online/offline/stale agents, connected/disconnected sources, bad/uncertain quality |
 | `Telemetry flow` | event rate, deduplicated events, raw -> contract -> dedup counts, ingestion latency |
-| `Point drilldown` | selected point график, latest value table, quality/event type distribution |
+| `Point drilldown` | selected points график, latest value table, quality/event type distribution |
 | `Top offenders` | top tenants/sources/points by event rate, stale age, bad quality, missing telemetry |
 
 `Telemetry Point Drilldown`:
@@ -183,8 +183,8 @@ Bounded drilldown остается на существующих correctness-fir
 value-level или event-level история:
 
 - `telemetry_latest_v1` для latest values;
-- `telemetry_1m_v1` для коротких трендов выбранных points;
-- `telemetry_events_dedup_v1` только для коротких bounded drilldown запросов.
+- `telemetry_events_dedup_v1` для коротких bounded drilldown запросов,
+  включая raw numeric/boolean samples выбранных points.
 
 Production dashboard не должен регулярно парсить `points_json` из
 `source_config_snapshots_v1` и не должен делать тяжелые joins при каждом refresh.
