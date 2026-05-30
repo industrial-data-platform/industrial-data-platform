@@ -17,14 +17,11 @@ the time.
 ## Accepted ADRs in current review
 
 - [`ADR-016: Asset Graph Registry boundary`](ADR-016-asset-graph-registry-boundary.md)
+- [`ADR-017: Internal Grafana service telemetry dashboards`](ADR-017-internal-grafana-service-telemetry-dashboard.md)
 
 ## Superseded discussion material
 
 - [`ADR-015: Hierarchical Catalog and Asset Graph boundary comparison`](ADR-015-hierarchical-catalog-runtime-boundary.md)
-
-## Draft / Proposed ADRs
-
-- [`ADR-017: Internal Grafana service telemetry dashboards`](ADR-017-internal-grafana-service-telemetry-dashboard.md)
 
 For active architecture navigation, start with
 [`../decisions.md`](../decisions.md), then use:

@@ -24,6 +24,10 @@ class FakeClickHouseClient:
             return "5\t5\n"
         if "FROM telemetry_1h_v1" in sql:
             return "1\t5\n"
+        if "FROM service_point_inventory_v1" in sql:
+            return "2\n"
+        if "FROM service_telemetry_activity_1m_v1" in sql:
+            return "5\t5\n"
         return ""
 
 
@@ -59,3 +63,5 @@ def test_load_poc_batches_rows_and_reports_read_model_metrics() -> None:
     assert len(inserted_lines) == 7
     assert result["queries"]["dedup_count"]["value"] == 5
     assert result["queries"]["latest_count"]["value"] == 2
+    assert result["queries"]["service_point_inventory"]["value"] == 2
+    assert result["queries"]["service_activity_1m"]["value"] == 5

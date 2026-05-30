@@ -1,0 +1,706 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "Internal service dashboard for bounded technical point drilldown over ClickHouse read models. Not tenant-facing.",
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Service Telemetry Overview",
+      "type": "link",
+      "url": "/d/idp-service-telemetry-overview/service-telemetry-overview"
+    }
+  ],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "idp-telemetry-store-telemetry-store"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisPlacement": "auto",
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "always",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".* boolean high/low$"
+            },
+            "properties": [
+              {
+                "id": "custom.drawStyle",
+                "value": "bars"
+              },
+              {
+                "id": "custom.barAlignment",
+                "value": 0
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 12
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 0
+              },
+              {
+                "id": "custom.showPoints",
+                "value": "always"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "blue",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 16,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "idp-telemetry-store-telemetry-store"
+          },
+          "editorType": "sql",
+          "format": 0,
+          "meta": {
+            "builderOptions": {
+              "columns": [],
+              "database": "",
+              "limit": 1000,
+              "mode": "list",
+              "queryType": "time-series",
+              "table": ""
+            }
+          },
+          "pluginVersion": "4.15.0",
+          "queryType": "time-series",
+          "rawSql": "WITH (SELECT greatest(coalesce(max(value_float), 1), 1) FROM telemetry_events_dedup_v1 WHERE tenant_id IN (${tenant_id:singlequote}) AND asset_id IN (${asset_id:singlequote}) AND agent_id IN (${agent_id:singlequote}) AND source_id IN (${source_id:singlequote}) AND point_key IN (${point_key:singlequote}) AND value_type = 'number' AND value_float IS NOT NULL AND $__timeFilter_ms(ts)) AS bool_scale SELECT ts AS time, concat(point_ref, ' boolean high/low') AS metric, if(value_bool, bool_scale, 0) AS value FROM telemetry_events_dedup_v1 WHERE tenant_id IN (${tenant_id:singlequote}) AND asset_id IN (${asset_id:singlequote}) AND agent_id IN (${agent_id:singlequote}) AND source_id IN (${source_id:singlequote}) AND point_key IN (${point_key:singlequote}) AND value_type = 'boolean' AND value_bool IS NOT NULL AND $__timeFilter_ms(ts) ORDER BY time ASC, metric ASC LIMIT 5000",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "idp-telemetry-store-telemetry-store"
+          },
+          "editorType": "sql",
+          "format": 0,
+          "meta": {
+            "builderOptions": {
+              "columns": [],
+              "database": "",
+              "limit": 1000,
+              "mode": "list",
+              "queryType": "time-series",
+              "table": ""
+            }
+          },
+          "pluginVersion": "4.15.0",
+          "queryType": "time-series",
+          "rawSql": "SELECT ts AS time, point_ref AS metric, value_float AS value FROM telemetry_events_dedup_v1 WHERE tenant_id IN (${tenant_id:singlequote}) AND asset_id IN (${asset_id:singlequote}) AND agent_id IN (${agent_id:singlequote}) AND source_id IN (${source_id:singlequote}) AND point_key IN (${point_key:singlequote}) AND value_type = 'number' AND value_float IS NOT NULL AND $__timeFilter_ms(ts) ORDER BY time ASC, metric ASC LIMIT 5000",
+          "refId": "B"
+        }
+      ],
+      "title": "Point trend",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "idp-telemetry-store-telemetry-store"
+      },
+      "description": "Latest values for the selected raw technical point identity.",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "idp-telemetry-store-telemetry-store"
+          },
+          "editorType": "sql",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "columns": [],
+              "database": "",
+              "limit": 1000,
+              "mode": "list",
+              "queryType": "table",
+              "table": ""
+            }
+          },
+          "pluginVersion": "4.15.0",
+          "queryType": "table",
+          "rawSql": "SELECT ts, tenant_id, asset_id, source_type, agent_id, source_id, point_key, value_type, coalesce(toString(value_float), toString(value_bool), value_string, value_raw) AS value, quality, source_config_revision FROM telemetry_latest_v1 WHERE tenant_id IN (${tenant_id:singlequote}) AND asset_id IN (${asset_id:singlequote}) AND source_id IN (${source_id:singlequote}) AND point_key IN (${point_key:singlequote}) ORDER BY ts DESC, point_key ASC LIMIT 100",
+          "refId": "A"
+        }
+      ],
+      "title": "Latest values",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "idp-telemetry-store-telemetry-store"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 8
+      },
+      "id": 3,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "idp-telemetry-store-telemetry-store"
+          },
+          "editorType": "sql",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "columns": [],
+              "database": "",
+              "limit": 1000,
+              "mode": "list",
+              "queryType": "table",
+              "table": ""
+            }
+          },
+          "pluginVersion": "4.15.0",
+          "queryType": "table",
+          "rawSql": "SELECT quality, count() AS events FROM telemetry_events_dedup_v1 WHERE tenant_id IN (${tenant_id:singlequote}) AND asset_id IN (${asset_id:singlequote}) AND source_id IN (${source_id:singlequote}) AND point_key IN (${point_key:singlequote}) AND $__timeFilter_ms(ts) GROUP BY quality ORDER BY events DESC LIMIT 10",
+          "refId": "A"
+        }
+      ],
+      "title": "Quality distribution",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "idp-telemetry-store-telemetry-store"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 8
+      },
+      "id": 4,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "idp-telemetry-store-telemetry-store"
+          },
+          "editorType": "sql",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "columns": [],
+              "database": "",
+              "limit": 1000,
+              "mode": "list",
+              "queryType": "table",
+              "table": ""
+            }
+          },
+          "pluginVersion": "4.15.0",
+          "queryType": "table",
+          "rawSql": "SELECT event_type, count() AS events FROM telemetry_events_dedup_v1 WHERE tenant_id IN (${tenant_id:singlequote}) AND asset_id IN (${asset_id:singlequote}) AND source_id IN (${source_id:singlequote}) AND point_key IN (${point_key:singlequote}) AND $__timeFilter_ms(ts) GROUP BY event_type ORDER BY events DESC LIMIT 10",
+          "refId": "A"
+        }
+      ],
+      "title": "Event type distribution",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "idp-telemetry-store-telemetry-store"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisPlacement": "auto",
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "always",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 8
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "idp-telemetry-store-telemetry-store"
+          },
+          "editorType": "sql",
+          "format": 0,
+          "meta": {
+            "builderOptions": {
+              "columns": [],
+              "database": "",
+              "limit": 1000,
+              "mode": "list",
+              "queryType": "time-series",
+              "table": ""
+            }
+          },
+          "pluginVersion": "4.15.0",
+          "queryType": "time-series",
+          "rawSql": "SELECT bucket_start AS time, 'events' AS metric, uniqMerge(event_count_state) AS value FROM service_telemetry_activity_1m_v1 WHERE tenant_id IN (${tenant_id:singlequote}) AND asset_id IN (${asset_id:singlequote}) AND source_type IN (${source_type:singlequote}) AND source_id IN (${source_id:singlequote}) AND point_key IN (${point_key:singlequote}) AND agent_id IN (${agent_id:singlequote}) AND $__timeFilter_ms(bucket_start) GROUP BY bucket_start ORDER BY bucket_start ASC LIMIT 1000",
+          "refId": "A"
+        }
+      ],
+      "title": "Event rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "idp-telemetry-store-telemetry-store"
+      },
+      "description": "Agent/source status context is empty-state tolerant when no operational status events have been seeded.",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 15
+      },
+      "id": 6,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "idp-telemetry-store-telemetry-store"
+          },
+          "editorType": "sql",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "columns": [],
+              "database": "",
+              "limit": 1000,
+              "mode": "list",
+              "queryType": "table",
+              "table": ""
+            }
+          },
+          "pluginVersion": "4.15.0",
+          "queryType": "table",
+          "rawSql": "SELECT scope, tenant_id, asset_id, agent_id, source_id, state, reason, ts, dashboard_state, context_source FROM (SELECT 'agent' AS scope, tenant_id, asset_id, agent_id, '' AS source_id, status AS state, '' AS reason, last_status_ts AS ts, if(last_status_ts < now64(3) - INTERVAL 15 MINUTE, 'stale', status) AS dashboard_state, 'service_latest_agent_status_v1' AS context_source FROM (SELECT tenant_id, asset_id, agent_id, argMaxMerge(status_state) AS status, maxMerge(last_status_ts_state) AS last_status_ts FROM service_latest_agent_status_v1 WHERE tenant_id IN (${tenant_id:singlequote}) AND asset_id IN (${asset_id:singlequote}) AND agent_id IN (${agent_id:singlequote}) GROUP BY tenant_id, asset_id, agent_id) UNION ALL SELECT 'source' AS scope, tenant_id, asset_id, agent_id, source_id, state, reason, last_state_ts AS ts, if(last_state_ts < now64(3) - INTERVAL 15 MINUTE, 'stale', state) AS dashboard_state, 'service_latest_source_connection_v1' AS context_source FROM (SELECT tenant_id, asset_id, agent_id, source_id, argMaxMerge(state_state) AS state, argMaxMerge(reason_state) AS reason, maxMerge(last_state_ts_state) AS last_state_ts FROM service_latest_source_connection_v1 WHERE tenant_id IN (${tenant_id:singlequote}) AND asset_id IN (${asset_id:singlequote}) AND agent_id IN (${agent_id:singlequote}) AND source_id IN (${source_id:singlequote}) GROUP BY tenant_id, asset_id, agent_id, source_id) UNION ALL SELECT 'point_inventory' AS scope, tenant_id, asset_id, agent_id, source_id, 'telemetry_inferred' AS state, 'latest telemetry freshness fallback' AS reason, last_seen AS ts, if(last_seen < now64(3) - INTERVAL 15 MINUTE, 'stale', 'connected') AS dashboard_state, 'service_point_inventory_v1' AS context_source FROM (SELECT tenant_id, asset_id, agent_id, source_id, maxMerge(last_seen_state) AS last_seen FROM service_point_inventory_v1 WHERE tenant_id IN (${tenant_id:singlequote}) AND asset_id IN (${asset_id:singlequote}) AND source_type IN (${source_type:singlequote}) AND agent_id IN (${agent_id:singlequote}) AND source_id IN (${source_id:singlequote}) GROUP BY tenant_id, asset_id, agent_id, source_id)) ORDER BY scope ASC, ts DESC LIMIT 40",
+          "refId": "A"
+        }
+      ],
+      "title": "Runtime status context",
+      "type": "table"
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": [
+    "service-operations",
+    "web-monitoring",
+    "clickhouse",
+    "internal"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "datasource": {
+          "type": "grafana-clickhouse-datasource",
+          "uid": "idp-telemetry-store-telemetry-store"
+        },
+        "definition": "SELECT tenant_id FROM service_point_inventory_v1 GROUP BY tenant_id ORDER BY tenant_id LIMIT 200",
+        "hide": 0,
+        "includeAll": false,
+        "multi": false,
+        "name": "tenant_id",
+        "options": [],
+        "query": "SELECT tenant_id FROM service_point_inventory_v1 GROUP BY tenant_id ORDER BY tenant_id LIMIT 200",
+        "refresh": 1,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "grafana-clickhouse-datasource",
+          "uid": "idp-telemetry-store-telemetry-store"
+        },
+        "definition": "SELECT asset_id FROM service_point_inventory_v1 WHERE tenant_id IN (${tenant_id:singlequote}) GROUP BY asset_id ORDER BY asset_id LIMIT 200",
+        "hide": 0,
+        "includeAll": false,
+        "multi": false,
+        "name": "asset_id",
+        "options": [],
+        "query": "SELECT asset_id FROM service_point_inventory_v1 WHERE tenant_id IN (${tenant_id:singlequote}) GROUP BY asset_id ORDER BY asset_id LIMIT 200",
+        "refresh": 1,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "grafana-clickhouse-datasource",
+          "uid": "idp-telemetry-store-telemetry-store"
+        },
+        "definition": "SELECT source_type FROM service_point_inventory_v1 WHERE tenant_id IN (${tenant_id:singlequote}) AND asset_id IN (${asset_id:singlequote}) GROUP BY source_type ORDER BY source_type LIMIT 100",
+        "hide": 0,
+        "includeAll": false,
+        "multi": false,
+        "name": "source_type",
+        "options": [],
+        "query": "SELECT source_type FROM service_point_inventory_v1 WHERE tenant_id IN (${tenant_id:singlequote}) AND asset_id IN (${asset_id:singlequote}) GROUP BY source_type ORDER BY source_type LIMIT 100",
+        "refresh": 1,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "grafana-clickhouse-datasource",
+          "uid": "idp-telemetry-store-telemetry-store"
+        },
+        "definition": "SELECT agent_id FROM service_point_inventory_v1 WHERE tenant_id IN (${tenant_id:singlequote}) AND asset_id IN (${asset_id:singlequote}) AND source_type IN (${source_type:singlequote}) GROUP BY agent_id ORDER BY agent_id LIMIT 200",
+        "hide": 0,
+        "includeAll": false,
+        "multi": false,
+        "name": "agent_id",
+        "options": [],
+        "query": "SELECT agent_id FROM service_point_inventory_v1 WHERE tenant_id IN (${tenant_id:singlequote}) AND asset_id IN (${asset_id:singlequote}) AND source_type IN (${source_type:singlequote}) GROUP BY agent_id ORDER BY agent_id LIMIT 200",
+        "refresh": 1,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "grafana-clickhouse-datasource",
+          "uid": "idp-telemetry-store-telemetry-store"
+        },
+        "definition": "SELECT source_id FROM service_point_inventory_v1 WHERE tenant_id IN (${tenant_id:singlequote}) AND asset_id IN (${asset_id:singlequote}) AND source_type IN (${source_type:singlequote}) AND agent_id IN (${agent_id:singlequote}) GROUP BY source_id ORDER BY source_id LIMIT 200",
+        "hide": 0,
+        "includeAll": false,
+        "multi": false,
+        "name": "source_id",
+        "options": [],
+        "query": "SELECT source_id FROM service_point_inventory_v1 WHERE tenant_id IN (${tenant_id:singlequote}) AND asset_id IN (${asset_id:singlequote}) AND source_type IN (${source_type:singlequote}) AND agent_id IN (${agent_id:singlequote}) GROUP BY source_id ORDER BY source_id LIMIT 200",
+        "refresh": 1,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "grafana-clickhouse-datasource",
+          "uid": "idp-telemetry-store-telemetry-store"
+        },
+        "definition": "SELECT point_key FROM service_point_inventory_v1 WHERE tenant_id IN (${tenant_id:singlequote}) AND asset_id IN (${asset_id:singlequote}) AND source_type IN (${source_type:singlequote}) AND agent_id IN (${agent_id:singlequote}) AND source_id IN (${source_id:singlequote}) GROUP BY point_key ORDER BY point_key LIMIT 500",
+        "hide": 0,
+        "includeAll": false,
+        "multi": true,
+        "name": "point_key",
+        "options": [],
+        "query": "SELECT point_key FROM service_point_inventory_v1 WHERE tenant_id IN (${tenant_id:singlequote}) AND asset_id IN (${asset_id:singlequote}) AND source_type IN (${source_type:singlequote}) AND agent_id IN (${agent_id:singlequote}) AND source_id IN (${source_id:singlequote}) GROUP BY point_key ORDER BY point_key LIMIT 500",
+        "refresh": 1,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Telemetry Point Drilldown",
+  "uid": "idp-telemetry-point-drilldown",
+  "version": 1,
+  "weekStart": ""
+}

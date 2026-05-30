@@ -1,10 +1,10 @@
 apiVersion: 1
 
 providers:
-  - name: idp-local-clickhouse-dashboards
+  - name: idp-service-operations-dashboards
     orgId: 1
-    folder: Web Monitoring
-    folderUid: idp-local
+    folder: Service Operations
+    folderUid: idp-service-operations
     type: file
     disableDeletion: false
     allowUiUpdates: false

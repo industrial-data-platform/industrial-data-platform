@@ -228,6 +228,28 @@ def _measure_read_model_queries(
             FORMAT TabSeparatedRaw
             """.strip(),
         ),
+        "service_point_inventory": _timed_scalar_query(
+            client,
+            f"""
+            SELECT uniqExact(tuple(tenant_id, asset_id, source_type, agent_id, source_id, point_key))
+            FROM service_point_inventory_v1
+            WHERE tenant_id = {_sql_string(tenant_id)}
+              AND asset_id = {_sql_string(asset_id)}
+            FORMAT TabSeparatedRaw
+            """.strip(),
+            parser=int,
+        ),
+        "service_activity_1m": _timed_rollup_query(
+            client,
+            grain="service_1m",
+            query=f"""
+            SELECT count(), uniqMerge(event_count_state)
+            FROM service_telemetry_activity_1m_v1
+            WHERE tenant_id = {_sql_string(tenant_id)}
+              AND asset_id = {_sql_string(asset_id)}
+            FORMAT TabSeparatedRaw
+            """.strip(),
+        ),
         "one_point_history": _timed_rollup_query(
             client,
             grain="point",

@@ -150,11 +150,93 @@ def test_kafka_connect_writes_raw_json_to_clickhouse_landing_and_contract_table(
         FORMAT TabSeparatedRaw
         """.strip()
     ).stdout.strip()
+    service_inventory_row = local_storage_stack.wait_for_clickhouse_value(
+        """
+        SELECT
+            tenant_id,
+            asset_id,
+            source_type,
+            agent_id,
+            source_id,
+            point_key,
+            argMaxMerge(point_id_state),
+            toString(maxMerge(last_seen_state))
+        FROM service_point_inventory_v1
+        WHERE tenant_id = 'tenant-storage-it'
+          AND asset_id = 'asset-storage-it'
+          AND source_id = 'source-storage-it'
+          AND point_key = 'temperature'
+        GROUP BY tenant_id, asset_id, source_type, agent_id, source_id, point_key
+        FORMAT TabSeparatedRaw
+        """.strip()
+    )
+    service_activity_row = local_storage_stack.wait_for_clickhouse_value(
+        """
+        SELECT
+            uniqMerge(event_count_state),
+            uniqIfMerge(good_count_state),
+            uniqIfMerge(bad_count_state)
+        FROM service_telemetry_activity_1m_v1
+        WHERE tenant_id = 'tenant-storage-it'
+          AND asset_id = 'asset-storage-it'
+          AND source_id = 'source-storage-it'
+          AND point_key = 'temperature'
+          AND bucket_start = toDateTime64('2026-05-03 05:50:00', 3, 'UTC')
+        FORMAT TabSeparatedRaw
+        """.strip()
+    )
 
     assert deduplicated_view_count == "1"
     assert latest_row == "storage-raw-001\tnumber\t42.5"
     assert minute_rollup_row == "1\t1\t1\t42.5\t42.5\t42.5\t42.5"
     assert hourly_rollup_row == "1\t1\t1\t42.5\t42.5\t42.5\t42.5"
+    assert service_inventory_row == (
+        "tenant-storage-it\tasset-storage-it\tknx\tagent-storage-it\t"
+        "source-storage-it\ttemperature\t"
+        "tenant-storage-it|asset-storage-it|source-storage-it|temperature\t"
+        "2026-05-03 05:50:00.000"
+    )
+    assert service_activity_row == "1\t1\t0"
+
+    corrected_payload = {
+        **payload,
+        "point_ref": "1/2/99",
+        "source_config_revision": "rev-storage-it-002",
+        "ingested_at": "2026-05-03T05:50:10Z",
+        "value": 43.5,
+    }
+    local_storage_stack.produce_kafka_text(
+        "idp.telemetry.events.v1",
+        json.dumps(corrected_payload, ensure_ascii=True, separators=(",", ":")),
+    )
+    corrected_inventory_row = local_storage_stack.wait_for_clickhouse_value(
+        """
+        SELECT
+            argMaxMerge(point_ref_state),
+            argMaxMerge(source_config_revision_state),
+            toString(maxMerge(last_ingested_at_state))
+        FROM service_point_inventory_v1
+        WHERE tenant_id = 'tenant-storage-it'
+          AND asset_id = 'asset-storage-it'
+          AND source_id = 'source-storage-it'
+          AND point_key = 'temperature'
+        FORMAT TabSeparatedRaw
+        """.strip()
+    )
+    corrected_latest_row = local_storage_stack.clickhouse_query(
+        """
+        SELECT point_ref, source_config_revision, value_float, toString(ingested_at)
+        FROM telemetry_latest_v1
+        WHERE tenant_id = 'tenant-storage-it'
+          AND asset_id = 'asset-storage-it'
+          AND source_id = 'source-storage-it'
+          AND point_key = 'temperature'
+        FORMAT TabSeparatedRaw
+        """.strip()
+    ).stdout.strip()
+
+    assert corrected_inventory_row == "1/2/99\trev-storage-it-002\t2026-05-03 05:50:10.000"
+    assert corrected_latest_row == "1/2/99\trev-storage-it-002\t43.5\t2026-05-03 05:50:10.000"
 
     source_config_payload = {
         "message_type": "idp.source.config.v1",
@@ -285,6 +367,31 @@ def test_kafka_connect_writes_raw_json_to_clickhouse_landing_and_contract_table(
         """.strip()
     )
     assert agent_status_row == "online"
+    latest_agent_status_row = local_storage_stack.wait_for_clickhouse_value(
+        """
+        SELECT argMaxMerge(status_state), toString(maxMerge(last_status_ts_state))
+        FROM service_latest_agent_status_v1
+        WHERE tenant_id = 'tenant-storage-it'
+          AND asset_id = 'asset-storage-it'
+          AND agent_id = 'agent-storage-it'
+        GROUP BY tenant_id, asset_id, agent_id
+        FORMAT TabSeparatedRaw
+        """.strip()
+    )
+    latest_source_connection_row = local_storage_stack.wait_for_clickhouse_value(
+        """
+        SELECT argMaxMerge(state_state), argMaxMerge(reason_state), toString(maxMerge(last_state_ts_state))
+        FROM service_latest_source_connection_v1
+        WHERE tenant_id = 'tenant-storage-it'
+          AND asset_id = 'asset-storage-it'
+          AND agent_id = 'agent-storage-it'
+          AND source_id = 'source-storage-it'
+        GROUP BY tenant_id, asset_id, agent_id, source_id
+        FORMAT TabSeparatedRaw
+        """.strip()
+    )
+    assert latest_agent_status_row == "online\t2026-05-03 05:50:06.000"
+    assert latest_source_connection_row == "connected\t\t2026-05-03 05:50:04.000"
 
     derived_payload = {
         "message_type": "idp.derived.event.v1",
@@ -352,6 +459,8 @@ def test_kafka_connect_writes_raw_json_to_clickhouse_landing_and_contract_table(
     assert load_poc["queries"]["latest_count"]["value"] == 20
     assert load_poc["queries"]["minute_rollup"]["value"] == 2000
     assert load_poc["queries"]["hour_rollup"]["value"] == 2000
+    assert load_poc["queries"]["service_point_inventory"]["value"] == 20
+    assert load_poc["queries"]["service_activity_1m"]["value"] == 2000
 
 
 def test_invalid_storage_record_goes_to_kafka_connect_dlq(local_storage_stack) -> None:
