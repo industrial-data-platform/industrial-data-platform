@@ -190,11 +190,14 @@ Dashboards в folder `Service Operations`:
 
 Dashboard set читает:
 
-- `telemetry_latest_v1` — последние значения по точкам
-- `telemetry_1m_v1` — минутные тренды
-- `telemetry_1h_v1` — часовые агрегаты
+- `service_point_inventory_v1` — observed inventory, variables и freshness
+- `service_latest_agent_status_v1` — latest agent health context
+- `service_latest_source_connection_v1` — latest source connection health
+- `service_telemetry_activity_1m_v1` — overview event rate, quality, top-N и
+  selected-point event rate
+- `telemetry_latest_v1` — bounded latest values drilldown
+- `telemetry_1m_v1` — bounded selected-point value trends
 - `telemetry_events_dedup_v1` — короткие bounded drilldown/quality queries
-- `agent_status_events_v1` и `source_connection_events_v1` — status context
 
 Быстрый seed для ручной проверки:
 

@@ -26,7 +26,7 @@
         "type": "grafana-clickhouse-datasource",
         "uid": "idp-telemetry-store-telemetry-store"
       },
-      "description": "Observed tenants are inferred from telemetry_latest_v1, not configured inventory.",
+      "description": "Observed tenants are inferred from service_point_inventory_v1, not configured inventory.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -89,7 +89,7 @@
           },
           "pluginVersion": "4.15.0",
           "queryType": "table",
-          "rawSql": "SELECT countDistinct(tenant_id) AS observed_tenants FROM telemetry_latest_v1",
+          "rawSql": "SELECT uniqExact(tenant_id) AS observed_tenants FROM service_point_inventory_v1",
           "refId": "A"
         }
       ],
@@ -101,7 +101,7 @@
         "type": "grafana-clickhouse-datasource",
         "uid": "idp-telemetry-store-telemetry-store"
       },
-      "description": "Observed assets are inferred from telemetry_latest_v1, not configured inventory.",
+      "description": "Observed assets are inferred from service_point_inventory_v1, not configured inventory.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -164,7 +164,7 @@
           },
           "pluginVersion": "4.15.0",
           "queryType": "table",
-          "rawSql": "SELECT countDistinct(tenant_id, asset_id) AS observed_assets FROM telemetry_latest_v1",
+          "rawSql": "SELECT uniqExact(tuple(tenant_id, asset_id)) AS observed_assets FROM service_point_inventory_v1",
           "refId": "A"
         }
       ],
@@ -176,7 +176,7 @@
         "type": "grafana-clickhouse-datasource",
         "uid": "idp-telemetry-store-telemetry-store"
       },
-      "description": "Observed agents are inferred from telemetry_latest_v1, not configured inventory.",
+      "description": "Observed agents are inferred from service_point_inventory_v1, not configured inventory.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -239,7 +239,7 @@
           },
           "pluginVersion": "4.15.0",
           "queryType": "table",
-          "rawSql": "SELECT countDistinct(tenant_id, asset_id, agent_id) AS observed_agents FROM telemetry_latest_v1",
+          "rawSql": "SELECT uniqExact(tuple(tenant_id, asset_id, agent_id)) AS observed_agents FROM service_point_inventory_v1",
           "refId": "A"
         }
       ],
@@ -251,7 +251,7 @@
         "type": "grafana-clickhouse-datasource",
         "uid": "idp-telemetry-store-telemetry-store"
       },
-      "description": "Observed sources are inferred from telemetry_latest_v1, not configured inventory.",
+      "description": "Observed sources are inferred from service_point_inventory_v1, not configured inventory.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -314,7 +314,7 @@
           },
           "pluginVersion": "4.15.0",
           "queryType": "table",
-          "rawSql": "SELECT countDistinct(tenant_id, asset_id, agent_id, source_id) AS observed_sources FROM telemetry_latest_v1",
+          "rawSql": "SELECT uniqExact(tuple(tenant_id, asset_id, agent_id, source_id)) AS observed_sources FROM service_point_inventory_v1",
           "refId": "A"
         }
       ],
@@ -326,7 +326,7 @@
         "type": "grafana-clickhouse-datasource",
         "uid": "idp-telemetry-store-telemetry-store"
       },
-      "description": "Observed points are inferred from telemetry_latest_v1, not configured inventory.",
+      "description": "Observed points are inferred from service_point_inventory_v1, not configured inventory.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -389,7 +389,7 @@
           },
           "pluginVersion": "4.15.0",
           "queryType": "table",
-          "rawSql": "SELECT count() AS observed_points FROM telemetry_latest_v1",
+          "rawSql": "SELECT uniqExact(tuple(tenant_id, asset_id, source_type, agent_id, source_id, point_key)) AS observed_points FROM service_point_inventory_v1",
           "refId": "A"
         }
       ],
@@ -464,7 +464,7 @@
           },
           "pluginVersion": "4.15.0",
           "queryType": "table",
-          "rawSql": "SELECT 'active_points' AS inferred_state, countIf(ts >= now64(3) - INTERVAL 15 MINUTE) AS points FROM telemetry_latest_v1 UNION ALL SELECT 'stale_points' AS inferred_state, countIf(ts < now64(3) - INTERVAL 15 MINUTE) AS points FROM telemetry_latest_v1 LIMIT 2",
+          "rawSql": "SELECT 'active_points' AS inferred_state, countIf(last_seen >= now64(3) - INTERVAL 15 MINUTE) AS points FROM (SELECT tenant_id, asset_id, source_type, agent_id, source_id, point_key, maxMerge(last_seen_state) AS last_seen FROM service_point_inventory_v1 GROUP BY tenant_id, asset_id, source_type, agent_id, source_id, point_key) UNION ALL SELECT 'stale_points' AS inferred_state, countIf(last_seen < now64(3) - INTERVAL 15 MINUTE) AS points FROM (SELECT tenant_id, asset_id, source_type, agent_id, source_id, point_key, maxMerge(last_seen_state) AS last_seen FROM service_point_inventory_v1 GROUP BY tenant_id, asset_id, source_type, agent_id, source_id, point_key) LIMIT 2",
           "refId": "A"
         }
       ],
@@ -539,7 +539,7 @@
           },
           "pluginVersion": "4.15.0",
           "queryType": "table",
-          "rawSql": "SELECT status, count() AS agents FROM (SELECT tenant_id, asset_id, agent_id, status FROM (SELECT tenant_id, asset_id, agent_id, if(ts < now64(3) - INTERVAL 15 MINUTE, 'stale', status) AS status, 0 AS sort_priority FROM agent_status_events_v1 ORDER BY tenant_id ASC, asset_id ASC, agent_id ASC, ts DESC LIMIT 1 BY tenant_id, asset_id, agent_id UNION ALL SELECT tenant_id, asset_id, agent_id, if(ts < now64(3) - INTERVAL 15 MINUTE, 'stale', 'online') AS status, 1 AS sort_priority FROM (SELECT tenant_id, asset_id, agent_id, max(ts) AS ts FROM telemetry_latest_v1 GROUP BY tenant_id, asset_id, agent_id)) ORDER BY tenant_id ASC, asset_id ASC, agent_id ASC, sort_priority ASC LIMIT 1 BY tenant_id, asset_id, agent_id) GROUP BY status ORDER BY agents DESC LIMIT 10",
+          "rawSql": "SELECT status, count() AS agents FROM (SELECT tenant_id, asset_id, agent_id, argMin(status, sort_priority) AS status FROM (SELECT tenant_id, asset_id, agent_id, if(last_status_ts < now64(3) - INTERVAL 15 MINUTE, 'stale', status) AS status, 0 AS sort_priority FROM (SELECT tenant_id, asset_id, agent_id, argMaxMerge(status_state) AS status, maxMerge(last_status_ts_state) AS last_status_ts FROM service_latest_agent_status_v1 GROUP BY tenant_id, asset_id, agent_id) UNION ALL SELECT tenant_id, asset_id, agent_id, if(last_seen < now64(3) - INTERVAL 15 MINUTE, 'stale', 'online') AS status, 1 AS sort_priority FROM (SELECT tenant_id, asset_id, agent_id, maxMerge(last_seen_state) AS last_seen FROM service_point_inventory_v1 GROUP BY tenant_id, asset_id, agent_id)) GROUP BY tenant_id, asset_id, agent_id) GROUP BY status ORDER BY agents DESC LIMIT 10",
           "refId": "A"
         }
       ],
@@ -614,7 +614,7 @@
           },
           "pluginVersion": "4.15.0",
           "queryType": "table",
-          "rawSql": "SELECT state, count() AS sources FROM (SELECT tenant_id, asset_id, agent_id, source_id, state FROM (SELECT tenant_id, asset_id, agent_id, source_id, if(ts < now64(3) - INTERVAL 15 MINUTE, 'stale', state) AS state, 0 AS sort_priority FROM source_connection_events_v1 ORDER BY tenant_id ASC, asset_id ASC, agent_id ASC, source_id ASC, ts DESC LIMIT 1 BY tenant_id, asset_id, agent_id, source_id UNION ALL SELECT tenant_id, asset_id, agent_id, source_id, if(ts < now64(3) - INTERVAL 15 MINUTE, 'stale', 'connected') AS state, 1 AS sort_priority FROM (SELECT tenant_id, asset_id, agent_id, source_id, max(ts) AS ts FROM telemetry_latest_v1 GROUP BY tenant_id, asset_id, agent_id, source_id)) ORDER BY tenant_id ASC, asset_id ASC, agent_id ASC, source_id ASC, sort_priority ASC LIMIT 1 BY tenant_id, asset_id, agent_id, source_id) GROUP BY state ORDER BY sources DESC LIMIT 10",
+          "rawSql": "SELECT state, count() AS sources FROM (SELECT tenant_id, asset_id, agent_id, source_id, argMin(state, sort_priority) AS state FROM (SELECT tenant_id, asset_id, agent_id, source_id, if(last_state_ts < now64(3) - INTERVAL 15 MINUTE, 'stale', state) AS state, 0 AS sort_priority FROM (SELECT tenant_id, asset_id, agent_id, source_id, argMaxMerge(state_state) AS state, maxMerge(last_state_ts_state) AS last_state_ts FROM service_latest_source_connection_v1 GROUP BY tenant_id, asset_id, agent_id, source_id) UNION ALL SELECT tenant_id, asset_id, agent_id, source_id, if(last_seen < now64(3) - INTERVAL 15 MINUTE, 'stale', 'connected') AS state, 1 AS sort_priority FROM (SELECT tenant_id, asset_id, agent_id, source_id, maxMerge(last_seen_state) AS last_seen FROM service_point_inventory_v1 GROUP BY tenant_id, asset_id, agent_id, source_id)) GROUP BY tenant_id, asset_id, agent_id, source_id) GROUP BY state ORDER BY sources DESC LIMIT 10",
           "refId": "A"
         }
       ],
@@ -711,7 +711,7 @@
           },
           "pluginVersion": "4.15.0",
           "queryType": "time-series",
-          "rawSql": "SELECT bucket_start AS time, 'events' AS metric, sum(event_count) AS value FROM telemetry_1m_v1 WHERE $__timeFilter_ms(bucket_start) GROUP BY bucket_start ORDER BY bucket_start ASC LIMIT 1000",
+          "rawSql": "SELECT bucket_start AS time, 'events/min' AS metric, uniqMerge(event_count_state) AS value FROM service_telemetry_activity_1m_v1 WHERE $__timeFilter_ms(bucket_start) GROUP BY bucket_start ORDER BY bucket_start ASC LIMIT 1000",
           "refId": "A"
         },
         {
@@ -734,7 +734,7 @@
           },
           "pluginVersion": "4.15.0",
           "queryType": "time-series",
-          "rawSql": "SELECT bucket_start AS time, 'events/hour' AS metric, sum(event_count) AS value FROM telemetry_1h_v1 WHERE $__timeFilter_ms(bucket_start) GROUP BY bucket_start ORDER BY bucket_start ASC LIMIT 1000",
+          "rawSql": "SELECT toStartOfHour(bucket_start) AS time, 'events/hour' AS metric, uniqMerge(event_count_state) AS value FROM service_telemetry_activity_1m_v1 WHERE $__timeFilter_ms(bucket_start) GROUP BY time ORDER BY time ASC LIMIT 1000",
           "refId": "B"
         }
       ],
@@ -808,7 +808,7 @@
           },
           "pluginVersion": "4.15.0",
           "queryType": "table",
-          "rawSql": "SELECT quality, count() AS events FROM telemetry_events_dedup_v1 WHERE $__timeFilter_ms(ts) GROUP BY quality ORDER BY events DESC LIMIT 10",
+          "rawSql": "SELECT quality, events FROM (SELECT 'good' AS quality, uniqIfMerge(good_count_state) AS events FROM service_telemetry_activity_1m_v1 WHERE $__timeFilter_ms(bucket_start) UNION ALL SELECT 'uncertain' AS quality, uniqIfMerge(uncertain_count_state) AS events FROM service_telemetry_activity_1m_v1 WHERE $__timeFilter_ms(bucket_start) UNION ALL SELECT 'bad' AS quality, uniqIfMerge(bad_count_state) AS events FROM service_telemetry_activity_1m_v1 WHERE $__timeFilter_ms(bucket_start)) ORDER BY events DESC LIMIT 10",
           "refId": "A"
         }
       ],
@@ -889,7 +889,7 @@
           },
           "pluginVersion": "4.15.0",
           "queryType": "table",
-          "rawSql": "SELECT tenant_id, asset_id, source_type, agent_id, source_id, point_key, sum(event_count) AS events, sum(bad_count) AS bad_events, round(100 * bad_events / nullIf(events, 0), 2) AS bad_pct FROM telemetry_1m_v1 WHERE $__timeFilter_ms(bucket_start) GROUP BY tenant_id, asset_id, source_type, agent_id, source_id, point_key ORDER BY bad_events DESC, events DESC LIMIT 20",
+          "rawSql": "SELECT tenant_id, asset_id, source_type, agent_id, source_id, point_key, uniqMerge(event_count_state) AS events, uniqIfMerge(bad_count_state) AS bad_events, round(100 * bad_events / nullIf(events, 0), 2) AS bad_pct FROM service_telemetry_activity_1m_v1 WHERE $__timeFilter_ms(bucket_start) GROUP BY tenant_id, asset_id, source_type, agent_id, source_id, point_key ORDER BY bad_events DESC, events DESC LIMIT 20",
           "refId": "A"
         }
       ],

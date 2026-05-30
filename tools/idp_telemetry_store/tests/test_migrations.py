@@ -12,6 +12,9 @@ from idp_telemetry_store.migrations import (
     migration_statuses,
 )
 
+REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_MIGRATIONS_DIR = REPO_ROOT / "tools" / "idp_telemetry_store" / "migrations"
+
 
 class FakeClickHouseClient:
     def __init__(self, applied: dict[str, str] | None = None) -> None:
@@ -96,6 +99,33 @@ def test_checksum_mismatch_is_fatal(tmp_path: Path) -> None:
 def test_missing_migrations_directory_is_fatal(tmp_path: Path) -> None:
     with pytest.raises(MigrationError, match="does not exist"):
         load_migrations(tmp_path / "missing")
+
+
+def test_repo_migrations_include_service_dashboard_read_models() -> None:
+    migrations = load_migrations(REPO_MIGRATIONS_DIR)
+    migration_by_version = {migration.version: migration for migration in migrations}
+
+    assert list(migration_by_version) == [
+        "0001_idp_telemetry_store_v1",
+        "0002_service_dashboard_read_models",
+    ]
+
+    service_migration = migration_by_version["0002_service_dashboard_read_models"].sql
+    expected_objects = [
+        "service_latest_agent_status_v1",
+        "service_latest_agent_status_mv_v1",
+        "service_latest_source_connection_v1",
+        "service_latest_source_connection_mv_v1",
+        "service_point_inventory_v1",
+        "service_point_inventory_mv_v1",
+        "service_telemetry_activity_1m_v1",
+        "service_telemetry_activity_1m_mv_v1",
+    ]
+
+    for object_name in expected_objects:
+        assert object_name in service_migration
+    assert "ALTER TABLE telemetry_events_v1" not in service_migration
+    assert "DROP TABLE" not in service_migration
 
 
 def _write(directory: Path, name: str, sql: str) -> Path:
