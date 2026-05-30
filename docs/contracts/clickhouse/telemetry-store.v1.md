@@ -246,6 +246,9 @@ Dashboard query patterns before `ORDER BY` choice:
   `point_id_state`, `point_ref_state`, `source_config_revision_state`,
   `value_type_state`, `quality_state`, `first_seen_state`, `last_seen_state`,
   `last_ingested_at_state`
+- latest metadata convention: `argMax*` states use `(ts, ingested_at)` as the
+  ordering key so replay/correction rows with the same telemetry timestamp
+  choose the same version as `telemetry_latest_v1`
 - read convention: group by grain and merge state columns. `source_type`,
   `value_type` and `quality` remain `LowCardinality(String)` at the storage
   edge where they are repeated categorical values.

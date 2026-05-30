@@ -124,6 +124,14 @@ def test_repo_migrations_include_service_dashboard_read_models() -> None:
 
     for object_name in expected_objects:
         assert object_name in service_migration
+    assert (
+        "AggregateFunction(argMax, String, "
+        "Tuple(DateTime64(3, 'UTC'), DateTime64(3, 'UTC')))"
+    ) in service_migration
+    assert (
+        "argMaxState(toString(source_config_revision), tuple(ts, ingested_at))"
+        in service_migration
+    )
     assert "ALTER TABLE telemetry_events_v1" not in service_migration
     assert "DROP TABLE" not in service_migration
 

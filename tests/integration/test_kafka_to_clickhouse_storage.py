@@ -198,6 +198,46 @@ def test_kafka_connect_writes_raw_json_to_clickhouse_landing_and_contract_table(
     )
     assert service_activity_row == "1\t1\t0"
 
+    corrected_payload = {
+        **payload,
+        "point_ref": "1/2/99",
+        "source_config_revision": "rev-storage-it-002",
+        "ingested_at": "2026-05-03T05:50:10Z",
+        "value": 43.5,
+    }
+    local_storage_stack.produce_kafka_text(
+        "idp.telemetry.events.v1",
+        json.dumps(corrected_payload, ensure_ascii=True, separators=(",", ":")),
+    )
+    corrected_inventory_row = local_storage_stack.wait_for_clickhouse_value(
+        """
+        SELECT
+            argMaxMerge(point_ref_state),
+            argMaxMerge(source_config_revision_state),
+            toString(maxMerge(last_ingested_at_state))
+        FROM service_point_inventory_v1
+        WHERE tenant_id = 'tenant-storage-it'
+          AND asset_id = 'asset-storage-it'
+          AND source_id = 'source-storage-it'
+          AND point_key = 'temperature'
+        FORMAT TabSeparatedRaw
+        """.strip()
+    )
+    corrected_latest_row = local_storage_stack.clickhouse_query(
+        """
+        SELECT point_ref, source_config_revision, value_float, toString(ingested_at)
+        FROM telemetry_latest_v1
+        WHERE tenant_id = 'tenant-storage-it'
+          AND asset_id = 'asset-storage-it'
+          AND source_id = 'source-storage-it'
+          AND point_key = 'temperature'
+        FORMAT TabSeparatedRaw
+        """.strip()
+    ).stdout.strip()
+
+    assert corrected_inventory_row == "1/2/99\trev-storage-it-002\t2026-05-03 05:50:10.000"
+    assert corrected_latest_row == "1/2/99\trev-storage-it-002\t43.5\t2026-05-03 05:50:10.000"
+
     source_config_payload = {
         "message_type": "idp.source.config.v1",
         "tenant_id": "tenant-storage-it",
