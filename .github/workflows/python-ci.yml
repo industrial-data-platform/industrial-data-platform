@@ -66,6 +66,8 @@ jobs:
                       test_path: apps/knx_demo/tests
                     - package: idp-config-registry
                       test_path: apps/idp_config_registry/tests
+                    - package: idp-asset-graph-registry
+                      test_path: apps/idp_asset_graph_registry/tests
                     - package: knx-project-parser
                       test_path: libs/knx_project_parser/tests
                     - package: idp-demo-stack
@@ -143,6 +145,7 @@ jobs:
                   uv run --frozen --all-packages --group integration --group coverage coverage run -m pytest \
                     tests/integration/test_config_registry_kafka_publisher.py \
                     tests/integration/test_config_registry_postgres.py \
+                    tests/integration/test_asset_graph_registry_postgres.py \
                     tests/integration/test_edge_agent_mqtt_publisher.py \
                     tests/integration/test_edge_agent_knx_to_mqtt.py \
                     tests/integration/test_kafka_to_clickhouse_storage.py \

@@ -28,6 +28,7 @@ modules:
     status: active
     paths:
       - apps/idp_config_registry
+      - apps/idp_asset_graph_registry
       - tools/idp_telemetry_store
       - infra/local
       - docs/contracts/kafka
@@ -40,6 +41,7 @@ modules:
       - docs/architecture/decisions.md
     validation:
       - "uv run --package idp-config-registry pytest apps/idp_config_registry/tests"
+      - "uv run --package idp-asset-graph-registry pytest apps/idp_asset_graph_registry/tests"
       - "uv run --package idp-telemetry-store pytest tools/idp_telemetry_store/tests"
       - "uv run --group integration pytest tests/integration/test_config_registry_kafka_publisher.py tests/integration/test_kafka_to_clickhouse_storage.py"
   - id: edge_telemetry_agent

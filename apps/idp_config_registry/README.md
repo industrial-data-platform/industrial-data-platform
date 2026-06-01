@@ -47,7 +47,14 @@ stable identifiers: `idp_config_registry`, `idp-config-registry`,
   `GET /tenants/{tenant_code}/assets/{asset_code}/agents/{agent_code}/sources`,
   `POST /tenants/{tenant_code}/assets/{asset_code}/agents/{agent_code}/sources/{source_code}/points`,
   `GET /tenants/{tenant_code}/assets/{asset_code}/agents/{agent_code}/sources/{source_code}/points`,
-  `DELETE /tenants/{tenant_code}/assets/{asset_code}/agents/{agent_code}/sources/{source_code}/points/{point_code}`
+  `DELETE /tenants/{tenant_code}/assets/{asset_code}/agents/{agent_code}/sources/{source_code}/points/{point_code}`,
+  `GET /internal/registry/reference-lookup`
+
+`GET /internal/registry/reference-lookup` is a read-only internal lookup
+boundary for adjacent platform services such as Asset Graph Registry. It checks
+Config Registry references by public codes and returns `valid` or `stale`
+status plus an optional display/snapshot payload. It does not expose internal
+UUID storage identity.
 
 `DELETE .../agents/{agent_code}/registry-graph` — scoped operational cleanup
 для local synthetic seed/reset workflows. Он одной транзакцией удаляет

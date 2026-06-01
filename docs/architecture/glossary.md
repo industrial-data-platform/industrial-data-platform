@@ -44,11 +44,12 @@ LikeC4-модель в `arch/likec4/` и markdown-документы в `docs/ar
 - `Asset Graph Registry` — accepted отдельный service/package
   boundary внутри `Industrial Data Platform`: владеет asset graph nodes,
   tree projections, logical attributes, semantic relations и telemetry bindings.
-  Основная data model entity называется `asset graph node`. Не является
-  embedded slice внутри `Config Registry`; V1 implementation baseline —
-  existing Python/FastAPI service conventions, SQLAlchemy/Alembic,
-  PostgreSQL/Platform Store и dedicated internal `Next.js` / `React` /
-  `Ant Design Admin` app.
+  Основная data model entity называется `asset graph node`. Текущий backend
+  package — `apps/idp_asset_graph_registry` / package
+  `idp_asset_graph_registry`. Не является embedded slice внутри
+  `Config Registry`; V1 implementation baseline — existing Python/FastAPI
+  service conventions, SQLAlchemy/Alembic, PostgreSQL/Platform Store и
+  dedicated internal `Next.js` / `React` / `Ant Design Admin` app.
 - `Catalog` / `Hierarchical Catalog V1` — первый tree projection внутри
   `Asset Graph Registry`: navigation/authoring tree поверх
   registry entities и asset graph node refs для internal admin UI, будущего

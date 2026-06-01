@@ -105,6 +105,8 @@ implementation detail.
 Catalog tree хранит произвольно вложенную parent/child hierarchy:
 
 - каждый node принадлежит одному `tenant_code`;
+- `tenant_code` проверяется через Config Registry lookup перед созданием
+  любого catalog node, включая `folder`;
 - `parent_node_code` nullable: `null` означает root-level node;
 - `node_code` уникален внутри tenant tree;
 - `sort_order` задает порядок siblings;
@@ -181,6 +183,14 @@ These routes belong to the Asset Graph Registry boundary, not to
 implementation-design detail inside the ADR-016 baseline.
 
 Requests/responses используют public codes. Internal UUID не выходит в API.
+
+Config Registry lookup имеет два разных результата:
+
+- `stale` или missing reference означает invalid/stale business reference и
+  не должен сохранять новый node/binding как valid;
+- недоступность Config Registry lookup API, non-2xx HTTP response или
+  malformed response считается dependency failure Asset Graph Registry API,
+  а не `unknown` registry reference.
 
 Minimal node payload:
 
